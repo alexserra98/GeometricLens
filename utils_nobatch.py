@@ -1,5 +1,4 @@
 import os
-#from helm.benchmark.hidden_geometry.geometry import RunGeometry, InstanceHiddenSates
 from pathlib import Path
 import json
 import pickle
@@ -7,25 +6,8 @@ import torch
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer, GenerationConfig
 from typing import Any, Dict, List
-
-from helm.common.cache import Cache, CacheConfig
-from helm.common.hierarchical_logger import htrack_block, hlog
 from helm.common.request import EMBEDDING_UNAVAILABLE_REQUEST_RESULT, Request, RequestResult, Sequence, Token
-from helm.common.tokenization_request import (
-    TokenizationRequest,
-    TokenizationRequestResult,
-    DecodeRequest,
-    DecodeRequestResult,
-    TokenizationToken,
-)
-from helm.proxy.clients.client import Client, wrap_request_time, truncate_sequence, cleanup_tokens
-from helm.proxy.clients.huggingface_tokenizer import HuggingFaceTokenizers
-from helm.proxy.clients.huggingface_model_registry import (
-    get_huggingface_model_config,
-    HuggingFaceModelConfig,
-    HuggingFaceHubModelConfig,
-    HuggingFaceLocalModelConfig,
-)
+
 import copy
 from einops import reduce
 import numpy as np
@@ -59,7 +41,6 @@ def hidden_states(hidden_states,len_tokens_question):
 
 def exact_match(answers, letters_gold):
     return answers == letters_gold
-
 def quasi_exact_match(answers, letters_gold):
     is_in_string = answers.lower() in letters_gold.lower()
     #print(f"Is {answers} in {letters_gold}? {is_in_string}")
@@ -67,7 +48,8 @@ def quasi_exact_match(answers, letters_gold):
     
 
 def metrics(probs,preds, token_gold, letters_gold,tokenizer):
-    loss = torch.nn.functional.cross_entropy(probs,token_gold[0])
+    #import pdb; pdb.set_trace()
+    loss = torch.nn.functional.cross_entropy(probs,token_gold.unsqueeze(0))
     perp = torch.exp(loss)
     answers = tokenizer.decode(preds[0]).strip()
     exact_match_result = exact_match(answers, letters_gold) 
@@ -83,7 +65,7 @@ def aggregate(model_name,request_state,tokenizer,output_mapping):
     instance = request_state.instance
     index = [ref.tags == ['correct'] for ref in request_state.instance.references].index(True)
     letter_gold = list(output_mapping.keys())[index]
-    if "llama" in model_name:
+    if "llama" in model_name or "facebook" in model_name:
         token_gold = tokenizer(letter_gold[-1], return_tensors="pt", return_token_type_ids=False)["input_ids"][0,1]
     else:
         token_gold = tokenizer(letter_gold[-1], return_tensors="pt", return_token_type_ids=False)["input_ids"]
@@ -91,7 +73,6 @@ def aggregate(model_name,request_state,tokenizer,output_mapping):
 
 @retry_on_failure(5, delay=5)
 def inference(model,encoded_input):
-    model.eval()
     with torch.no_grad():
         output = model(**encoded_input, output_hidden_states=True)
     return output

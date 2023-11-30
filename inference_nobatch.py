@@ -6,25 +6,7 @@ import torch
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer, GenerationConfig
 from typing import Any, Dict, List
-
-from helm.common.cache import Cache, CacheConfig
-from helm.common.hierarchical_logger import htrack_block, hlog
 from helm.common.request import EMBEDDING_UNAVAILABLE_REQUEST_RESULT, Request, RequestResult, Sequence, Token
-from helm.common.tokenization_request import (
-    TokenizationRequest,
-    TokenizationRequestResult,
-    DecodeRequest,
-    DecodeRequestResult,
-    TokenizationToken,
-)
-from helm.proxy.clients.client import Client, wrap_request_time, truncate_sequence, cleanup_tokens
-from helm.proxy.clients.huggingface_tokenizer import HuggingFaceTokenizers
-from helm.proxy.clients.huggingface_model_registry import (
-    get_huggingface_model_config,
-    HuggingFaceModelConfig,
-    HuggingFaceHubModelConfig,
-    HuggingFaceLocalModelConfig,
-)
 import copy
 from einops import reduce
 import numpy as np
@@ -39,7 +21,9 @@ def ensure_directory_exists(directory_path):
         os.makedirs(directory_path)
 
 #working_path = Path(os.getcwd())
-working_path = Path("/home/alexserra98/helm-suite/no-helm")
+#working_path = Path("/home/alexserra98/helm-suite/no-helm")
+working_path = os.getcwd()
+
 scratch_path = Path("/orfeo/scratch/dssc/zenocosini/")
 #Getting commandline arguments
 parser = argparse.ArgumentParser()
@@ -63,7 +47,7 @@ model_kwargs = {}
 
 model_kwargs["output_hidden_states"] = True
 if os.path.exists(scratch_path):
-    model_kwargs["cache_dir"]=scratch_path
+    model_kwargs["cache_dir"]="/orfeo/scratch/dssc/zenocosini/"
 if "llama" in model_name:
     model_kwargs["torch_dtype"]="auto"
     model_kwargs["device_map"]="auto"
@@ -98,7 +82,7 @@ for dataset in datasets[0]:
         with open(os.path.join(dataset_path,"request_states.pkl"),"rb") as f:
             request_states = pickle.load(f)
         
-        request_states = request_states[:200]    
+        request_states = request_states[:2500]    
         output_mapping = request_states[0].output_mapping
         hidden_states_results = []
         metrics_results = []
@@ -120,7 +104,8 @@ for dataset in datasets[0]:
             del output.hidden_states
         # Saving the results
         logging.info("Saving the results...")
-        result_path = os.path.join(scratch_path, "inference_result", model_name,dataset,train_instances)
+        run_name = dataset + f",max_train_instances={train_instances}"
+        result_path = os.path.join(scratch_path, "inference_result", model_name.split('/')[1],dataset,train_instances)
         ensure_directory_exists(result_path)
 
         with open(os.path.join(result_path,"hidden_states.pkl"),"wb") as f:
