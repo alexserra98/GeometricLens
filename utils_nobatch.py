@@ -47,14 +47,20 @@ def quasi_exact_match(answers, letters_gold):
     return is_in_string
     
 
-def metrics(probs,preds, token_gold, letters_gold,tokenizer):
+def metrics(probs,pred,pred_letter, token_gold, letters_gold,tokenizer):
     #import pdb; pdb.set_trace()
     loss = torch.nn.functional.cross_entropy(probs,token_gold.unsqueeze(0))
     perp = torch.exp(loss)
-    answers = tokenizer.decode(preds[0]).strip()
-    exact_match_result = exact_match(answers, letters_gold) 
-    quasi_exact_match_result = quasi_exact_match(answers, letters_gold) 
-    return {"perp":perp, "loss":loss, "exact_match":exact_match_result, "quasi_exact_match":quasi_exact_match_result}   
+    answer = tokenizer.decode(pred[0]).strip()
+    answer_letter = tokenizer.decode(pred_letter[0]).strip()
+    exact_match_letter_result = exact_match(answer_letter, letters_gold)
+    exact_match_result = exact_match(answer, letters_gold) 
+    quasi_exact_match_result = quasi_exact_match(answer, letters_gold) 
+    return {"perp":perp, 
+            "loss":loss, 
+            "exact_match":exact_match_result, 
+            "quasi_exact_match":quasi_exact_match_result, 
+            "exact_match_letter":exact_match_letter_result}   
 
 def aggregate(model_name,request_state,tokenizer,output_mapping):
     prompt  = request_state.request.prompt
@@ -73,6 +79,8 @@ def aggregate(model_name,request_state,tokenizer,output_mapping):
 
 @retry_on_failure(5, delay=5)
 def inference(model,encoded_input):
+    model.eval()
     with torch.no_grad():
         output = model(**encoded_input, output_hidden_states=True)
     return output
+
