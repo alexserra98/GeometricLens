@@ -47,12 +47,13 @@ def quasi_exact_match(answers, letters_gold):
     return is_in_string
     
 
-def metrics(probs,pred,pred_letter, token_gold, letters_gold,tokenizer):
+def metrics(scores,probs,pred,pred_letter, token_gold, letters_gold,tokenizer,tokens_answers):
     #import pdb; pdb.set_trace()
-    loss = torch.nn.functional.cross_entropy(probs,token_gold.unsqueeze(0))
+    loss = torch.nn.functional.cross_entropy(scores,token_gold.unsqueeze(0))
+    #loss = torch.nn.functional.cross_entropy(scores,token_gold[0])
     perp = torch.exp(loss)
     answer = tokenizer.decode(pred[0]).strip()
-    answer_letter = tokenizer.decode(pred_letter[0]).strip()
+    answer_letter = tokenizer.decode(tokens_answers[pred_letter[0]]).strip()
     exact_match_letter_result = exact_match(answer_letter, letters_gold)
     exact_match_result = exact_match(answer, letters_gold) 
     quasi_exact_match_result = quasi_exact_match(answer, letters_gold) 

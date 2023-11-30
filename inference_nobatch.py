@@ -58,8 +58,6 @@ else:
 tokenizer = AutoTokenizer.from_pretrained(model_name, **model_kwargs)
 tokenizer.padding_side = "left"
 tokenizer.pad_token = tokenizer.eos_token
-output_mapping = request_states[0].output_mapping
-tokens_answers = [tokenizer.encode(letter) for letter in list(output_mapping.values())]
 #Setting up generation config
 request_config = {'temperature': 1e-07,
                   'num_return_sequences': 1,
@@ -85,6 +83,7 @@ for dataset in datasets[0]:
         
         request_states = request_states[:2500]    
         output_mapping = request_states[0].output_mapping
+        tokens_answers = [tokenizer.encode(letter)[0] for letter in list(output_mapping.keys())]
         hidden_states_results = []
         metrics_results = []
         for request_state in tqdm(request_states, desc="Inference..."):
@@ -100,11 +99,12 @@ for dataset in datasets[0]:
             probs = torch.nn.functional.softmax(scores/float(request_config["temperature"]),dim=-1)
             pred =  torch.multinomial(probs, num_samples=1)
             # generation with only letters
-            probs_letters = torch.nn.functional.softmax(scores[token_answers]/float(request_config["temperature"]),dim=-1)
+            #import pdb; pdb.set_trace()
+            probs_letters = torch.nn.functional.softmax(scores.index_select(-1,torch.tensor(tokens_answers))/float(request_config["temperature"]),dim=-1)
             pred_letter = torch.multinomial(probs_letters, num_samples=1)
             sequences = torch.concat([encoded_input["input_ids"].cpu(),pred],dim=1)
             hidden_states_results.append(hidden_states(output.hidden_states,len_tokens_question))
-            metrics_results.append(metrics(probs, pred, pred_letter, token_gold, letter_gold, tokenizer))
+            metrics_results.append(metrics(scores,probs, pred, pred_letter, token_gold, letter_gold, tokenizer,tokens_answers))
             del output.hidden_states
         # Saving the results
         logging.info("Saving the results...")
