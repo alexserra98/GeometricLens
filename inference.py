@@ -40,8 +40,7 @@ def ensure_directory_exists(directory_path):
         os.makedirs(directory_path)
 batch_size = 2
 
-#working_path = Path(os.getcwd())
-working_path = Path("/home/alexserra98/helm-suite/no-helm")
+working_path = Path(os.getcwd())
 #Getting commandline arguments
 parser = argparse.ArgumentParser()
 parser.add_argument('--model-name', type=str, help='The name of the model')
@@ -98,8 +97,7 @@ for dataset in datasets[0]:
         dataset_path = os.path.join(working_path, "datasets", file[0])
         with open(os.path.join(dataset_path,"request_states.pkl"),"rb") as f:
             request_states = pickle.load(f)
-        
-        request_states = request_states[:100]    
+        request_states = request_states[:2500]        
         output_mapping = request_states[0].output_mapping
         hidden_states_results = []
         metrics_results = []
@@ -120,7 +118,7 @@ for dataset in datasets[0]:
         # Saving the results
         logging.info("Saving the results...")
         run_name = dataset + f",max_train_instances={train_instances}"
-        result_path = os.path.join(working_path, "results", model_name,run_name)
+        result_path = os.path.join(working_path, "results",model_name.split("/")[1],run_name)
         ensure_directory_exists(result_path)
 
         with open(os.path.join(result_path,"hidden_states.pkl"),"wb") as f:
