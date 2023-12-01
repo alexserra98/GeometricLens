@@ -40,6 +40,7 @@ for dataset in datasets[0]:
         requests_results = client.make_request(scenario)
         logging.info("Saving the results...")
         run_name = dataset + f",max_train_instances={train_instances}"
+        #SET LTS PATH FOR ORFEO!
         result_path = Path("inference_result", model_name.split('/')[1],dataset,train_instances).mkdir(parents=True, exist_ok=True)
         with open(os.path.join(result_path,"request_results.pkl"),"wb") as f:
             pickle.dump(requests_results,f)
