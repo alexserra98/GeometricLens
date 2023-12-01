@@ -30,7 +30,7 @@ import copy
 from einops import reduce
 import numpy as np
 import argparse
-from utils import *
+from inference_id.backup.utils import *
 import logging
 #logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
