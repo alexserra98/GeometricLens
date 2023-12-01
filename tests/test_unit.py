@@ -52,15 +52,16 @@ def test_prediction():
 
 def test_make_request():
     scenario = test_scenario()
-    client = Huggingface_client("gpt2")
+    client = Huggingface_client("meta-llama/Llama-2-7b-hf")
     requests_results = client.make_request(scenario)
     print(f'{requests_results=}')
     return requests_results
 def test_tokenizer():
     scenario = test_scenario()
-    client = Huggingface_client("gpt2")
-    encoded_input = client.tokenizer(scenario.requests_instances[0].prompt,return_tensors="pt", padding=True,return_token_type_ids=False).to("cuda")
-    print(f'{encoded_input=} \n {encoded_input.shape=}')
+    client = Huggingface_client("meta-llama/Llama-2-7b-hf")
+    #encoded_input = client.tokenizer(scenario.requests_instances[0].prompt,return_tensors="pt", padding=True,return_token_type_ids=False).to("cuda")
+    encoded_input = client.encode("A")
+    print(f'{encoded_input=}')  
     
     
 if __name__ == "__main__":
@@ -68,4 +69,5 @@ if __name__ == "__main__":
     #test_generation()
     #test_prediction()
     test_make_request()
-    test_prediction()
+    #test_prediction()
+    #test_tokenizer()
