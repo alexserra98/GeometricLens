@@ -58,7 +58,7 @@ class HiddenStates():
         hs = torch.stack(self.hidden_states)[:,0,-len_tokens_question:,:].clone().detach().cpu().numpy()
         return {"last": hs[:,-1],"sum":reduce(hs[:,-len_tokens_question:], "l s d -> l d", "mean")}
    
-    def index_last_question(prompt, tokenizer):
+    def index_last_question(self,prompt, tokenizer):
         index_in_prompt = prompt.rfind("Question")
         tokens_question = tokenizer(prompt[index_in_prompt:], return_tensors="pt", return_token_type_ids=False)
         len_tokens_question = tokens_question["input_ids"].shape[1]
