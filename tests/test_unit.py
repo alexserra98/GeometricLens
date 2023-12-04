@@ -1,22 +1,7 @@
-import os
-from pathlib import Path
-import json
 import pickle
-import torch
-from tqdm import tqdm
-from transformers import AutoModelForCausalLM, AutoTokenizer, GenerationConfig
-from typing import Any, Dict, List
-from helm.common.request import EMBEDDING_UNAVAILABLE_REQUEST_RESULT, Request, RequestResult, Sequence, Token
-
-import copy
-from einops import reduce
-import numpy as np
-import argparse
-import time
-from dataclasses import dataclass, field
-from dataset_utils import *
-from generation import *
-from hidden_states_geometry.geometry import *
+from inference_id.datasets.utils import *
+from inference_id.generation.generation import *
+from inference_id.metrics.metrics import *
 
 def test_scenario():
     scenario = Scenario("commonsenseqa",0,"llama",10)
@@ -28,7 +13,7 @@ def test_generation():
     client = Huggingface_client("gpt2")
     encoded_input = client.tokenizer(scenario.requests_instances[0].prompt,return_tensors="pt", padding=True,return_token_type_ids=False).to("cuda")
     request_result=client.inference(encoded_input)
-    print(f'{request_result[0].loss}')
+    print(f'{request_result}')
     return request_result
 
 def test_prediction():
@@ -53,8 +38,12 @@ def test_prediction():
 
 def test_make_request():
     scenario = test_scenario()
+    with open("tests/assets/scenario.pkl", "wb") as f:
+       pickle.dump(scenario, f)
     client = Huggingface_client("gpt2")
     requests_results = client.make_request(scenario)
+    with open("tests/assets/requests_results.pkl", "wb") as f:
+       pickle.dump(requests_results, f)
     print(f'{requests_results=}')
     return requests_results
 def test_tokenizer():
@@ -75,8 +64,9 @@ def test_basic_metrics():
 def test_intrinsic_dim():
     with open("tests/assets/requests_results.pkl", "rb") as f:
        requests_results = pickle.load(f)
-    metrics = ShotMetrics(requests_results)
-    print(f'{metrics.intrinsic_dim()=}')
+    metrics = ShotMetrics(requests_results, "commonsenseqa",0)
+    hidden_states = metrics.construct_hidden_states()
+    print(f'{metrics.intrinsic_dim(hidden_states)=}')
     return metrics
 
 def test_letter_overlap():
@@ -87,7 +77,7 @@ def test_letter_overlap():
     print(f'{metrics.get_all_letter_overlaps(hidden_states)=}')
     return metrics
 
-def   
+  
 if __name__ == "__main__":
     #test_scenario()
     #test_generation()
@@ -95,4 +85,6 @@ if __name__ == "__main__":
     #test_make_request()
     #test_prediction()
     #test_tokenizer()
-    test_letter_overlap()
+    #test_letter_overlap()
+    test_intrinsic_dim()
+    #test_basic_metrics()

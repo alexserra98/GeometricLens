@@ -14,10 +14,10 @@ import numpy as np
 import argparse
 import time
 from dataclasses import dataclass, field
-from dataset_utils import *
-from utils_nobatch import retry_on_failure
+from inference_id.datasets.utils import *
+from inference_id.generation.utils import retry_on_failure
 from abc import ABC, abstractmethod
-from utils_nobatch import *
+from inference_id.generation.utils import *
 
 @dataclass
 class RequestResult():
@@ -29,6 +29,9 @@ class RequestResult():
     
     
 class Huggingface_client():
+    """
+    Client for Huggingface models. It instantiate the model and the tokenizer, and provides method to make inference over a dataset
+    """
     def __init__(self,model_name) -> None:
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model_name = model_name
@@ -50,7 +53,7 @@ class Huggingface_client():
             self.tokenizer.padding_side = "left"
             self.tokenizer.pad_token = self.tokenizer.eos_token
     
-    def make_request(self, scenario):
+    def make_request(self, scenario: Scenario) -> List[RequestResult]:
         request_config = {'temperature': 1e-07,
                         'num_return_sequences': 1,
                         'max_new_tokens': 1,
@@ -82,7 +85,7 @@ class Huggingface_client():
         return requests_results
     
         
-    def prediction(self, request_result, request_config, tokens_answers):
+    def prediction(self, request_result: RequestResult, request_config: Dict, tokens_answers: List[int]):
         std_pred_strat: StandardPrediction = StandardPrediction(request_result.logits, request_config)
         only_ref_pred_stat: OnlyReferencePrediction = OnlyReferencePrediction(request_result.logits, request_config, tokens_answers)
         std_pred = std_pred_strat.predict()
@@ -98,7 +101,7 @@ class Huggingface_client():
             output = self.model(**encoded_input, output_hidden_states=True)
         return output
  
-    def encode(self,input):
+    def encode(self,input: str)-> List[int]:
         if "llama" in self.model_name or "facebook" in self.model_name:
             encoded_input=self.tokenizer.encode(input)
             #import pdb; pdb.set_trace()
@@ -111,6 +114,9 @@ class Huggingface_client():
 
 
 class PredictionStrategy(ABC):
+    """
+    Abstract class for prediction strategies
+    """
     def __init__(self,logits, request_config) -> None:
         self.logits=logits
         self.request_config=request_config
@@ -120,8 +126,10 @@ class PredictionStrategy(ABC):
         pass
     
 class StandardPrediction(PredictionStrategy):
-    
-    def predict(self):
+    """
+    Standard Inference with sampling from logits
+    """
+    def predict(self) -> int:
         #scores = request_result.logits[:,-1].detach().cpu()
         rescaled_logit=self.logits/float(self.request_config["temperature"])
         #import pdb; pdb.set_trace()
@@ -130,13 +138,14 @@ class StandardPrediction(PredictionStrategy):
         return pred.item()
     
 class OnlyReferencePrediction(PredictionStrategy):
+    """
+    Inference with sampling from logits, but only from the reference tokens
+    """
     def __init__(self,logits,request_config,tokens_answers) -> None:
         super().__init__(logits,request_config)
         self.tokens_answers=tokens_answers
     
-    def predict(self):
-        #scores = request_result.logits[:,-1].detach().cpu()
-        
+    def predict(self) -> int:
         stripped_logits = self.logits.index_select(-1,torch.tensor(self.tokens_answers))
         rescaled_logits=stripped_logits/float(self.request_config["temperature"])
         probs = torch.nn.functional.softmax(rescaled_logits,dim=-1)

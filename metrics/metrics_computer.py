@@ -1,7 +1,7 @@
 import torch
 import dadapy
 import numpy
-from hidden_states_geometry.geometry import *
+from inference_id.metrics.metrics import *
 import os
 import pickle
 import logging

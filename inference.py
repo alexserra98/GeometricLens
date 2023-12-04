@@ -2,10 +2,10 @@ import os
 from pathlib import Path
 import pickle
 import argparse
-from utils_nobatch import *
+from inference_id.generation.utils import *
 import logging
-from dataset_utils import *
-from generation import *
+from inference_id.datasets.utils import *
+from inference_id.generation.generation import *
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 #working_path = Path(os.getcwd())
