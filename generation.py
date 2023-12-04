@@ -31,6 +31,7 @@ class RequestResult():
 class Huggingface_client():
     def __init__(self,model_name) -> None:
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.model_name = model_name
         model_kwargs = {}
         model_kwargs["output_hidden_states"] = True
         if (cache_path:=Path("/orfeo/scratch/dssc/zenocosini/")).exists() :
@@ -60,21 +61,22 @@ class Huggingface_client():
                         "output_scores":True,
                         "pad_token_id":self.tokenizer.eos_token_id}
 
-        tokens_answers = [self.tokenizer.encode(letter)[0] for letter in list(scenario.output_mapping.keys())]
+        tokens_answers = [self.encode(letter)[0] for letter in list(scenario.output_mapping.keys())]
+        #import pdb; pdb.set_trace()
         requests_results = []
         for request_instance in tqdm(scenario.requests_instances, desc="Generating requests"):
             encoded_input = self.tokenizer(request_instance.prompt,return_tensors="pt", padding=True,return_token_type_ids=False).to(
             self.device
             )
             request_result=self.inference(encoded_input)
-            request_result.logits = request_result.logits[:,-1].detach().cpu()
+            request_result.logits = request_result.logits[:,-1].detach().cpu().to(torch.float32)
             predictions = self.prediction(request_result, request_config,tokens_answers)
-            token_gold = torch.tensor(self.tokenizer.encode(request_instance.letter_gold)[0]).unsqueeze(0)
+            token_gold = torch.tensor(self.encode(request_instance.letter_gold)[0]).unsqueeze(0)
             request_instance.token_gold = token_gold[0].item()
             loss = torch.nn.functional.cross_entropy(request_result.logits,token_gold)
             hidden_states = HiddenStates(request_result.hidden_states)
             del request_result.hidden_states
-            result = RequestResult(loss, request_result.logits,hidden_states.preprocess(request_instance,self.tokenizer), predictions, request_instance.token_gold)
+            result = RequestResult(loss, request_result.logits,hidden_states.preprocess(request_instance,self.tokenizer), predictions,{"token":request_instance.token_gold,"letter":request_instance.letter_gold})
             requests_results.append(result)
             
         return requests_results
@@ -83,8 +85,10 @@ class Huggingface_client():
     def prediction(self, request_result, request_config, tokens_answers):
         std_pred_strat: StandardPrediction = StandardPrediction(request_result.logits, request_config)
         only_ref_pred_stat: OnlyReferencePrediction = OnlyReferencePrediction(request_result.logits, request_config, tokens_answers)
-        std_pred = self.tokenizer.encode(self.tokenizer.decode(std_pred_strat.predict()).strip())[0]
-        pred_dict = {"std_pred":std_pred, "only_ref_pred":only_ref_pred_stat.predict()}
+        std_pred = std_pred_strat.predict()
+        only_ref = only_ref_pred_stat.predict()
+        pred_dict = {"std_pred":{"token":std_pred,"letter":self.tokenizer.decode(std_pred)}, "only_ref_pred":{"token":only_ref,"letter":self.tokenizer.decode(only_ref)}}
+
         return pred_dict
 
     @retry_on_failure(3)
@@ -92,7 +96,17 @@ class Huggingface_client():
         self.model.eval()
         with torch.no_grad():
             output = self.model(**encoded_input, output_hidden_states=True)
-        return output 
+        return output
+ 
+    def encode(self,input):
+        if "llama" in self.model_name or "facebook" in self.model_name:
+            encoded_input=self.tokenizer.encode(input)
+            #import pdb; pdb.set_trace()
+            encoded_input=encoded_input[1:]
+            return encoded_input
+        else:
+            return self.tokenizer.encode(input)
+        
     
 
 
@@ -109,7 +123,9 @@ class StandardPrediction(PredictionStrategy):
     
     def predict(self):
         #scores = request_result.logits[:,-1].detach().cpu()
-        probs = torch.nn.functional.softmax(self.logits/float(self.request_config["temperature"]),dim=-1)
+        rescaled_logit=self.logits/float(self.request_config["temperature"])
+        #import pdb; pdb.set_trace()
+        probs = torch.nn.functional.softmax(rescaled_logit,dim=-1)
         pred =  torch.multinomial(probs, num_samples=1)
         return pred.item()
     
@@ -120,8 +136,10 @@ class OnlyReferencePrediction(PredictionStrategy):
     
     def predict(self):
         #scores = request_result.logits[:,-1].detach().cpu()
+        
         stripped_logits = self.logits.index_select(-1,torch.tensor(self.tokens_answers))
-        probs = torch.nn.functional.softmax(stripped_logits/float(self.request_config["temperature"]),dim=-1)
+        rescaled_logits=stripped_logits/float(self.request_config["temperature"])
+        probs = torch.nn.functional.softmax(rescaled_logits,dim=-1)
         pred = torch.multinomial(probs, num_samples=1)
         return self.tokens_answers[pred]
    

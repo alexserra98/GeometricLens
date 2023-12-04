@@ -16,6 +16,7 @@ import time
 from dataclasses import dataclass, field
 from dataset_utils import *
 from generation import *
+from hidden_states_geometry.geometry import *
 
 def test_scenario():
     scenario = Scenario("commonsenseqa",0,"llama",10)
@@ -57,15 +58,40 @@ def test_make_request():
     print(f'{requests_results=}')
     return requests_results
 def test_tokenizer():
-    scenario = test_scenario()
-    client = Huggingface_client("gpt2")
-    encoded_input = client.tokenizer(scenario.requests_instances[0].prompt,return_tensors="pt", padding=True,return_token_type_ids=False).to("cuda")
-    print(f'{encoded_input=} \n {encoded_input.shape=}')
+    with open("tests/assets/scenario.pkl", "rb") as f:
+       scenario = pickle.load(f)
+    client = Huggingface_client("meta-llama/Llama-2-7b-hf")
+    #encoded_input = client.tokenizer(scenario.requests_instances[0].prompt,return_tensors="pt", padding=True,return_token_type_ids=False).to("cuda")
+    encoded_input = client.encode("A")
+    print(f'{encoded_input=}')  
     
+def test_basic_metrics():
+    with open("tests/assets/requests_results.pkl", "rb") as f:
+       requests_results = pickle.load(f)
+    metrics = Metrics(requests_results)
+    print(f'{metrics.basic_metric_mean()=}')
+    return metrics
     
+def test_intrinsic_dim():
+    with open("tests/assets/requests_results.pkl", "rb") as f:
+       requests_results = pickle.load(f)
+    metrics = Metrics(requests_results)
+    print(f'{metrics.intrinsic_dim()=}')
+    return metrics
+
+def test_letter_overlap():
+    with open("tests/assets/requests_results.pkl", "rb") as f:
+       requests_results = pickle.load(f)
+    metrics = Metrics(requests_results)
+    hidden_states = metrics.construct_hidden_states()
+    print(f'{metrics.get_all_letter_overlaps(hidden_states)=}')
+    return metrics
+  
 if __name__ == "__main__":
     #test_scenario()
     #test_generation()
     #test_prediction()
-    test_make_request()
-    test_prediction()
+    #test_make_request()
+    #test_prediction()
+    #test_tokenizer()
+    test_letter_overlap()

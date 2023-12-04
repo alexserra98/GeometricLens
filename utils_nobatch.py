@@ -26,9 +26,10 @@ def hidden_states_preprocess(hidden_states,len_tokens_question):
     return {"last": hs[:,-1],"sum":reduce(hs[:,-len_tokens_question:], "l s d -> l d", "mean")}
 
 def exact_match(answers, letters_gold):
-    return answers == letters_gold
+    return answers.strip() == letters_gold
+
 def quasi_exact_match(answers, letters_gold):
-    is_in_string = answers.lower() in letters_gold.lower()
+    is_in_string = answers.strip().lower() in letters_gold.lower()
     #print(f"Is {answers} in {letters_gold}? {is_in_string}")
     return is_in_string
     
@@ -58,7 +59,7 @@ class HiddenStates():
         hs = torch.stack(self.hidden_states)[:,0,-len_tokens_question:,:].clone().detach().cpu().numpy()
         return {"last": hs[:,-1],"sum":reduce(hs[:,-len_tokens_question:], "l s d -> l d", "mean")}
    
-    def index_last_question(prompt, tokenizer):
+    def index_last_question(self,prompt, tokenizer):
         index_in_prompt = prompt.rfind("Question")
         tokens_question = tokenizer(prompt[index_in_prompt:], return_tensors="pt", return_token_type_ids=False)
         len_tokens_question = tokens_question["input_ids"].shape[1]
