@@ -26,13 +26,18 @@ Tensor = Type[torch.Tensor]
 
 @dataclass
 class InstanceResult():
+  dataset: str
+  train_instances: int
   intrinsic_dim: Dict[str, Dict[str, np.ndarray]]
   metrics: Dict[str, Dict[str, float]]
+  letter_nn: Optional[Dict[str, Dict[str, np.ndarray]]] = None
   
   
-class Metrics():
-  def __init__(self, requests_results: List[RequestResult]):
+class ShotMetrics():
+  def __init__(self, requests_results: List[RequestResult], dataset:str, train_instances: int):
     self.requests_results = requests_results
+    self.train_instances = train_instances
+    self.dataset = dataset
     self.basic_metric, self.hidden_states = self.set_dataframes()
 
   def set_dataframes(self):
@@ -60,7 +65,15 @@ class Metrics():
     basic_metrics = pd.DataFrame(basic_metrics_dict)
     hidden_states = pd.DataFrame(hidden_states_dict)
     return basic_metrics, hidden_states
-  
+  def evaluate(self): 
+    basic_metric = self.basic_metric_mean()
+    hidden_states = self.construct_hidden_states()
+    intrinsic_dim = self.intrinsic_dim(hidden_states)
+    if self.dataset == "commonsenseqa":
+      letter_overlap = self.get_all_letter_overlaps(hidden_states) 
+      return InstanceResult(self.dataset, self.train_instances, intrinsic_dim, basic_metric, letter_overlap)
+    return InstanceResult(self.dataset, self.train_instances, intrinsic_dim, basic_metric)
+    
   #TODO use property decorator
   def basic_metric_mean(self):
     output_dict = {column_name: self.basic_metric[column_name].mean() for column_name in self.basic_metric.columns}
@@ -78,7 +91,7 @@ class Metrics():
     hidden_states = self.construct_hidden_states()
     intrinsic_dim = self.intrinsic_dim(hidden_states)
     letter_overlap = self.get_all_letter_overlaps(hidden_states)
-    return intrinsic_dim, letter_overlap
+    return intrinsic_dim, letter_overlap 
 
   def instance_result(self):
     intrinsic_dim = self.construct_hidden_states().get_instances_id()
@@ -145,7 +158,6 @@ class HiddenStates():
     nn = []
     nn_half1 = []
     nn_half2 = []
-   
     
     half = True
     for letter in ["A","B","C","D"]:
@@ -158,9 +170,7 @@ class HiddenStates():
       half = int(hidden_states.shape[0]/2)
       nn_half1.append(self.nearest_neighbour(hidden_states[:half], k=k))
       nn_half2.append(self.nearest_neighbour(hidden_states[half:], k=k))
-
     overlap = np.empty([4,4])
-
     warnings.warn("Computing overlap for -5th layer and using 80 %% of the instances")
     for i in tqdm.tqdm(range(4), desc = "Computing overlap"):
       for j in range (4):
@@ -173,7 +183,7 @@ class HiddenStates():
 
   
       
-class Geometry():
+class DatasetMetrics():
   """
   Geometry stores all the runs in a version and collect methods to compute geometric information of the representations
   across runs
@@ -183,7 +193,7 @@ class Geometry():
   neig_overlap: compute the overlap between two representations
   """
 
-  def __init__(self, intrinsic_dim: List[Dict], metrics: List) -> None:
+  def __init__(self, instances_result: List[InstanceResult] ) -> None:
     """
     Parameters
     ----------
@@ -191,11 +201,7 @@ class Geometry():
         List of dictionaries containing the nearest neighbours of each layer of the two runs
         Dict[k-method, Array(num_layers, num_instances, k_neighbours)]
     """
-    #self.nearest_neig = nearest_neig
-    self.intrinsic_dim = intrinsic_dim
-    self.accuracy = [i["accuracy"] for i in metrics]
-    self.train_instances = [i["train_instances"] for i in metrics]
-    self.id_acc = self.get_last_layer_id_diff()
+    self.instances_results = instances_result 
 
   def get_last_layer_id_diff(self):
     """
@@ -204,21 +210,22 @@ class Geometry():
     ----------
     Dict[k-method, Dict[accuracy, Array(neigh_order)]]
     """
-    num_runs = len(self.intrinsic_dim)
+    num_runs = len(self.instances_results)
     metric_id = {}
-    for match in ["correct", "wrong", "all"]:
-      metric_id[match] = {}
-      for method in ["last", "sum"]:
-        metric_id[match][method] = []
-        for i in range(num_runs):
-          for j in range(num_runs):
-            if i==j:
-              continue
-            nn_order = min(self.intrinsic_dim[i][match][method].shape[1], self.intrinsic_dim[j][match][method].shape[1])
-            id_diff = np.abs(self.intrinsic_dim[i][match][method][-5][:nn_order] - self.intrinsic_dim[j][match][method][-5][:nn_order])
-            acc_diff = np.abs(self.accuracy[i] - self.accuracy[j])
-            train_inst_diff = np.abs(self.train_instances[i] - self.train_instances[j])
-            metric_id[match][method].append({"id_diff": id_diff, "acc_diff": acc_diff, "train_diff": train_inst_diff})  
+    zero_shot = next((x for x in self.instances_results if x.train_instances==0), None)
+    
+    for method in [Layer.LAST.value, Layer.SUM.value]:
+        metric_id[method] = {"id_diff": [], "metric_diff": {key: [] for key in self.instances_results[0].metrics.keys()}} 
+        for i_result in self.instances_results:
+          if i_result.train_instances == 0:
+            continue
+          zero_shot_id = zero_shot.intrinsic_dim[Match.ALL.value][method]
+          i_result_id = i_result.intrinsic_dim[Match.ALL.value][method]
+          nn_order = min(zero_shot.shape[1], i_result_id.shape[1])
+          id_diff = np.abs(zero_shot_id[-5][:nn_order] - i_result_id[-5][:nn_order])
+          metric_id[method]["id_diff"].append(id_diff)
+          for metric in i_result.metrics.keys():
+            metric_id[method]["metric_diff"][metric].append(np.abs(zero_shot.metrics[metric] - i_result.metrics[metric]))
     return metric_id
 
   def get_all_overlaps(self) -> Dict:
@@ -249,31 +256,9 @@ class Geometry():
     for i in range(layers_len):
       for j in range(layers_len):
         # WARNING : the overlap is computed with K=K THE OTHER OCC IS IN RUNGEOMETRY
-        overlaps[i][j] = self.neig_overlap(nn1[i], nn2[j])
+        overlaps[i][j] = neig_overlap(nn1[i], nn2[j])
     return overlaps
   
-  def neig_overlap( X, Y):
-    """
-    Computes the neighborhood overlap between two representations.
-    Parameters
-    ----------
-    X : 2D array of ints
-        nearest neighbor index matrix of the first representation
-    Y : 2D array of ints
-        nearest neighbor index matrix of the second representation
-    
-    Returns
-    -------
-    overlap : float
-        neighborhood overlap between the two representations
-    """
-    assert X.shape[0] == Y.shape[0]
-    ndata = X.shape[0]
-    # Is this correct?
-    k = X.shape[1]
-    iter = map(lambda x,y : np.intersect1d(x,y).shape[0]/k, X,Y)
-    out = functools.reduce(lambda x,y: x+y, iter)
-    return out/ndata
   
 
         

@@ -68,25 +68,26 @@ def test_tokenizer():
 def test_basic_metrics():
     with open("tests/assets/requests_results.pkl", "rb") as f:
        requests_results = pickle.load(f)
-    metrics = Metrics(requests_results)
+    metrics = ShotMetrics(requests_results)
     print(f'{metrics.basic_metric_mean()=}')
     return metrics
     
 def test_intrinsic_dim():
     with open("tests/assets/requests_results.pkl", "rb") as f:
        requests_results = pickle.load(f)
-    metrics = Metrics(requests_results)
+    metrics = ShotMetrics(requests_results)
     print(f'{metrics.intrinsic_dim()=}')
     return metrics
 
 def test_letter_overlap():
     with open("tests/assets/requests_results.pkl", "rb") as f:
        requests_results = pickle.load(f)
-    metrics = Metrics(requests_results)
+    metrics = ShotMetrics(requests_results)
     hidden_states = metrics.construct_hidden_states()
     print(f'{metrics.get_all_letter_overlaps(hidden_states)=}')
     return metrics
-  
+
+def   
 if __name__ == "__main__":
     #test_scenario()
     #test_generation()
