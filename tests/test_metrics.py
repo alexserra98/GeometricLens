@@ -2,7 +2,7 @@ import torch
 import dadapy
 import numpy
 import sklearn
-from hidden_states_geometry.geometry import Geometry, RunGeometry
+from inference_id.metrics.metrics import Geometry, RunGeometry
 import os
 import pickle
 import logging

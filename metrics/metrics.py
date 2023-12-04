@@ -1,29 +1,29 @@
-from dadapy.data import Data
-from dadapy.plot import plot_inf_imb_plane
-from dadapy.metric_comparisons import MetricComparisons
 import numpy as np
 import torch
-from helm.benchmark.adaptation.scenario_state import ScenarioState
 from dataclasses import dataclass
-from typing import List, Dict, Tuple, Optional, Iterable, Set, Type
-from einops import reduce
-import einsum
-import torch.nn.functional as F
-import functools
-from sklearn.neighbors import NearestNeighbors
-from .utils import compute_id, hidden_states_collapse, RunMeta, InstanceHiddenStates, Match, Layer, neig_overlap
-from utils_nobatch import exact_match, quasi_exact_match
+from typing import List, Dict, Tuple, Optional,  Type
+from .utils import  Match, Layer, neig_overlap, exact_match, quasi_exact_match
 import tqdm
-from generation import RequestResult
+from inference_id.generation.generation import RequestResult
 import pandas as pd
-import warnings
-
+from helm.common.request import EMBEDDING_UNAVAILABLE_REQUEST_RESULT, Request, RequestResult
+from helm.benchmark.scenarios.scenario import Instance
+from .hidden_states import HiddenStates
+from enum import Enum
 #TODO use a factory to create RunMetrics objects
 
 # Define a type hint 
 Array = Type[np.ndarray]
 Tensor = Type[torch.Tensor]
 
+class Match(Enum):
+    CORRECT = "correct"
+    WRONG = "wrong"
+    ALL = "all"
+class Layer(Enum):
+    LAST = "last"
+    SUM = "sum"
+    
 @dataclass
 class InstanceResult():
   dataset: str
@@ -33,19 +33,25 @@ class InstanceResult():
   letter_nn: Optional[Dict[str, Dict[str, np.ndarray]]] = None
   
   
+  
 class ShotMetrics():
+  """
+  Class to compute the metrics of a run. It takes a list of request results computed by generate.py
+  and compute the per instance metrics 
+  """
   def __init__(self, requests_results: List[RequestResult], dataset:str, train_instances: int):
     self.requests_results = requests_results
     self.train_instances = train_instances
     self.dataset = dataset
     self.basic_metric, self.hidden_states = self.set_dataframes()
 
-  def set_dataframes(self):
+  def set_dataframes(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
-    Compute the per instance metric
+    Aggregate in two different dataframes the data for basic metrics and the hidden states of all instances
     Output
     ----------
-    List[Dict[metric, value]]
+    basic_metrics: pd.DataFrame(num_instances, num_metrics)
+    hidden_states: pd.DataFrame(num_instances, num_layers, model_dim)
     """
     basic_metrics_dict = {"loss":[], "perplexity":[], "std_exact_match":[],"std_quasi_exact_match":[], "ref_exact_match":[]}
     hidden_states_dict = {"hidden_states": [],"layer": [], "match": [], "answered_letter": [], "gold_letter": []}
@@ -65,7 +71,14 @@ class ShotMetrics():
     basic_metrics = pd.DataFrame(basic_metrics_dict)
     hidden_states = pd.DataFrame(hidden_states_dict)
     return basic_metrics, hidden_states
-  def evaluate(self): 
+  
+  def evaluate(self) -> InstanceResult: 
+    """
+    Compute all the implemented metrics
+    Output
+    ----------
+    InstanceResult object
+    """
     basic_metric = self.basic_metric_mean()
     hidden_states = self.construct_hidden_states()
     intrinsic_dim = self.intrinsic_dim(hidden_states)
@@ -75,122 +88,35 @@ class ShotMetrics():
     return InstanceResult(self.dataset, self.train_instances, intrinsic_dim, basic_metric)
     
   #TODO use property decorator
-  def basic_metric_mean(self):
+  def basic_metric_mean() -> Dict[str, float]:
     output_dict = {column_name: self.basic_metric[column_name].mean() for column_name in self.basic_metric.columns}
     return output_dict  
-  def construct_hidden_states(self):
+  
+  def construct_hidden_states(self) -> HiddenStates:
     hidden_states = HiddenStates(self.hidden_states)
     return hidden_states
-  def intrinsic_dim(self,hidden_states):
+  
+  def intrinsic_dim(self,hidden_states) -> Dict[str, Dict[str, np.ndarray]]:
     intrinsic_dim = hidden_states.get_instances_id()
     return intrinsic_dim 
-  def get_all_letter_overlaps(self,hidden_states):
+  
+  def get_all_letter_overlaps(self,hidden_states) -> Dict[str, Dict[str, np.ndarray]]:
     return hidden_states.layer_overlap_letter()
 
-  def hidden_states_metrics(self):
+  def hidden_states_metrics(self) -> Tuple[Dict[str, Dict[str, np.ndarray]], Dict[str, Dict[str, np.ndarray]]]:
     hidden_states = self.construct_hidden_states()
     intrinsic_dim = self.intrinsic_dim(hidden_states)
     letter_overlap = self.get_all_letter_overlaps(hidden_states)
     return intrinsic_dim, letter_overlap 
 
-  def instance_result(self):
+  def instance_result(self) -> InstanceResult:
     intrinsic_dim = self.construct_hidden_states().get_instances_id()
     metrics = self.basic_metric_mean()
     return InstanceResult(intrinsic_dim, metrics)
 
-class HiddenStates():
-  def __init__(self,hidden_states):
-    self.hidden_states = hidden_states
-  
-  #TODO use a decorator
-  def preprocess_hiddenstates(self,func, query, *args, **kwargs):
-    hidden_states_collapsed = hidden_states_collapse(self.hidden_states, query)
-
-    return func(hidden_states_collapsed, *args, **kwargs)
-
-  def set_hidden_states(self, exact_matches) -> Dict[str, Dict[str, np.ndarray]]:
-    """
-    Output
-    ----------
-    {method: method(num_instances, num_layers, model_dim)}
-    """ 
-    instances_hiddenstates = self._get_instances_hidden_states(exact_matches) 
-    hidden_states = {match.value: {layer.value: hidden_states_collapse(instances_hiddenstates, {"layer":layer.value,"match": match.value}) 
-                            for layer in [Layer.LAST,Layer.SUM] } 
-                            for match in [Match.CORRECT, Match.WRONG, Match.ALL]}
-    return hidden_states
-  
-  def get_instances_id(self) -> np.ndarray:
-    """
-    Compute the ID of all instances using gride algorithm
-    Output
-    ----------
-    Dict[str, np.array(num_layers)]
-    """
-    id = {match.value: 
-            {layer.value: compute_id(self.hidden_states,{"match":match.value,"layer":layer.value}, "gride") 
-            for layer in [Layer.LAST, Layer.SUM]} 
-            for match in [Match.CORRECT, Match.WRONG, Match.ALL]}
-    return id
-  
-  def nearest_neighbour(self, hidden_states, k: int ) -> np.ndarray:
-    """
-    Compute the nearest neighbours of each instance in the run per layer
-    using the provided methodv
-    Output
-    ----------
-    Array(num_layers, num_instances, k_neighbours)
-    """
-
-    assert k <= hidden_states.shape[0], "K must be smaller than the number of instances"
-    layers = hidden_states.shape[1]
-    neigh_matrix_list = []
-    for i in range(layers):
-      neigh = NearestNeighbors(n_neighbors=k)
-      neigh.fit(hidden_states[:,i,:])
-      dist, indices = neigh.kneighbors(hidden_states[:,i,:])
-      indices = np.delete(indices, 0, 1) # removing the first column which is the instance itself
-      neigh_matrix_list.append(indices)
-    
-    return np.stack(neigh_matrix_list)
-  
-  def layer_overlap_letter(self):
-    nn = []
-    nn_half1 = []
-    nn_half2 = []
-    
-    half = True
-    for letter in ["A","B","C","D"]:
-      k = max(int(half*0.8),2)
-      hidden_states = hidden_states_collapse(self.hidden_states,
-                                             {"match":Match.ALL.value, 
-                                              "layer":Layer.LAST.value, 
-                                              "answered_letter":letter})
-      nn.append(self.nearest_neighbour(hidden_states, k=k))
-      half = int(hidden_states.shape[0]/2)
-      nn_half1.append(self.nearest_neighbour(hidden_states[:half], k=k))
-      nn_half2.append(self.nearest_neighbour(hidden_states[half:], k=k))
-    overlap = np.empty([4,4])
-    warnings.warn("Computing overlap for -5th layer and using 80 %% of the instances")
-    for i in tqdm.tqdm(range(4), desc = "Computing overlap"):
-      for j in range (4):
-        if i==j:
-          overlap[i,j] = neig_overlap(nn_half1[i][-5,], nn_half2[j][-5])
-        else:
-          overlap[i,j] = neig_overlap(nn[i][-5,], nn[j][-5])
-    
-    return overlap
-
-  
-      
 class DatasetMetrics():
   """
-  Geometry stores all the runs in a version and collect methods to compute geometric information of the representations
-  across runs
-  Methods
-  ----------
-  _instances_overlap: compute the overlap between two representations
-  neig_overlap: compute the overlap between two representations
+  Class to compute metrics across all the runs of a dataset. Generally used to compare between different n-shots
   """
 
   def __init__(self, instances_result: List[InstanceResult] ) -> None:
