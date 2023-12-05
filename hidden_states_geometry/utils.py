@@ -106,11 +106,13 @@ def hidden_states_collapse(df_hiddenstates: pd.DataFrame(), query: Dict)-> np.nd
     ----------
     (num_instances, num_layers, model_dim)
     """ 
+    #import pdb; pdb.set_trace()
     for condition in query.keys():
         if condition == "match" and query[condition] == Match.ALL.value:
             continue
         df_hiddenstates = df_hiddenstates[df_hiddenstates[condition] == query[condition]]
     hidden_states = df_hiddenstates["hidden_states"].tolist()
+    #import pdb; pdb.set_trace()
     return np.stack(hidden_states)
 
     # for some reason huggingface does not the full list of activations
@@ -168,6 +170,9 @@ def neig_overlap(X, Y):
     overlap : float
         neighborhood overlap between the two representations
     """
+    lenght = min(X.shape[0],Y.shape[0])
+    X = X[:lenght,:]
+    Y = Y[:lenght,:]
     assert X.shape[0] == Y.shape[0]
     ndata = X.shape[0]
     # Is this correct?

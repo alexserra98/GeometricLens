@@ -13,6 +13,8 @@ working_path = "/orfeo/scratch/dssc/zenocosini"
 results_path = os.path.join(working_path, "inference_result")
 models = os.listdir(results_path)
 for model in models:
+    if "13" in model:
+        continue
     datasets = os.listdir(os.path.join(results_path, model))
     for dataset in datasets:
         instances_id = []
@@ -21,9 +23,9 @@ for model in models:
         for max_train_instance in tqdm(max_train_instances, desc="Computing per instance result"):
             logging.info(f'Computing results for {model}, {dataset}, {max_train_instance}')
             instance_path = Path(os.path.join(results_path, model, dataset, max_train_instance))
-            with open(instance_path /"requests_results.pkl", 'rb') as f:
+            with open(instance_path /"request_results.pkl", 'rb') as f:
                     requests_results = pickle.load(f)
-            shot_metrics = ShotMetrics(requests_results,dataset,max_train_instance)
+            shot_metrics = ShotMetrics(requests_results,dataset,max_train_instance,model)
             final_metrics = shot_metrics.evaluate()
             with open(instance_path /"final_metrics.pkl", 'wb') as f:
                     pickle.dump(final_metrics,f)

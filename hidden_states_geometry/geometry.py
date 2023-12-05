@@ -34,10 +34,11 @@ class InstanceResult():
   
   
 class ShotMetrics():
-  def __init__(self, requests_results: List[RequestResult], dataset:str, train_instances: int):
+  def __init__(self, requests_results: List[RequestResult], dataset:str, train_instances: int, model:str):
     self.requests_results = requests_results
     self.train_instances = train_instances
     self.dataset = dataset
+    self.model = model
     self.basic_metric, self.hidden_states = self.set_dataframes()
 
   def set_dataframes(self):
@@ -69,7 +70,7 @@ class ShotMetrics():
     basic_metric = self.basic_metric_mean()
     hidden_states = self.construct_hidden_states()
     intrinsic_dim = self.intrinsic_dim(hidden_states)
-    if self.dataset == "commonsenseqa":
+    if self.dataset == "commonsenseqa" and "llama" in self.model:
       letter_overlap = self.get_all_letter_overlaps(hidden_states) 
       return InstanceResult(self.dataset, self.train_instances, intrinsic_dim, basic_metric, letter_overlap)
     return InstanceResult(self.dataset, self.train_instances, intrinsic_dim, basic_metric)

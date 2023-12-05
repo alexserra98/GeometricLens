@@ -32,17 +32,18 @@ logging.info("Getting the datasets...")
 logging.info("Loading model and tokenizer...")
 client = HuggingfaceClient(model_name)
 
-for dataset in datasets[0]:
-    dataset = dataset
-    for train_instances in max_train_instances[0]:
+for train_instances in max_train_instances[0]:
+    requests_results = []
+    for dataset in datasets[0]:
         logging.info(f"Starting inference on {dataset} with {train_instances} train instances...")
-        scenario = Scenario(dataset,train_instances,model_name,2500)
-        requests_results = client.make_request(scenario)
-        logging.info("Saving the results...")
-        scratch_path="/orfeo/scratch/dssc/zenocosini"
-        result_path = Path(scratch_path,"inference_result", model_name.split('/')[1],dataset,train_instances)
-        result_path.mkdir(parents=True, exist_ok=True)
-        with open(Path(result_path,"request_results.pkl"),"wb") as f:
-            pickle.dump(requests_results,f)
+        scenario = Scenario(dataset,train_instances,model_name,1000)
+        requests_results.extend(client.make_request(scenario))
+
+    logging.info("Saving the results...")
+    scratch_path="/orfeo/scratch/dssc/zenocosini"
+    result_path = Path(scratch_path,"inference_result", model_name.split('/')[1],"all",train_instances)
+    result_path.mkdir(parents=True, exist_ok=True)
+    with open(Path(result_path,"request_results.pkl"),"wb") as f:
+        pickle.dump(requests_results,f)
 
 
