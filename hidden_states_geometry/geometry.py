@@ -70,7 +70,7 @@ class ShotMetrics():
     basic_metric = self.basic_metric_mean()
     hidden_states = self.construct_hidden_states()
     intrinsic_dim = self.intrinsic_dim(hidden_states)
-    if self.dataset == "commonsenseqa" and "llama" in self.model:
+    if self.dataset == "commonsenseqa" and "Llama" in self.model:
       letter_overlap = self.get_all_letter_overlaps(hidden_states) 
       return InstanceResult(self.dataset, self.train_instances, intrinsic_dim, basic_metric, letter_overlap)
     return InstanceResult(self.dataset, self.train_instances, intrinsic_dim, basic_metric)
