@@ -1,26 +1,47 @@
+import sys
+from pathlib import Path
+import os
+sys.path.append(str(Path(os.getcwd())))
 import pickle
 from inference_id.datasets.utils import *
 from inference_id.generation.generation import *
 from inference_id.metrics.metrics import *
+#It has to be run from the inference_id folder!
+#TODO change path so that it can be run from anywhere
+
 
 def test_scenario():
-    scenario = Scenario("commonsenseqa",0,"llama",10)
-    print(f'{scenario=}')
+    scenario = Scenario("commonsenseqa",0,"gpt2",1000)
+    def correct_letter(letter):
+        out = []
+        for request in scenario.requests_instances:
+            condition = request.letter_gold in scenario.output_mapping.keys()    
+            out.append(condition)
+        return all(out)
+    assert correct_letter(scenario.requests_instances[0].letter_gold)
+    #print(f'{scenario=}')
     return scenario
 
 def test_generation():
-    scenario = test_scenario()
+    with open("tests/assets/scenario.pkl", "rb") as f:
+       scenario = pickle.load(f)    
+       
     client = Huggingface_client("gpt2")
     encoded_input = client.tokenizer(scenario.requests_instances[0].prompt,return_tensors="pt", padding=True,return_token_type_ids=False).to("cuda")
     request_result=client.inference(encoded_input)
-    print(f'{request_result}')
+    assert len(request_result.hidden_states) == 13 , "The number of hidden states is not correct"
+    assert request_result.hidden_states[0].shape == torch.Size([1, 63, 768]), "The hidden states shape is not correct"
+    assert request_result.logits.shape == torch.Size([1, 63, 50257]), "The logits shape is not correct"
+
+    #print(f'{request_result}')
     return request_result
 
 def test_prediction():
-    scenario = test_scenario()
+    with open("tests/assets/scenario.pkl", "rb") as f:
+         scenario = pickle.load(f)
     client = Huggingface_client("gpt2")
-    encoded_input = client.tokenizer(scenario.requests_instances[0].prompt,return_tensors="pt", padding=True,return_token_type_ids=False).to("cuda")
-    request_result=client.inference(encoded_input)
+    with open("tests/assets/request_result.pkl", "rb") as f:
+         request_result = pickle.load(f)
     request_config = {'temperature': 1e-07,
                         'num_return_sequences': 1,
                         'max_new_tokens': 1,
@@ -33,58 +54,77 @@ def test_prediction():
     tokens_answers = [client.tokenizer.encode(letter)[0] for letter in list(scenario.output_mapping.keys())]
     request_result.logits = request_result.logits[:,-1].detach().cpu()
     preds=client.prediction(request_result, request_config,tokens_answers)
-    print(f'{preds=}')
+    assert preds["std_pred"]["token"] in range(50257) and preds["only_ref_pred"]["token"] in range(50257) , "The token prediction is not inside the range"
+    assert preds["only_ref_pred"]["letter"] in scenario.output_mapping.keys() , "The letter prediction is not val>id"
+    #print(f'{preds=}')
     return preds    
 
 def test_make_request():
-    scenario = test_scenario()
-    with open("tests/assets/scenario.pkl", "wb") as f:
-       pickle.dump(scenario, f)
+    with open("tests/assets/scenario.pkl", "rb") as f:
+         scenario = pickle.load(f)
     client = Huggingface_client("gpt2")
     requests_results = client.make_request(scenario)
-    with open("tests/assets/requests_results.pkl", "wb") as f:
-       pickle.dump(requests_results, f)
-    print(f'{requests_results=}')
+    assert len(requests_results) == scenario.request_instances, "The number of requests is not correct"
+    assert requests_results[0].hidden_states["last"].shape == requests_results[0].hidden_states["sum"],  "The shape of the hidden states last sum are different"
+    assert requests_results[0].hidden_states["last"].shape[0] == 13, "The shape of the hidden states last is not correct"
+    #print(f'{requests_results=}')
     return requests_results
+
 def test_tokenizer():
-    with open("tests/assets/scenario.pkl", "rb") as f:
-       scenario = pickle.load(f)
-    client = Huggingface_client("meta-llama/Llama-2-7b-hf")
+    client = Huggingface_client("gpt2")
     #encoded_input = client.tokenizer(scenario.requests_instances[0].prompt,return_tensors="pt", padding=True,return_token_type_ids=False).to("cuda")
     encoded_input = client.encode("A")
-    print(f'{encoded_input=}')  
+    assert type(encoded_input) == list, "The encoded input is not a list"
+    assert len(encoded_input) == 1, "The encoded input is not a list of length 1"
+    #print(f'{type(encoded_input)}')  
     
 def test_basic_metrics():
     with open("tests/assets/requests_results.pkl", "rb") as f:
        requests_results = pickle.load(f)
-    metrics = ShotMetrics(requests_results)
-    print(f'{metrics.basic_metric_mean()=}')
+    scenario_result = ScenarioResult("commonsenseqa",0,"gpt2",requests_results)
+    metrics = ShotMetrics(scenario_result)
+    basic_metric = metrics.basic_metric_mean()
+    assert all(1>=val and val>=0 for key, val in basic_metric.items() if "match" in key), "The metrics are not in the range [0,1]"
+    assert basic_metric["ref_exact_match"] >= 0.2, "The reference exact match is smaller than random baseline"
+    #print(f'{metrics.basic_metric_mean()=}')
     return metrics
     
 def test_intrinsic_dim():
     with open("tests/assets/requests_results.pkl", "rb") as f:
        requests_results = pickle.load(f)
-    metrics = ShotMetrics(requests_results, "commonsenseqa",0)
-    hidden_states = metrics.construct_hidden_states()
-    print(f'{metrics.intrinsic_dim(hidden_states)=}')
+    scenario_result = ScenarioResult("commonsenseqa",0,"gpt2",requests_results)
+    metrics = ShotMetrics(scenario_result)
+    hidden_states = HiddenStates(metrics.hidden_states)
+    id = hidden_states.get_instances_id()
+    condition = []
+    for key, val in id.items():
+        condition.append(val["last"].shape[0] == 11 and val["sum"].shape[0] == 11)
+    assert all(condition), "The shape of the hidden states last sum are different"
+    #print(f'{id=}')
     return metrics
 
 def test_letter_overlap():
     with open("tests/assets/requests_results.pkl", "rb") as f:
        requests_results = pickle.load(f)
-    metrics = ShotMetrics(requests_results)
-    hidden_states = metrics.construct_hidden_states()
-    print(f'{metrics.get_all_letter_overlaps(hidden_states)=}')
+    scenario_result = ScenarioResult("commonsenseqa",0,"gpt2",requests_results)
+    metrics = ShotMetrics(scenario_result)
+    hidden_states = HiddenStates(metrics.hidden_states)
+    letter_overlap = hidden_states.layer_overlap_label("answered_letter")
+    assert len(letter_overlap["last"]) == 13 and len(letter_overlap["sum"]) == 13
+    assert letter_overlap["last"][0].shape == (4,4), "The shape of the hidden states last sum are different"
+    
+    #print(f'{letter_overlap=}')
     return metrics
 
   
 if __name__ == "__main__":
-    #test_scenario()
-    #test_generation()
-    #test_prediction()
-    #test_make_request()
-    #test_prediction()
-    #test_tokenizer()
-    #test_letter_overlap()
+    test_scenario()
+    test_generation()
+    test_prediction()
+    test_make_request()
+    test_prediction()
+    test_tokenizer()
+    test_basic_metrics()
     test_intrinsic_dim()
-    #test_basic_metrics()
+    test_letter_overlap()
+    

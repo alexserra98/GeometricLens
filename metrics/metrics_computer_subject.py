@@ -10,10 +10,11 @@ from pathlib import Path
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 working_path = "/orfeo/scratch/dssc/zenocosini" 
-results_path = os.path.join(working_path, "inference_result")
+results_path = os.path.join(working_path, "inference_result-_subject")
 models = os.listdir(results_path)
 for model in models:
     datasets = os.listdir(os.path.join(results_path, model))
+    results_per_train_instances = {n:[] for n in range(6)}
     for dataset in datasets:
         instances_id = []
         instances_metrics = []
@@ -23,11 +24,13 @@ for model in models:
             instance_path = Path(os.path.join(results_path, model, dataset, max_train_instance))
             with open(instance_path /"scenario_results.pkl", 'rb') as f:
                     scenario_results = pickle.load(f)
-            shot_metrics = ShotMetrics(scenario_results,dataset,max_train_instance)
-            final_metrics = shot_metrics.evaluate()
-            with open(instance_path /"final_metrics.pkl", 'wb') as f:
-                    pickle.dump(final_metrics,f)
-
+            results_per_train_instances[max_train_instance].append(scenario_results)
+    overlaps = {n:[] for n in range(6)}
+    for n in range(6):
+        subject_overlap: SubjectOverlap() = SubjectOverlap(results_per_train_instances[n])
+        overlaps[n]=subject_overlap.compute_overlap()    
+    with open(Path(results_path,model,"overlaps.pkl"),"wb") as f:
+        pickle.dump(overlaps,f)
 
 
     

@@ -1,16 +1,16 @@
 import numpy as np
+from pandas.core.api import DataFrame as DataFrame
 import torch
 from dataclasses import dataclass
 from typing import List, Dict, Tuple, Optional,  Type
 from .utils import  Match, Layer, neig_overlap, exact_match, quasi_exact_match
 import tqdm
-from inference_id.generation.generation import RequestResult
+from inference_id.generation.generation import RequestResult, ScenarioResult
 import pandas as pd
 from helm.common.request import EMBEDDING_UNAVAILABLE_REQUEST_RESULT, Request, RequestResult
 from helm.benchmark.scenarios.scenario import Instance
 from .hidden_states import HiddenStates
 from enum import Enum
-#TODO use a factory to create RunMetrics objects
 
 # Define a type hint 
 Array = Type[np.ndarray]
@@ -30,8 +30,7 @@ class InstanceResult():
   train_instances: int
   intrinsic_dim: Dict[str, Dict[str, np.ndarray]]
   metrics: Dict[str, Dict[str, float]]
-  letter_nn: Optional[Dict[str, Dict[str, np.ndarray]]] = None
-  
+  label_nn: Optional[Dict[str, Dict[str, np.ndarray]]] = None
   
   
 class ShotMetrics():
@@ -39,10 +38,11 @@ class ShotMetrics():
   Class to compute the metrics of a run. It takes a list of request results computed by generate.py
   and compute the per instance metrics 
   """
-  def __init__(self, requests_results: List[RequestResult], dataset:str, train_instances: int):
-    self.requests_results = requests_results
-    self.train_instances = train_instances
-    self.dataset = dataset
+  def __init__(self, scenario_result: ScenarioResult):
+    self.requests_results = scenario_result.requests_results
+    self.train_instances = scenario_result.train_instances
+    self.dataset = scenario_result.dataset
+    self.model = scenario_result.model_name
     self.basic_metric, self.hidden_states = self.set_dataframes()
 
   def set_dataframes(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
@@ -80,39 +80,46 @@ class ShotMetrics():
     InstanceResult object
     """
     basic_metric = self.basic_metric_mean()
-    hidden_states = self.construct_hidden_states()
-    intrinsic_dim = self.intrinsic_dim(hidden_states)
-    if self.dataset == "commonsenseqa":
-      letter_overlap = self.get_all_letter_overlaps(hidden_states) 
+    hidden_states = HiddenStates(self.hidden_states)
+    intrinsic_dim = hidden_states.get_instances_id()
+    if self.dataset == "commonsenseqa" and "Llama" in self.model:
+      letter_overlap = hidden_states.layer_overlap_label("answered_letter")
       return InstanceResult(self.dataset, self.train_instances, intrinsic_dim, basic_metric, letter_overlap)
     return InstanceResult(self.dataset, self.train_instances, intrinsic_dim, basic_metric)
     
   #TODO use property decorator
-  def basic_metric_mean() -> Dict[str, float]:
+  def basic_metric_mean(self) -> Dict[str, float]:
     output_dict = {column_name: self.basic_metric[column_name].mean() for column_name in self.basic_metric.columns}
     return output_dict  
+
+
+class SubjectOverlap():
+  def __init__(self, scenario_results: List[ScenarioResult]) -> None:
+    """
+    Compute overlap between MMLU subjects
+    """
+    self.scenario_results = scenario_results
+    self.hidden_states = self.set_dataframes()
   
-  def construct_hidden_states(self) -> HiddenStates:
+  def set_dataframes(self) -> pd.DataFrame:
+    """
+    Aggregate in a dataframe the hidden states of all instances
+    ----------
+    hidden_states: pd.DataFrame(num_instances, num_layers, model_dim)
+    """
+    hidden_states_dict = {"hidden_states": [],"layer": [], "subject":[]}
+    for scenario_result in self.scenario_results:
+      for request_result in scenario_result.requests_results:
+        for layer in ["last","sum"]:
+          hidden_states_dict["hidden_states"].append(request_result.hidden_states[layer])
+          hidden_states_dict["layer"].append(layer)
+          hidden_states_dict["subject"].append(scenario_result.dataset)
+    hidden_states = pd.DataFrame(hidden_states_dict)
+    return  hidden_states 
+  
+  def compute_overlap(self) -> Dict[str, Dict[str, np.ndarray]]:
     hidden_states = HiddenStates(self.hidden_states)
-    return hidden_states
-  
-  def intrinsic_dim(self,hidden_states) -> Dict[str, Dict[str, np.ndarray]]:
-    intrinsic_dim = hidden_states.get_instances_id()
-    return intrinsic_dim 
-  
-  def get_all_letter_overlaps(self,hidden_states) -> Dict[str, Dict[str, np.ndarray]]:
-    return hidden_states.layer_overlap_letter()
-
-  def hidden_states_metrics(self) -> Tuple[Dict[str, Dict[str, np.ndarray]], Dict[str, Dict[str, np.ndarray]]]:
-    hidden_states = self.construct_hidden_states()
-    intrinsic_dim = self.intrinsic_dim(hidden_states)
-    letter_overlap = self.get_all_letter_overlaps(hidden_states)
-    return intrinsic_dim, letter_overlap 
-
-  def instance_result(self) -> InstanceResult:
-    intrinsic_dim = self.construct_hidden_states().get_instances_id()
-    metrics = self.basic_metric_mean()
-    return InstanceResult(intrinsic_dim, metrics)
+    return hidden_states.layer_overlap_label("subject")
 
 class DatasetMetrics():
   """
@@ -129,14 +136,13 @@ class DatasetMetrics():
     """
     self.instances_results = instances_result 
 
-  def get_last_layer_id_diff(self):
+  def get_last_layer_id_diff(self) -> Dict[str, Dict[str, np.ndarray]]:
     """
     Compute difference in last layer ID among 0-shot and few-shot
     Output
     ----------
-    Dict[k-method, Dict[accuracy, Array(neigh_order)]]
+    Dict[layer, Dict[metric, Array(neigh_order)]]
     """
-    num_runs = len(self.instances_results)
     metric_id = {}
     zero_shot = next((x for x in self.instances_results if x.train_instances==0), None)
     
@@ -147,6 +153,7 @@ class DatasetMetrics():
             continue
           zero_shot_id = zero_shot.intrinsic_dim[Match.ALL.value][method]
           i_result_id = i_result.intrinsic_dim[Match.ALL.value][method]
+          # the intrinisc dimension is calculated up to the nearest neighbour order that change between runs
           nn_order = min(zero_shot.shape[1], i_result_id.shape[1])
           id_diff = np.abs(zero_shot_id[-5][:nn_order] - i_result_id[-5][:nn_order])
           metric_id[method]["id_diff"].append(id_diff)
@@ -163,7 +170,6 @@ class DatasetMetrics():
     """
     overlaps = {}
     num_runs = len(self.nearest_neig)
-    num_layers = self.nearest_neig[0]["last"].shape[0]
     for method in ["last", "sum"]:
       overlaps[method] = {}
       desc = "Computing overlap for method " + method
@@ -184,6 +190,7 @@ class DatasetMetrics():
         # WARNING : the overlap is computed with K=K THE OTHER OCC IS IN RUNGEOMETRY
         overlaps[i][j] = neig_overlap(nn1[i], nn2[j])
     return overlaps
+  
   
   
 
@@ -242,5 +249,86 @@ class DatasetMetrics():
 #    
 #    return np.stack(neigh_matrix_list)
 
+# class HiddenStates():
+#   def __init__(self,hidden_states):
+#     self.hidden_states = hidden_states
+  
+#   #TODO use a decorator
+#   def preprocess_hiddenstates(self,func, query, *args, **kwargs):
+#     hidden_states_collapsed = hidden_states_collapse(self.hidden_states, query)
 
+#     return func(hidden_states_collapsed, *args, **kwargs)
+
+#   def set_hidden_states(self, exact_matches) -> Dict[str, Dict[str, np.ndarray]]:
+#     """
+#     Output
+#     ----------
+#     {method: method(num_instances, num_layers, model_dim)}
+#     """ 
+#     instances_hiddenstates = self._get_instances_hidden_states(exact_matches) 
+#     hidden_states = {match.value: {layer.value: hidden_states_collapse(instances_hiddenstates, {"layer":layer.value,"match": match.value}) 
+#                             for layer in [Layer.LAST,Layer.SUM] } 
+#                             for match in [Match.CORRECT, Match.WRONG, Match.ALL]}
+#     return hidden_states
+  
+#   def get_instances_id(self) -> np.ndarray:
+#     """
+#     Compute the ID of all instances using gride algorithm
+#     Output
+#     ----------
+#     Dict[str, np.array(num_layers)]
+#     """
+#     id = {match.value: 
+#             {layer.value: compute_id(self.hidden_states,{"match":match.value,"layer":layer.value}, "gride") 
+#             for layer in [Layer.LAST, Layer.SUM]} 
+#             for match in [Match.CORRECT, Match.WRONG, Match.ALL]}
+#     return id
+  
+#   def nearest_neighbour(self, hidden_states, k: int ) -> np.ndarray:
+#     """
+#     Compute the nearest neighbours of each instance in the run per layer
+#     using the provided methodv
+#     Output
+#     ----------
+#     Array(num_layers, num_instances, k_neighbours)
+#     """
+
+#     assert k <= hidden_states.shape[0], "K must be smaller than the number of instances"
+#     layers = hidden_states.shape[1]
+#     neigh_matrix_list = []
+#     for i in range(layers):
+#       neigh = NearestNeighbors(n_neighbors=k)
+#       neigh.fit(hidden_states[:,i,:])
+#       dist, indices = neigh.kneighbors(hidden_states[:,i,:])
+#       indices = np.delete(indices, 0, 1) # removing the first column which is the instance itself
+#       neigh_matrix_list.append(indices)
+    
+#     return np.stack(neigh_matrix_list)
+  
+#   def layer_overlap_letter(self):
+#     nn = []
+#     nn_half1 = []
+#     nn_half2 = []
+    
+#     half = True
+#     for letter in ["A","B","C","D"]:
+#       k = max(int(half*0.8),2)
+#       hidden_states = hidden_states_collapse(self.hidden_states,
+#                                              {"match":Match.ALL.value, 
+#                                               "layer":Layer.LAST.value, 
+#                                               "answered_letter":letter})
+#       nn.append(self.nearest_neighbour(hidden_states, k=k))
+#       half = int(hidden_states.shape[0]/2)
+#       nn_half1.append(self.nearest_neighbour(hidden_states[:half], k=k))
+#       nn_half2.append(self.nearest_neighbour(hidden_states[half:], k=k))
+#     overlap = np.empty([4,4])
+#     warnings.warn("Computing overlap for -5th layer and using 80 %% of the instances")
+#     for i in tqdm.tqdm(range(4), desc = "Computing overlap"):
+#       for j in range (4):
+#         if i==j:
+#           overlap[i,j] = neig_overlap(nn_half1[i][-5,], nn_half2[j][-5])
+#         else:
+#           overlap[i,j] = neig_overlap(nn[i][-5,], nn[j][-5])
+    
+#     return overlap
 

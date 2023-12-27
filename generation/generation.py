@@ -26,7 +26,13 @@ class RequestResult():
     hidden_states: torch.Tensor
     preds: Dict[str, torch.Tensor]
     gold: torch.Tensor
-    
+
+@dataclass
+class ScenarioResult():
+    dataset: str
+    train_instances: int
+    model_name: str
+    requests_results: List[RequestResult] = field(default_factory=list)
     
 class Huggingface_client():
     """
@@ -77,7 +83,8 @@ class Huggingface_client():
             token_gold = torch.tensor(self.encode(request_instance.letter_gold)[0]).unsqueeze(0)
             request_instance.token_gold = token_gold[0].item()
             loss = torch.nn.functional.cross_entropy(request_result.logits,token_gold)
-            hidden_states = HiddenStates(request_result.hidden_states)
+            Warning("Llama class return hidden states as a torch tensor while Auto class return it as a tuple of torch tensor")
+            hidden_states = HiddenStatesHandler(request_result.hidden_states)
             del request_result.hidden_states
             result = RequestResult(loss, request_result.logits,hidden_states.preprocess(request_instance,self.tokenizer), predictions,{"token":request_instance.token_gold,"letter":request_instance.letter_gold})
             requests_results.append(result)
@@ -149,6 +156,6 @@ class OnlyReferencePrediction(PredictionStrategy):
         stripped_logits = self.logits.index_select(-1,torch.tensor(self.tokens_answers))
         rescaled_logits=stripped_logits/float(self.request_config["temperature"])
         probs = torch.nn.functional.softmax(rescaled_logits,dim=-1)
-        pred = torch.multinomial(probs, num_samples=1)
+        pred = probs.max(1)[1]
         return self.tokens_answers[pred]
    
