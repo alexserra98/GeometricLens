@@ -26,7 +26,7 @@ def hidden_states_preprocess(hidden_states,len_tokens_question):
     return {"last": hs[:,-1],"sum":reduce(hs[:,-len_tokens_question:], "l s d -> l d", "mean")}
 
 
-class HiddenStates():
+class HiddenStatesHandler():
     def __init__(self, hidden_states):
         self.hidden_states = hidden_states
     

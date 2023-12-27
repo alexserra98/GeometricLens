@@ -120,6 +120,20 @@ def neig_overlap(X, Y):
     out = functools.reduce(lambda x,y: x+y, iter)
     return out/ndata
 
+def label_neig_overlap(nn_matrix: np.ndarray, labels: List[str], labels_dict: Dict[str, int]) -> np.ndarray:
+    """
+    Computes the fraction of neighbours of label2 in the nearest neighbours of label1.
+    Parameters
+    ----------
+    nn_matrix : 2D array of ints
+        nearest neighbor labels matrix 
+    labels : List[str]
+        we want to compute the fraction of labels[1] in labels[0] neighbours
+    """
+    index_label =  [k for k, v in labels_dict.items() if v == labels[0]]
+    nn_matrix = nn_matrix[index_label]
+    nn_matrix = nn_matrix==labels[1]
+    return nn_matrix.sum()/nn_matrix.shape[0]
 
 
 

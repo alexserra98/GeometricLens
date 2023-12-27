@@ -27,7 +27,8 @@ class Scenario():
     truncation: int = None
     requests_instances: List[RequestInstance] = field(default_factory=list)
     output_mapping: Dict[str, str] = field(default_factory=dict)
-
+    #TODO probably output_mapping not needed just use letter_answers 
+    #Why am I using post init?
     def __post_init__(self):
         helm_requests_states = self.retrieve_requests_states()
         self.output_mapping = helm_requests_states[0].output_mapping
