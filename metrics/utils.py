@@ -131,8 +131,8 @@ def label_neig_overlap(nn_matrix: np.ndarray, labels: List[str], labels_dict: Di
         we want to compute the fraction of labels[1] in labels[0] neighbours
     """
     index_label =  [k for k, v in labels_dict.items() if v == labels[0]]
-    nn_matrix = nn_matrix[index_label]
-    nn_matrix = nn_matrix==labels[1]
+    nn_matrix = nn_matrix[index_label]==labels[1]
+    import pdb; pdb.set_trace() 
     return nn_matrix.sum()/nn_matrix.shape[0]
 
 

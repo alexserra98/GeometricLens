@@ -36,11 +36,11 @@ for dataset in datasets[0]:
     for train_instances in max_train_instances[0]:
         logging.info("Starting inference on %s with %s train instances...",
                      dataset, train_instances)
-        scenario = Scenario(dataset, train_instances, model_name, 2500)
+        scenario = Scenario(dataset, train_instances, model_name, 200)
         requests_results = client.make_request(scenario)
         logging.info("Saving the results...")
         scratch_path = "/orfeo/scratch/dssc/zenocosini"
-        result_path = Path(scratch_path, "inference_result", 
+        result_path = Path(scratch_path, "overlap_long_result", 
                            model_name.split('/')[1], dataset, train_instances)
         result_path.mkdir(parents=True, exist_ok=True)
         scenario_state = ScenarioResult(dataset, train_instances, model_name,
