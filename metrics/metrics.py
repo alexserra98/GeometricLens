@@ -1,18 +1,19 @@
 import numpy as np
 from pandas.core.api import DataFrame as DataFrame
 import torch
+
 from dataclasses import dataclass
 from typing import List, Dict, Tuple, Optional,  Type
 from .utils import  Match, Layer, neig_overlap, exact_match, quasi_exact_match
+
 import tqdm
-from inference_id.generation.generation import RequestResult, ScenarioResult
+from inference_id.generation.generation import  ScenarioResult
 import pandas as pd
-from helm.common.request import EMBEDDING_UNAVAILABLE_REQUEST_RESULT, Request, RequestResult
-from helm.benchmark.scenarios.scenario import Instance
+
 from .hidden_states import HiddenStates
 from enum import Enum
 
-# Define a type hint 
+#Define a type hint 
 Array = Type[np.ndarray]
 Tensor = Type[torch.Tensor]
 

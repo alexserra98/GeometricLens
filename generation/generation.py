@@ -1,18 +1,10 @@
-import os
 from pathlib import Path
-import json
-import pickle
 import torch
 from tqdm import tqdm
-from transformers import AutoModelForCausalLM, AutoTokenizer, GenerationConfig, LlamaForCausalLM, LlamaTokenizer
-from typing import Any, Dict, List
-from helm.common.request import EMBEDDING_UNAVAILABLE_REQUEST_RESULT, Request, RequestResult, Sequence, Token
 
-import copy
-from einops import reduce
-import numpy as np
-import argparse
-import time
+from transformers import AutoModelForCausalLM, AutoTokenizer, LlamaForCausalLM, LlamaTokenizer
+from typing import Any, Dict, List
+from helm.common.request import RequestResult
 from dataclasses import dataclass, field
 from inference_id.datasets.utils import *
 from inference_id.generation.utils import retry_on_failure

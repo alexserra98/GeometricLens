@@ -1,13 +1,8 @@
 from dadapy.data import Data
-from dadapy.plot import plot_inf_imb_plane
-from dadapy.metric_comparisons import MetricComparisons
 import numpy as np
-import torch
 from dataclasses import dataclass
-from einops import reduce
-from collections import Counter
 from enum import Enum
-from typing import Dict, List
+from typing import Dict, List, NamedTuple
 import pandas as pd
 import functools
 
@@ -46,7 +41,7 @@ def compute_id(hidden_states: np.ndarray ,query: Dict,  algorithm = "2nn") -> np
     Dict np.array(num_layers)
     """
     assert algorithm == "gride", "gride is the only algorithm supported"
-    hidden_states = hidden_states_collapse(hidden_states,query)
+    hidden_states,_ = hidden_states_collapse(hidden_states,query)
     # Compute ID
     id_per_layer = []
     layers = hidden_states.shape[1]
@@ -120,7 +115,7 @@ def neig_overlap(X, Y):
     out = functools.reduce(lambda x,y: x+y, iter)
     return out/ndata
 
-def label_neig_overlap(nn_matrix: np.ndarray, labels: List[str], labels_dict: Dict[str, int]) -> np.ndarray:
+def label_neig_overlap(nn_matrix: np.ndarray, labels: NamedTuple, subject_per_row: pd.Series) -> np.ndarray:
     """
     Computes the fraction of neighbours of label2 in the nearest neighbours of label1.
     Parameters
@@ -129,11 +124,29 @@ def label_neig_overlap(nn_matrix: np.ndarray, labels: List[str], labels_dict: Di
         nearest neighbor labels matrix 
     labels : List[str]
         we want to compute the fraction of labels[1] in labels[0] neighbours
+    list_of_labels : pd.Series
+        pandas Series of labels associated with each row in the nearest neighbour matrix
     """
-    index_label =  [k for k, v in labels_dict.items() if v == labels[0]]
-    nn_matrix = nn_matrix[index_label]==labels[1]
-    import pdb; pdb.set_trace() 
+    index_label =  subject_per_row.index[subject_per_row==labels.current_label].tolist()
+    nn_matrix = nn_matrix[index_label]==labels.label_to_find
     return nn_matrix.sum()/nn_matrix.shape[0]
 
+def class_imbalance(hidden_states_df, label):
+    """
+    Eliminate extra instances from the dataframe to make it balanced
+    Parameters
+    ----------
+    hidden_states_df: pd.DataFrame
+        dataframe containing hidden states and labels
+    label: str
+        label to balance
+    """
+    if hidden_states_df[label].value_counts().nunique() == 1:
+        return hidden_states_df
+    class_counts = hidden_states_df[label].value_counts()
+    min_count = class_counts.min()
+    balanced_df = hidden_states_df.groupby(label).apply(lambda x: x.sample(min_count))
+    return balanced_df
+    
 
 

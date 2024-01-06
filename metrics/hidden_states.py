@@ -1,22 +1,13 @@
 from dadapy.data import Data
-from dadapy.plot import plot_inf_imb_plane
-from dadapy.metric_comparisons import MetricComparisons
 import numpy as np
-import torch
-from helm.benchmark.adaptation.scenario_state import ScenarioState
 from dataclasses import dataclass
 from typing import List, Dict, Tuple, Optional, Iterable, Set, Type
 from einops import reduce
-import einsum
-import torch.nn.functional as F
-import functools
 from sklearn.neighbors import NearestNeighbors
-from .utils import compute_id, hidden_states_collapse, Match, Layer, neig_overlap, label_neig_overlap
-
+from .utils import compute_id, hidden_states_collapse, Match, Layer, label_neig_overlap, class_imbalance
 import tqdm
-from inference_id.generation.generation import RequestResult
 import pandas as pd
-import warnings
+from collections import namedtuple
 
 def compute_id(hidden_states: np.ndarray ,query: Dict,  algorithm = "2nn") -> np.ndarray:
     """
@@ -32,7 +23,7 @@ def compute_id(hidden_states: np.ndarray ,query: Dict,  algorithm = "2nn") -> np
     Dict np.array(num_layers)
     """
     assert algorithm == "gride", "gride is the only algorithm supported"
-    hidden_states = hidden_states_collapse(hidden_states,query)
+    hidden_states,_ = hidden_states_collapse(hidden_states,query)
     # Compute ID
     id_per_layer = []
     layers = hidden_states.shape[1]
@@ -67,9 +58,13 @@ def hidden_states_collapse(df_hiddenstates: pd.DataFrame(), query: Dict)-> np.nd
     for condition in query.keys():
         if condition == "match" and query[condition] == Match.ALL.value:
             continue
-        df_hiddenstates = df_hiddenstates[df_hiddenstates[condition] == query[condition]]
+        elif condition== "balanced":
+            label = query[condition]
+            df_hiddenstates = class_imbalance(df_hiddenstates, label)
+        else:
+          df_hiddenstates = df_hiddenstates[df_hiddenstates[condition] == query[condition]]
     hidden_states = df_hiddenstates["hidden_states"].tolist()
-    return np.stack(hidden_states)
+    return np.stack(hidden_states), df_hiddenstates
 
 
 
@@ -79,7 +74,7 @@ class HiddenStates():
   
   #TODO use a decorator
   def preprocess_hiddenstates(self,func, query, *args, **kwargs):
-    hidden_states_collapsed = hidden_states_collapse(self.hidden_states, query)
+    hidden_states_collapsed,_ = hidden_states_collapse(self.hidden_states, query)
 
     return func(hidden_states_collapsed, *args, **kwargs)
 
@@ -118,13 +113,13 @@ class HiddenStates():
     
     return np.stack(neigh_matrix_list)
   
-  def labelize_nearest_neighbour(self, neigh_matrix_list: np.ndarray, labels_dict: dict) -> np.ndarray:
-    def substitute_with_dict(matrix, dictionary):
-      vectorized_get = np.vectorize(dictionary.get)
+  def labelize_nearest_neighbour(self, neigh_matrix_list: np.ndarray, subject_per_row: pd.Series) -> np.ndarray:
+    def substitute_with_list(matrix, subject_per_row):
+      vectorized_get = np.vectorize(lambda k: subject_per_row.iloc[k])
       return vectorized_get(matrix)
 
     # Apply the function to each matrix
-    substituted_matrices = substitute_with_dict(neigh_matrix_list, labels_dict)
+    substituted_matrices = substitute_with_list(neigh_matrix_list, subject_per_row)
     return np.stack(substituted_matrices)
   
   def layer_overlap_label(self,label) -> Dict[str, List[np.ndarray]]:
@@ -135,20 +130,25 @@ class HiddenStates():
     Dict[layer: List[Array(num_layers, num_layers)]]
     """
     overlaps = {}
+    Labels = namedtuple("Labels", "current_label, label_to_find")
     for layer in [Layer.LAST, Layer.SUM]:
-      hidden_states = hidden_states_collapse(self.hidden_states,{"match":Match.ALL.value, "layer":layer.value})
-      k = max(int(hidden_states.shape[0]*0.8),2)
-      nn = self.nearest_neighbour(hidden_states, k=k)
-      labels_dict = {i: self.hidden_states.iloc[i][label] for i in range(hidden_states.shape[0])}
-      nn = self.labelize_nearest_neighbour(nn, labels_dict)
+      hidden_states, hidden_states_df= hidden_states_collapse(self.hidden_states,{"match":Match.ALL.value, "layer":layer.value, "balanced":label})
+      assert hidden_states_df[label].value_counts().nunique() == 1, "There must be the same number of instances for each label - Class imbalance not supported"
+      k = max(hidden_states_df[label].value_counts().unique()[0],2) # number of nearest neighbours - Equal to the number of instances of a single label
+      nn = self.nearest_neighbour(hidden_states, k=k) # nearest neighbours matrix
+      # labelize the nearest neighbours matrix
+      # We substitute the indices with the labels of the associated instances, we keep a list_of_labels the track the label associated to each row
+      # Generally there are blocks of n consecutive rows with the same label
+      subject_per_row = hidden_states_df[label].reset_index(drop=True)
+      nn = self.labelize_nearest_neighbour(nn, subject_per_row)
       overlaps[layer.value] = []
-      for num_layer in tqdm.tqdm(range(hidden_states.shape[1]), desc = "Computing overlap"):
+      for num_layer in range(hidden_states.shape[1]):
         overlap = np.empty([self.hidden_states[label].nunique(),self.hidden_states[label].nunique()])  
         for n,i in enumerate(self.hidden_states[label].unique()):
           for m,j in enumerate(self.hidden_states[label].unique()):
-            overlap[n,m] = label_neig_overlap(nn[num_layer],[i,j], labels_dict)
+            labels = Labels(i,j)
+            overlap[n,m] = label_neig_overlap(nn[num_layer],labels, subject_per_row)
         overlaps[layer.value].append(overlap)
-    
     return overlaps
     
     
