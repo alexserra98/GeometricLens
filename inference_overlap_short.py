@@ -39,9 +39,14 @@ for dataset in datasets[0]:
         scenario = Scenario(dataset, train_instances, model_name, 200)
         requests_results = client.make_request(scenario)
         logging.info("Saving the results...")
-        scratch_path = "/orfeo/scratch/dssc/zenocosini"
-        result_path = Path(scratch_path, "overlap_short_result", 
-                           model_name.split('/')[1], dataset, train_instances)
+        #scratch_path = "/orfeo/scratch/dssc/zenocosini"
+        if model_name != "gpt2":
+            result_path = Path(working_path, "overlap_short_result", 
+                               model_name.split('/')[1], dataset, train_instances)
+        else:
+            result_path = Path(working_path, "overlap_short_result", 
+                               model_name, dataset, train_instances)
+        
         result_path.mkdir(parents=True, exist_ok=True)
         scenario_state = ScenarioResult(dataset, train_instances, model_name,
                                         requests_results)

@@ -1,12 +1,16 @@
 import sys
 from pathlib import Path
 import os
-sys.path.append(str(Path(os.getcwd())))
+sys.path.append("/home/alexserra98/helm-suite")
+
+# Set working directory as the parent of the file
+os.chdir(Path(__file__).resolve().parent.parent)
+
+
 import pickle
 from inference_id.datasets.utils import *
 from inference_id.generation.generation import *
 from inference_id.metrics.metrics import *
-#It has to be run from the inference_id folder!
 #TODO change path so that it can be run from anywhere
 
 
@@ -20,10 +24,10 @@ def test_scenario():
         return all(out)
     assert correct_letter(scenario.requests_instances[0].letter_gold)
     #print(f'{scenario=}')
-    return scenario
+    #return scenario
 
 def test_generation():
-    with open("tests/assets/scenario.pkl", "rb") as f:
+    with open("tests/assets/unit/scenario.pkl", "rb") as f:
        scenario = pickle.load(f)    
        
     client = Huggingface_client("gpt2")
@@ -34,13 +38,13 @@ def test_generation():
     assert request_result.logits.shape == torch.Size([1, 63, 50257]), "The logits shape is not correct"
 
     #print(f'{request_result}')
-    return request_result
+    #return request_result
 
 def test_prediction():
-    with open("tests/assets/scenario.pkl", "rb") as f:
+    with open("tests/assets/unit/scenario.pkl", "rb") as f:
          scenario = pickle.load(f)
     client = Huggingface_client("gpt2")
-    with open("tests/assets/request_result.pkl", "rb") as f:
+    with open("tests/assets/unit/request_result.pkl", "rb") as f:
          request_result = pickle.load(f)
     request_config = {'temperature': 1e-07,
                         'num_return_sequences': 1,
@@ -57,18 +61,18 @@ def test_prediction():
     assert preds["std_pred"]["token"] in range(50257) and preds["only_ref_pred"]["token"] in range(50257) , "The token prediction is not inside the range"
     assert preds["only_ref_pred"]["letter"] in scenario.output_mapping.keys() , "The letter prediction is not val>id"
     #print(f'{preds=}')
-    return preds    
+    #return preds    
 
 def test_make_request():
-    with open("tests/assets/scenario.pkl", "rb") as f:
+    with open("tests/assets/unit/scenario.pkl", "rb") as f:
          scenario = pickle.load(f)
     client = Huggingface_client("gpt2")
     requests_results = client.make_request(scenario)
-    assert len(requests_results) == scenario.request_instances, "The number of requests is not correct"
+    assert len(requests_results) == len(scenario.requests_instances), "The number of requests is not correct"
     assert requests_results[0].hidden_states["last"].shape == requests_results[0].hidden_states["sum"],  "The shape of the hidden states last sum are different"
     assert requests_results[0].hidden_states["last"].shape[0] == 13, "The shape of the hidden states last is not correct"
     #print(f'{requests_results=}')
-    return requests_results
+    #return requests_results
 
 def test_tokenizer():
     client = Huggingface_client("gpt2")
@@ -79,7 +83,7 @@ def test_tokenizer():
     #print(f'{type(encoded_input)}')  
     
 def test_basic_metrics():
-    with open("tests/assets/requests_results.pkl", "rb") as f:
+    with open("tests/assets/unit/requests_results.pkl", "rb") as f:
        requests_results = pickle.load(f)
     scenario_result = ScenarioResult("commonsenseqa",0,"gpt2",requests_results)
     metrics = ShotMetrics(scenario_result)
@@ -87,10 +91,10 @@ def test_basic_metrics():
     assert all(1>=val and val>=0 for key, val in basic_metric.items() if "match" in key), "The metrics are not in the range [0,1]"
     assert basic_metric["ref_exact_match"] >= 0.2, "The reference exact match is smaller than random baseline"
     #print(f'{metrics.basic_metric_mean()=}')
-    return metrics
+    #return metrics
     
 def test_intrinsic_dim():
-    with open("tests/assets/requests_results.pkl", "rb") as f:
+    with open("tests/assets/unit/requests_results.pkl", "rb") as f:
        requests_results = pickle.load(f)
     scenario_result = ScenarioResult("commonsenseqa",0,"gpt2",requests_results)
     metrics = ShotMetrics(scenario_result)
@@ -101,10 +105,10 @@ def test_intrinsic_dim():
         condition.append(val["last"].shape[0] == 11 and val["sum"].shape[0] == 11)
     assert all(condition), "The shape of the hidden states last sum are different"
     #print(f'{id=}')
-    return metrics
+    #return metrics
 
 def test_letter_overlap():
-    with open("tests/assets/requests_results.pkl", "rb") as f:
+    with open("tests/assets/unit/requests_results.pkl", "rb") as f:
        requests_results = pickle.load(f)
     scenario_result = ScenarioResult("commonsenseqa",0,"gpt2",requests_results)
     metrics = ShotMetrics(scenario_result)
@@ -112,19 +116,30 @@ def test_letter_overlap():
     letter_overlap = hidden_states.layer_overlap_label("answered_letter")
     assert len(letter_overlap["last"]) == 13 and len(letter_overlap["sum"]) == 13
     assert letter_overlap["last"][0].shape == (4,4), "The shape of the hidden states last sum are different"
-    
+    with open("letter_overlap.pkl", "wb") as f:
+        pickle.dump(letter_overlap,f)
     #print(f'{letter_overlap=}')
-    return metrics
+    #return metrics
+
+def test_subject_overlap():
+    with open(Path("tests/assets/unit/result_per_train_instances.pkl"),"rb") as f:
+        results_per_train_instances = pickle.load(f)
+    subject_overlap: SubjectOverlap = SubjectOverlap(results_per_train_instances[0])
+    overlaps=subject_overlap.compute_overlap()  
+    assert len(overlaps["last"])==13, "The number of layers is not correct"
+    assert len(overlaps["sum"])==13, "The number of layers is not correct"
+    assert overlaps["last"][0].shape == (3,3),"The shape of overlap matrix is not correct"
 
   
 if __name__ == "__main__":
-    test_scenario()
-    test_generation()
-    test_prediction()
-    test_make_request()
-    test_prediction()
-    test_tokenizer()
-    test_basic_metrics()
-    test_intrinsic_dim()
+#     test_scenario()
+#     test_generation()
+#     test_prediction()
+#     test_make_request()
+#     test_prediction()
+#     test_tokenizer()
+#     test_basic_metrics()
+#     test_intrinsic_dim()
     test_letter_overlap()
+#     test_subject_overlap()
     
