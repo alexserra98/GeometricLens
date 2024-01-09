@@ -89,7 +89,7 @@ class ShotMetrics():
       letter_overlap = hidden_states.layer_overlap_label("answered_letter")
       return InstanceResult(self.dataset, self.train_instances, intrinsic_dim, basic_metric, letter_overlap)
     return InstanceResult(self.dataset, self.train_instances, intrinsic_dim, basic_metric)
-  def compute_nn(self, k: int) -> Dict[str, Dict[str, np.ndarray]]:
+  def compute_nn(self) -> Dict[str, Dict[str, np.ndarray]]:
     """
     Compute the nearest neighbours of each instance in the run per layer
     using the provided methodv
@@ -141,26 +141,27 @@ class BaseFinetuneOverlap():
     Compute overlap between base and finetuned model
     """
     self.data = data
-  def get_couples(self, list_of_models: List) -> List[Tuple[str, str]]:
-    """
-    Get all the couples of base and finetuned model
-    """
-    base = list(filter(lambda x: "chat" not in x, list_of_models))
-    finetuned = list(filter(lambda x: "chat" in x, list_of_models))
-    couples = [(b,f) for b in base for f in finetuned if list(set(b.split("-"))-set(f.split("-")))[0]=="chat"]
-    return couples
-  
+#  def get_couples(self, list_of_models: List) -> List[Tuple[str, str]]:
+#    """
+#    Get all the couples of base and finetuned model
+#    """
+#    base = list(filter(lambda x: "chat" not in x, list_of_models))
+#    finetuned = list(filter(lambda x: "chat" in x, list_of_models))
+#    couples = [(b,f) for f in finetuned for b in base if "chat" in list(set(b.split("-"))-set(f.split("-")))]
+#    import pdb; pdb.set_trace()
+#    return couples
+#  
   def compute_overlap(self) -> Dict[str, Dict[str, np.ndarray]]:
     overlaps = {}
-    for couples in self.get_couples(list(self.data.keys())):
+    for couples in tqdm.tqdm([("Llama-2-7b-hf","Llama-2-7b-chat-hf"),("Llama-2-13b-hf","Llama-2-13b-chat-hf")]):
       overlaps[couples] = {}
       for dataset in self.data[couples[0]].keys():
         overlaps[couples][dataset] = {}
         for train_instances in self.data[couples[0]][dataset].keys():
           overlaps[couples][dataset][train_instances] = {}
           for method in ["last", "sum"]:
-            overlaps[couples][dataset][train_instances][method] = layer_overlap(self.data[couples[0]][dataset][train_instances][method],
-                                                                            self.data[couples[1]][dataset][train_instances][method])
+            overlaps[couples][dataset][train_instances][method] = layer_overlap(self.data[couples[0]][dataset][str(train_instances)]["all"][method],
+                                                                            self.data[couples[1]][dataset][str(train_instances)]["all"][method])
     return overlaps
     
   
