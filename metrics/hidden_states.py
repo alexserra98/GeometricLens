@@ -113,6 +113,20 @@ class HiddenStates():
     
     return np.stack(neigh_matrix_list)
   
+  def get_nearest_neighbour(self, k: int) -> np.ndarray:
+    """
+    Compute the nearest neighbours of each instance in the run per layer
+    using the provided methodv
+    Output
+    ----------
+    Dict[str, np.array(num_layers, num_instances, k_neighbours)]
+    """
+    nn = {match.value: 
+            {layer.value: self.nearest_neighbour(self.hidden_states,{"match":match.value,"layer":layer.value}, k) 
+            for layer in [Layer.LAST, Layer.SUM]} 
+            for match in [Match.CORRECT, Match.WRONG, Match.ALL]}
+    return nn
+  
   def labelize_nearest_neighbour(self, neigh_matrix_list: np.ndarray, subject_per_row: pd.Series) -> np.ndarray:
     def substitute_with_list(matrix, subject_per_row):
       vectorized_get = np.vectorize(lambda k: subject_per_row.iloc[k])
