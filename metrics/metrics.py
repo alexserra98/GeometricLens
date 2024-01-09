@@ -157,11 +157,12 @@ class BaseFinetuneOverlap():
       overlaps[couples] = {}
       for dataset in self.data[couples[0]].keys():
         overlaps[couples][dataset] = {}
-        for train_instances in self.data[couples[0]][dataset].keys():
-          overlaps[couples][dataset][train_instances] = {}
-          for method in ["last", "sum"]:
-            overlaps[couples][dataset][train_instances][method] = layer_overlap(self.data[couples[0]][dataset][str(train_instances)]["all"][method],
-                                                                            self.data[couples[1]][dataset][str(train_instances)]["all"][method])
+        for method in ["last", "sum"]:
+          overlaps[couples][dataset][method] = np.empty([6,6,self.data[couples[0]][dataset]['0']["all"][method].shape[0]])
+          for train_instances_i in self.data[couples[0]][dataset].keys():
+            for train_instances_j in self.data[couples[0]][dataset].keys():
+                overlaps[couples][dataset][method][int(train_instances_i),int(train_instances_j)] = layer_overlap(self.data[couples[0]][dataset][train_instances_i]["all"][method],
+                                                                              self.data[couples[1]][dataset][train_instances_j]["all"][method])
     return overlaps
     
   
