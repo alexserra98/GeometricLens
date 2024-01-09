@@ -23,10 +23,10 @@ for model in models:
             instance_path = Path(os.path.join(results_path, model, dataset, max_train_instance))
             with open(instance_path /"scenario_results.pkl", 'rb') as f:
                     scenario_results = pickle.load(f)
-            shot_metrics = ShotMetrics(scenario_results)
-            if "commonsense" in dataset and "llama" in model:
+            shot_metrics: ShotMetrics = ShotMetrics(scenario_results)
+            if "commonsense" in dataset and "Llama" in model:
                 final_metrics = shot_metrics.evaluate()
-            with open(instance_path /"final_metrics.pkl", 'wb') as f:
+                with open(instance_path /"final_metrics.pkl", 'wb') as f:
                     pickle.dump(final_metrics,f)
 
 

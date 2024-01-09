@@ -12,6 +12,7 @@ models = os.listdir(results_path)
 for model in models:
     datasets = os.listdir(os.path.join(results_path, model))
     results_per_train_instances = {n:[] for n in range(6)}
+    datasets.sort()
     for dataset in datasets:
         instances_id = []
         instances_metrics = []

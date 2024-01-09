@@ -3,7 +3,7 @@ from pathlib import Path
 import pickle
 import argparse
 import logging
-from inference_id.datasets_overlap_short.utils import Scenario
+from inference_id.datasets_overlap_short_swap.utils import Scenario
 from inference_id.generation.generation import Huggingface_client, ScenarioResult
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s-%(message)s')
 
@@ -34,6 +34,7 @@ client = Huggingface_client(model_name)
 
 for dataset in datasets[0]:
     for train_instances in max_train_instances[0]:
+        print(model_name)
         logging.info("Starting inference on %s with %s train instances...",
                      dataset, train_instances)
         scenario = Scenario(dataset, train_instances, model_name, 200)
@@ -41,10 +42,10 @@ for dataset in datasets[0]:
         logging.info("Saving the results...")
         #scratch_path = "/orfeo/scratch/dssc/zenocosini"
         if model_name != "gpt2":
-            result_path = Path(working_path, "overlap_short_result", 
+            result_path = Path(working_path, "overlap_short_swap_result", 
                                model_name.split('/')[1], dataset, train_instances)
         else:
-            result_path = Path(working_path, "overlap_short_result", 
+            result_path = Path(working_path, "overlap_short_swap_result", 
                                model_name, dataset, train_instances)
         
         result_path.mkdir(parents=True, exist_ok=True)
