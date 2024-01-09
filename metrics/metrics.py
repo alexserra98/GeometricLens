@@ -187,7 +187,7 @@ class DatasetMetrics():
     Dict[layer, Dict[metric, Array(neigh_order)]]
     """
     metric_id = {}
-    zero_shot = next((x for x in self.instances_results if x.train_instances==0), None)
+    zero_shot = next((x for x in self.instances_results if x.train_instances=='0'), None)
     
     for method in [Layer.LAST.value, Layer.SUM.value]:
         metric_id[method] = {"id_diff": [], "metric_diff": {key: [] for key in self.instances_results[0].metrics.keys()}} 
@@ -197,7 +197,7 @@ class DatasetMetrics():
           zero_shot_id = zero_shot.intrinsic_dim[Match.ALL.value][method]
           i_result_id = i_result.intrinsic_dim[Match.ALL.value][method]
           # the intrinisc dimension is calculated up to the nearest neighbour order that change between runs
-          nn_order = min(zero_shot.shape[1], i_result_id.shape[1])
+          nn_order = min(zero_shot_id.shape[1], i_result_id.shape[1])
           id_diff = np.abs(zero_shot_id[-5][:nn_order] - i_result_id[-5][:nn_order])
           metric_id[method]["id_diff"].append(id_diff)
           for metric in i_result.metrics.keys():
