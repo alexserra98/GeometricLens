@@ -4,7 +4,7 @@ import torch
 
 from dataclasses import dataclass
 from typing import List, Dict, Tuple, Optional,  Type
-from .utils import  Match, Layer, neig_overlap, exact_match, quasi_exact_match
+from .utils import  Match, Layer, neig_overlap, exact_match, quasi_exact_match, layer_overlap
 
 import tqdm
 from inference_id.generation.generation import  ScenarioResult
@@ -12,6 +12,8 @@ import pandas as pd
 
 from .hidden_states import HiddenStates
 from enum import Enum
+
+from warnings import warn
 
 #Define a type hint 
 Array = Type[np.ndarray]
@@ -87,7 +89,18 @@ class ShotMetrics():
       letter_overlap = hidden_states.layer_overlap_label("answered_letter")
       return InstanceResult(self.dataset, self.train_instances, intrinsic_dim, basic_metric, letter_overlap)
     return InstanceResult(self.dataset, self.train_instances, intrinsic_dim, basic_metric)
-    
+  def compute_nn(self, k: int) -> Dict[str, Dict[str, np.ndarray]]:
+    """
+    Compute the nearest neighbours of each instance in the run per layer
+    using the provided methodv
+    Output
+    ----------
+    Dict[k-method, Array(num_layers, num_instances, k_neighbours)]
+    """
+    hidden_states = HiddenStates(self.hidden_states)
+    k = 20
+    warn("Computing nearest neighbours with k=20")
+    return hidden_states.get_nearest_neighbour(k) 
   #TODO use property decorator
   def basic_metric_mean(self) -> Dict[str, float]:
     output_dict = {column_name: self.basic_metric[column_name].mean() for column_name in self.basic_metric.columns}
@@ -122,6 +135,35 @@ class SubjectOverlap():
     hidden_states = HiddenStates(self.hidden_states)
     return hidden_states.layer_overlap_label("subject")
 
+class BaseFinetuneOverlap():
+  def __init__(self, data: Dict) -> None:
+    """
+    Compute overlap between base and finetuned model
+    """
+    self.data = data
+  def get_couples(self, list_of_models: List) -> List[Tuple[str, str]]:
+    """
+    Get all the couples of base and finetuned model
+    """
+    base = list(filter(lambda x: "chat" not in x, list_of_models))
+    finetuned = list(filter(lambda x: "chat" in x, list_of_models))
+    couples = [(b,f) for b in base for f in finetuned if list(set(b.split("-"))-set(f.split("-")))[0]=="chat"]
+    return couples
+  
+  def compute_overlap(self) -> Dict[str, Dict[str, np.ndarray]]:
+    overlaps = {}
+    for couples in self.get_couples(list(self.data.keys())):
+      overlaps[couples] = {}
+      for dataset in self.data[couples[0]].keys():
+        overlaps[couples][dataset] = {}
+        for train_instances in self.data[couples[0]][dataset].keys():
+          overlaps[couples][dataset][train_instances] = {}
+          for method in ["last", "sum"]:
+            overlaps[couples][dataset][train_instances][method] = layer_overlap(self.data[couples[0]][dataset][train_instances][method],
+                                                                            self.data[couples[1]][dataset][train_instances][method])
+    return overlaps
+    
+  
 class DatasetMetrics():
   """
   Class to compute metrics across all the runs of a dataset. Generally used to compare between different n-shots
@@ -179,7 +221,9 @@ class DatasetMetrics():
           # indexes are not 0-based because it's easier to mange with plolty sub_trace
           overlaps[method][(i+1,j+1)] = self._instances_overlap(i,j,method)
     return overlaps
+
     
+  
   def _instances_overlap(self, i,j,method) -> np.ndarray:
     nn1 = self.nearest_neig[i][method]
     nn2 = self.nearest_neig[j][method]

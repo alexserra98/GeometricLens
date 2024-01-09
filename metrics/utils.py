@@ -5,6 +5,7 @@ from enum import Enum
 from typing import Dict, List, NamedTuple
 import pandas as pd
 import functools
+from warnings import warn
 
 @dataclass
 class RunMeta():
@@ -129,7 +130,10 @@ def label_neig_overlap(nn_matrix: np.ndarray, labels: NamedTuple, subject_per_ro
     """
     index_label =  subject_per_row.index[subject_per_row==labels.current_label].tolist()
     nn_matrix = nn_matrix[index_label]==labels.label_to_find
-    return nn_matrix.sum()/nn_matrix.shape[0]
+    out = nn_matrix.sum()/nn_matrix.shape[0]
+    warn("ATTENTION THE NORMALIZATION HAS NOT BEEN TESTED YET")
+    out = (out - np.min(out)) / (np.max(out) - np.min(out))
+    return out
 
 def class_imbalance(hidden_states_df, label):
     """
@@ -148,5 +152,11 @@ def class_imbalance(hidden_states_df, label):
     balanced_df = hidden_states_df.groupby(label).apply(lambda x: x.sample(min_count))
     return balanced_df
     
-
-
+def layer_overlap(nn1, nn2) -> np.ndarray:
+    assert nn1.shape == nn2.shape, "The two nearest neighbour matrix must have the same shape" 
+    layers_len = nn1.shape[0]
+    overlaps = np.empty([layers_len])
+    for i in range(layers_len):
+        overlaps[i] = neig_overlap(nn1[i], nn2[i])
+    return overlaps
+  
