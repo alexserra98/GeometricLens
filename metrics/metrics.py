@@ -12,6 +12,7 @@ import pandas as pd
 
 from .hidden_states import HiddenStates
 from enum import Enum
+from abc import ABC, abstractmethod
 
 from warnings import warn
 
@@ -85,9 +86,6 @@ class ShotMetrics():
     basic_metric = self.basic_metric_mean()
     hidden_states = HiddenStates(self.hidden_states)
     intrinsic_dim = hidden_states.get_instances_id()
-    if self.dataset == "commonsenseqa" and "Llama" in self.model:
-      letter_overlap = hidden_states.layer_overlap_label("answered_letter")
-      return InstanceResult(self.dataset, self.train_instances, intrinsic_dim, basic_metric, letter_overlap)
     return InstanceResult(self.dataset, self.train_instances, intrinsic_dim, basic_metric)
   def compute_nn(self) -> Dict[str, Dict[str, np.ndarray]]:
     """
@@ -107,13 +105,29 @@ class ShotMetrics():
     return output_dict  
 
 
-class SubjectOverlap():
-  def __init__(self, scenario_results: List[ScenarioResult]) -> None:
+class LabelOverlap(ABC):
+  def __init__(self, scenario_results: List[ScenarioResult], label: str) -> None:
     """
     Compute overlap between MMLU subjects
     """
     self.scenario_results = scenario_results
     self.hidden_states = self.set_dataframes()
+    self.label = label
+  
+  @abstractmethod
+  def set_dataframes(self) -> pd.DataFrame:
+    """
+    Aggregate in a dataframe the hidden states of all instances
+    ----------
+    hidden_states: pd.DataFrame(num_instances, num_layers, model_dim)
+    """
+    pass
+  
+  def compute_overlap(self) -> Dict[str, Dict[str, np.ndarray]]:
+    hidden_states = HiddenStates(self.hidden_states)
+    return hidden_states.layer_overlap_label(self.label)
+
+class SubjectOverlap(LabelOverlap):
   
   def set_dataframes(self) -> pd.DataFrame:
     """
@@ -131,9 +145,23 @@ class SubjectOverlap():
     hidden_states = pd.DataFrame(hidden_states_dict)
     return  hidden_states 
   
-  def compute_overlap(self) -> Dict[str, Dict[str, np.ndarray]]:
-    hidden_states = HiddenStates(self.hidden_states)
-    return hidden_states.layer_overlap_label("subject")
+class LetterOverlap(LabelOverlap):
+  def set_dataframes(self) -> pd.DataFrame:
+    """
+    Aggregate in a dataframe the hidden states of all instances
+    ----------
+    hidden_states: pd.DataFrame(num_instances, num_layers, model_dim)
+    """
+    hidden_states_dict = {"hidden_states": [],"layer": [], "letter":[]}
+    for scenario_result in self.scenario_results:
+      for request_result in scenario_result.requests_results:
+        for layer in ["last","sum"]:
+          hidden_states_dict["hidden_states"].append(request_result.hidden_states[layer])
+          hidden_states_dict["layer"].append(layer)
+          hidden_states_dict["letter"].append(request_result.preds['std_pred']['letter'])
+    hidden_states = pd.DataFrame(hidden_states_dict)
+    return  hidden_states 
+  
 
 class BaseFinetuneOverlap():
   def __init__(self, data: Dict) -> None:

@@ -4,6 +4,14 @@ import pickle
 import logging
 from tqdm import tqdm
 from pathlib import Path
+import sys
+
+label = sys.argv[1]
+
+class OverlapClasses(Enum):
+    letter = LetterOverlap
+    subject = SubjectOverlap
+assert label in list(OverlapClasses.__members__), "Label not supported"
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 working_path = "/orfeo/scratch/dssc/zenocosini" 
@@ -26,12 +34,14 @@ for model in models:
             results_per_train_instances[int(max_train_instance)].append(scenario_results)
     overlaps = {n:[] for n in range(6)}
     for n in tqdm(range(6), desc="Computing overlap..."):
-        subject_overlap: SubjectOverlap = SubjectOverlap(results_per_train_instances[n])
-        overlaps[n]=subject_overlap.compute_overlap()    
+        overlap_instance = OverlapClasses[label].value(results_per_train_instances[n])
+        overlaps[n] = overlap_instance.compute_overlap()
 
     logging.info(f'Saving results...')
-    with open(Path(results_path,model,"overlaps.pkl"),"wb") as f:
-        pickle.dump(overlaps,f)
+    with open(Path(results_path, model, "label_overlaps.pkl"), "wb") as f:
+        pickle.dump(overlaps, f)
+
+
 
 
     
