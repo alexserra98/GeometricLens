@@ -7,6 +7,7 @@ from pathlib import Path
 import sys
 
 label = sys.argv[1]
+data_directory = sys.argv[2]
 
 class OverlapClasses(Enum):
     letter = LetterOverlap
@@ -15,7 +16,7 @@ assert label in list(OverlapClasses.__members__), "Label not supported"
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 working_path = "/orfeo/scratch/dssc/zenocosini" 
-results_path = os.path.join(working_path, "overlap_short_result")
+results_path = os.path.join(working_path, data_directory)
 models = os.listdir(results_path)
 for model in models:
     datasets = os.listdir(os.path.join(results_path, model))
