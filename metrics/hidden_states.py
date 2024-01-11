@@ -148,7 +148,7 @@ class HiddenStates():
     for layer in [Layer.LAST, Layer.SUM]:
       hidden_states, hidden_states_df= hidden_states_collapse(self.hidden_states,{"match":Match.ALL.value, "layer":layer.value, "balanced":label})
       assert hidden_states_df[label].value_counts().nunique() == 1, "There must be the same number of instances for each label - Class imbalance not supported"
-      k = max(hidden_states_df[label].value_counts().unique()[0],2) # number of nearest neighbours - Equal to the number of instances of a single label
+      k = max(hidden_states.shape[0]*0.10,2) # number of nearest neighbours - Equal to the number of instances of a single label
       nn = self.nearest_neighbour(hidden_states, k=k) # nearest neighbours matrix
       # labelize the nearest neighbours matrix
       # We substitute the indices with the labels of the associated instances, we keep a list_of_labels the track the label associated to each row
