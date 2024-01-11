@@ -39,7 +39,8 @@ for model in models:
         overlaps[n] = overlap_instance.compute_overlap()
 
     logging.info(f'Saving results...')
-    with open(Path(results_path, model, "label_overlaps.pkl"), "wb") as f:
+    file_name = f"{label}_overlaps.pkl"
+    with open(Path(results_path, model, file_name), "wb") as f:
         pickle.dump(overlaps, f)
 
 
