@@ -23,6 +23,8 @@ for model in models:
     results_per_train_instances = {n:[] for n in range(6)}
     datasets.sort()
     for dataset in datasets:
+        if dataset=="result":
+            continue
         instances_id = []
         instances_metrics = []
         max_train_instances = os.listdir(os.path.join(results_path, model, dataset))
@@ -31,16 +33,17 @@ for model in models:
             instance_path = Path(os.path.join(results_path, model, dataset, max_train_instance))
             with open(instance_path /"scenario_results.pkl", 'rb') as f:
                     scenario_results = pickle.load(f)
-            #import pdb; pdb.set_trace()
             results_per_train_instances[int(max_train_instance)].append(scenario_results)
     overlaps = {n:[] for n in range(6)}
     for n in tqdm(range(6), desc="Computing overlap..."):
-        overlap_instance = OverlapClasses[label].value(results_per_train_instances[n])
+        overlap_instance = OverlapClasses[label].value(results_per_train_instances[n],label)
         overlaps[n] = overlap_instance.compute_overlap()
 
     logging.info(f'Saving results...')
     file_name = f"{label}_overlaps.pkl"
-    with open(Path(results_path, model, file_name), "wb") as f:
+    final_path = Path(results_path, model,"result") 
+    final_path.mkdir(parents=True, exist_ok=True)
+    with open(Path(final_path, file_name),"wb") as f:
         pickle.dump(overlaps, f)
 
 

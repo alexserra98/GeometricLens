@@ -131,8 +131,6 @@ def label_neig_overlap(nn_matrix: np.ndarray, labels: NamedTuple, subject_per_ro
     index_label =  subject_per_row.index[subject_per_row==labels.current_label].tolist()
     nn_matrix = nn_matrix[index_label]==labels.label_to_find
     out = nn_matrix.sum()/nn_matrix.shape[0]
-    warn("ATTENTION THE NORMALIZATION HAS NOT BEEN TESTED YET")
-    out = (out - np.min(out)) / (np.max(out) - np.min(out))
     return out
 
 def class_imbalance(hidden_states_df, label):
