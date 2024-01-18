@@ -158,7 +158,7 @@ class LetterOverlap(LabelOverlap):
         for layer in ["last","sum"]:
           hidden_states_dict["hidden_states"].append(request_result.hidden_states[layer])
           hidden_states_dict["layer"].append(layer)
-          hidden_states_dict["letter"].append(request_result.preds['std_pred']['letter'])
+          hidden_states_dict["letter"].append(request_result.preds['only_ref_pred']['letter'])
     hidden_states = pd.DataFrame(hidden_states_dict)
     return  hidden_states 
   

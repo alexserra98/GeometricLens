@@ -55,6 +55,7 @@ def hidden_states_collapse(df_hiddenstates: pd.DataFrame(), query: Dict)-> np.nd
     ----------
     (num_instances, num_layers, model_dim)
     """ 
+
     for condition in query.keys():
         if condition == "match" and query[condition] == Match.ALL.value:
             continue
@@ -145,16 +146,18 @@ class HiddenStates():
     """
     overlaps = {}
     Labels = namedtuple("Labels", "current_label, label_to_find")
+
     for layer in [Layer.LAST, Layer.SUM]:
       hidden_states, hidden_states_df= hidden_states_collapse(self.hidden_states,{"match":Match.ALL.value, "layer":layer.value, "balanced":label})
       assert hidden_states_df[label].value_counts().nunique() == 1, "There must be the same number of instances for each label - Class imbalance not supported"
-      k = max(hidden_states.shape[0]*0.10,2) # number of nearest neighbours - Equal to the number of instances of a single label
+      k = max(int(hidden_states.shape[0]*0.10),2) # number of nearest neighbours - Equal to the number of instances of a single label
       nn = self.nearest_neighbour(hidden_states, k=k) # nearest neighbours matrix
       # labelize the nearest neighbours matrix
       # We substitute the indices with the labels of the associated instances, we keep a list_of_labels the track the label associated to each row
       # Generally there are blocks of n consecutive rows with the same label
       subject_per_row = hidden_states_df[label].reset_index(drop=True)
       nn = self.labelize_nearest_neighbour(nn, subject_per_row)
+
       overlaps[layer.value] = []
       for num_layer in range(hidden_states.shape[1]):
         overlap = np.empty([self.hidden_states[label].nunique(),self.hidden_states[label].nunique()])  
@@ -162,6 +165,7 @@ class HiddenStates():
           for m,j in enumerate(self.hidden_states[label].unique()):
             labels = Labels(i,j)
             overlap[n,m] = label_neig_overlap(nn[num_layer],labels, subject_per_row)
+        overlap = (overlap - np.min(overlap)) / (np.max(overlap) - np.min(overlap))
         overlaps[layer.value].append(overlap)
     return overlaps
     
