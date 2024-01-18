@@ -162,6 +162,8 @@ class HiddenStates():
           for m,j in enumerate(self.hidden_states[label].unique()):
             labels = Labels(i,j)
             overlap[n,m] = label_neig_overlap(nn[num_layer],labels, subject_per_row)
+        overlap = (overlap - np.min(overlap)) / (np.max(overlap) - np.min(overlap))
+        overlap = overlap/overlap.shape[0]**2
         overlaps[layer.value].append(overlap)
     return overlaps
     

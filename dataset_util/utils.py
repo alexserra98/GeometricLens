@@ -39,8 +39,9 @@ class Scenario():
         #self.tokens_answers = [tokenizer.encode(letter)[0] for letter in list(self.output_mapping.keys())]
     
     def retrieve_requests_states(self):
-        if not (path := Path(os.getcwd(), path)).exists():
-            raise OSError("Invalid path try maybe you didn't launch the script from the inference_id folder")
+        file_path_parent = Path(os.path.abspath(__file__)).parent.parent
+        if not (path := Path(file_path_parent, path)).exists():
+            raise OSError(f'Invalid path: {path}')
         file = next(path.glob(f"*{self.dataset}*max_train_instances={self.train_instances}*"), None)
         if file is None:
             raise Exception("The dataset is not present in the datasets folder.")
