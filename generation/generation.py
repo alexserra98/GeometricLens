@@ -77,7 +77,6 @@ class Huggingface_client():
             loss = torch.nn.functional.cross_entropy(request_result.logits,token_gold)
             Warning("Llama class return hidden states as a torch tensor while Auto class return it as a tuple of torch tensor")
             hidden_states = HiddenStatesHandler(request_result.hidden_states)
-            del request_result.hidden_states
             result = RequestResult(loss, request_result.logits,hidden_states.preprocess(request_instance,self.tokenizer), predictions,{"token":request_instance.token_gold,"letter":request_instance.letter_gold})
             requests_results.append(result)
             

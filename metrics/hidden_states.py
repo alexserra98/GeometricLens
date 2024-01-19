@@ -9,6 +9,11 @@ import tqdm
 import pandas as pd
 from collections import namedtuple
 
+from dataclasses import asdict
+from dadapy.data import Data
+from dadapy.metric_comparisons import MetricComparisons
+from warnings import warn
+
 def compute_id(hidden_states: np.ndarray ,query: Dict,  algorithm = "2nn") -> np.ndarray:
     """
     Collect hidden states of all instances and compute ID
@@ -55,6 +60,7 @@ def hidden_states_collapse(df_hiddenstates: pd.DataFrame(), query: Dict)-> np.nd
     ----------
     (num_instances, num_layers, model_dim)
     """ 
+
     for condition in query.keys():
         if condition == "match" and query[condition] == Match.ALL.value:
             continue
@@ -136,6 +142,14 @@ class HiddenStates():
     substituted_matrices = substitute_with_list(neigh_matrix_list, subject_per_row)
     return np.stack(substituted_matrices)
   
+  def label_overlap(self, hidden_states, labels, k) -> Dict[str, List[np.ndarray]]:
+    overlaps = []
+    for num_layer in range(hidden_states.shape[1]):
+      mc = MetricComparisons(hidden_states[:,num_layer,:])
+      overlap = mc.return_label_overlap(labels, k)
+      overlaps.append(overlap)
+    return np.stack(overlaps)
+      
   def layer_overlap_label(self,label) -> Dict[str, List[np.ndarray]]:
     """
     Compute the overlap between the layers of instances in which the model answered with the same letter
@@ -143,29 +157,182 @@ class HiddenStates():
     ----------
     Dict[layer: List[Array(num_layers, num_layers)]]
     """
-    overlaps = {}
-    Labels = namedtuple("Labels", "current_label, label_to_find")
-    for layer in [Layer.LAST, Layer.SUM]:
-      hidden_states, hidden_states_df= hidden_states_collapse(self.hidden_states,{"match":Match.ALL.value, "layer":layer.value, "balanced":label})
-      assert hidden_states_df[label].value_counts().nunique() == 1, "There must be the same number of instances for each label - Class imbalance not supported"
-      k = max(hidden_states.shape[0]*0.10,2) # number of nearest neighbours - Equal to the number of instances of a single label
-      nn = self.nearest_neighbour(hidden_states, k=k) # nearest neighbours matrix
-      # labelize the nearest neighbours matrix
-      # We substitute the indices with the labels of the associated instances, we keep a list_of_labels the track the label associated to each row
-      # Generally there are blocks of n consecutive rows with the same label
-      subject_per_row = hidden_states_df[label].reset_index(drop=True)
-      nn = self.labelize_nearest_neighbour(nn, subject_per_row)
-      overlaps[layer.value] = []
-      for num_layer in range(hidden_states.shape[1]):
-        overlap = np.empty([self.hidden_states[label].nunique(),self.hidden_states[label].nunique()])  
-        for n,i in enumerate(self.hidden_states[label].unique()):
-          for m,j in enumerate(self.hidden_states[label].unique()):
-            labels = Labels(i,j)
-            overlap[n,m] = label_neig_overlap(nn[num_layer],labels, subject_per_row)
-        overlap = (overlap - np.min(overlap)) / (np.max(overlap) - np.min(overlap))
-        overlap = overlap/overlap.shape[0]**2
-        overlaps[layer.value].append(overlap)
-    return overlaps
+    warn("The last token is always the same, thus its first layer activation (embedding) is always the same")
+    warn("Computing overlap using k with  2 -25- 500")
+    iter_list=[k for k in range(0,125,25)]
+    iter_list[0]=2
+    iter_list.extend([k for k in range(100,550,50)])
+    rows = []
+    for k in tqdm.tqdm(iter_list, desc = "Computing overlap"):
+      for model in tqdm.tqdm(self.hidden_states["model"].unique().tolist(), desc = "Computing overlap"):
+        for dataset in self.hidden_states["dataset"].unique().tolist():
+          for method in self.hidden_states["layer"].unique().tolist():
+            for train_instances in self.hidden_states["train_instances"].unique().tolist():
+              
+              hidden_states, hidden_states_df= hidden_states_collapse(self.hidden_states,{"match":Match.ALL.value, 
+                                                                                          "layer":method,
+                                                                                          "model":model,
+                                                                                          "dataset":dataset,
+                                                                                          "train_instances": train_instances, 
+                                                                                          "balanced":label})
+              assert hidden_states_df[label].value_counts().nunique() == 1, "There must be the same number of instances for each label - Class imbalance not supported"
+              subject_per_row = hidden_states_df[label].reset_index(drop=True)
+              overlap = self.label_overlap(hidden_states, subject_per_row, k) 
+              rows.append([k, model, dataset, method, train_instances,overlap])
+                  
+    df = pd.DataFrame(rows, columns = ["k","model","dataset","method","train_instances","overlap"])
+    return df
+  #HORRIBLE CODE REPETITION overlap will become a class itself
+  def layer_overlap_subject(self) -> Dict[str, List[np.ndarray]]:
+    """
+    Compute the overlap between the layers of instances in which the model answered with the same letter
+    Output
+    ----------
+    Dict[layer: List[Array(num_layers, num_layers)]]
+    """
+    label="subject"
+    warn("The last token is always the same, thus its first layer activation (embedding) is always the same")
+    warn("Computing overlap using k with  2 -25- 500")
+    iter_list=[k for k in range(0,125,25)]
+    iter_list[0]=2
+    iter_list.extend([k for k in range(100,550,50)])
+    rows = []
+    for k in tqdm.tqdm(iter_list, desc = "Computing overlap"):
+      for model in tqdm.tqdm(self.hidden_states["model"].unique().tolist(), desc = "Computing overlap"):
+        for method in self.hidden_states["layer"].unique().tolist():
+          for train_instances in self.hidden_states["train_instances"].unique().tolist():
+            
+            hidden_states, hidden_states_df= hidden_states_collapse(self.hidden_states,{"match":Match.ALL.value, 
+                                                                                        "layer":method,
+                                                                                        "model":model,
+                                                                                        "train_instances": train_instances, 
+                                                                                        "balanced":label})
+            assert hidden_states_df[label].value_counts().nunique() == 1, "There must be the same number of instances for each label - Class imbalance not supported"
+            subject_per_row = hidden_states_df[label].reset_index(drop=True)
+            overlap = self.label_overlap(hidden_states, subject_per_row, k) 
+            rows.append([k, model,  method, train_instances,overlap])
+                
+    df = pd.DataFrame(rows, columns = ["k","model","method","train_instances","overlap"])
+    return df
+
+  
+  
+  def point_overlap(self, data_i: np.ndarray, data_j: np.ndarray, k: int) -> np.ndarray:
+    """
+    Compute the overlap between two runs
+    
+    Parameters
+    ----------
+    data_i: np.ndarray(num_instances, num_layers, model_dim)
+    data_j: np.ndarray(num_instances, num_layers, model_dim)
+    k: int
+    
+    Output
+    ----------
+    Array(num_layers)
+    """
+    assert data_i.shape[1] == data_j.shape[1], "The two runs must have the same number of layers"
+    number_of_layers = data_i.shape[1]
+    overlap_per_layer = []
+    for layer in range(number_of_layers):
+      mc = MetricComparisons(data_i[:,layer,:])
+      overlap_per_layer.append(mc.return_data_overlap(data_j[:,layer,:], k = k))
+    
+    return np.stack(overlap_per_layer)
+  
+  def pair_names(self,names_list):
+    """
+    Pairs base names with their corresponding 'chat' versions.
+
+    Args:
+    names_list (list): A list of strings containing names.
+
+    Returns:
+    list: A list of tuples, each containing a base name and its 'chat' version.
+    """
+    # Separating base names and 'chat' names
+    base_names = [name for name in names_list if 'chat' not in name]
+    chat_names = [name for name in names_list if 'chat' in name]
+    base_names.sort()
+    chat_names.sort()
+    # Pairing base names with their corresponding 'chat' versions
+    pairs = []
+    for base_name, chat_name in zip(base_names, chat_names):
+      pairs.append((base_name, chat_name))
+
+    return pairs
+  
+  def layer_point_overlap(self) -> Dict[str, Dict[str, np.ndarray]]:
+    """
+    Compute the overlap between same dataset, same train instances, different models (pretrained and finetuned)
+    
+    Parameters
+    ----------
+    data: Dict[model, Dict[dataset, Dict[train_instances, Dict[method, Dict[match, Dict[layer, np.ndarray]]]]]]
+    Output
+    df: pd.DataFrame (k,dataset,method,train_instances_i,train_instances_j,overlap)
+    """
+    warn("Computing overlap using k with  2 -25- 500")
+    iter_list=[k for k in range(0,125,25)]
+    iter_list[0]=2
+    iter_list.extend([k for k in range(100,550,50)])
+    rows = []
+    
+    for k in tqdm.tqdm(iter_list, desc = "Computing overlap"):
+      for couples in tqdm.tqdm(self.pair_names(self.hidden_states["model"].unique().tolist()), desc = "Computing overlap"):
+        for dataset in self.hidden_states["dataset"].unique().tolist():
+          for method in self.hidden_states["layer"].unique().tolist():
+            for train_instances_i in self.hidden_states["train_instances"].unique().tolist():
+              for train_instances_j in self.hidden_states["train_instances"].unique():
+                  ## Temporary hiddenstate collapse. Integrate with the rest!
+                  hidden_states_i, _ = hidden_states_collapse(self.hidden_states,{"match":Match.ALL.value,
+                                                                                              "layer":method, 
+                                                                                              "model":couples[0], 
+                                                                                              "dataset":dataset,
+                                                                                              "train_instances": train_instances_i,})
+                  hidden_states_j, _ = hidden_states_collapse(self.hidden_states,{"match":Match.ALL.value,
+                                                                                              "layer":method, 
+                                                                                              "model":couples[1], 
+                                                                                              "dataset":dataset,
+                                                                                              "train_instances": train_instances_j})
+         
+                  rows.append([k,couples,dataset,method,train_instances_i,train_instances_j, self.point_overlap(hidden_states_i, hidden_states_j, k)]) 
+                  
+    df = pd.DataFrame(rows, columns = ["k","couple","dataset","method","train_instances_i","train_instances_j","overlap"])
+    return df
+
+# def layer_overlap_label(self,label) -> Dict[str, List[np.ndarray]]:
+#     """
+#     Compute the overlap between the layers of instances in which the model answered with the same letter
+#     Output
+#     ----------
+#     Dict[layer: List[Array(num_layers, num_layers)]]
+#     """
+#     overlaps = {}
+#     Labels = namedtuple("Labels", "current_label, label_to_find")
+
+#     for layer in [Layer.LAST, Layer.SUM]:
+#       hidden_states, hidden_states_df= hidden_states_collapse(self.hidden_states,{"match":Match.ALL.value, "layer":layer.value, "balanced":label})
+#       assert hidden_states_df[label].value_counts().nunique() == 1, "There must be the same number of instances for each label - Class imbalance not supported"
+#       k = max(int(hidden_states.shape[0]*0.10),2) # number of nearest neighbours - Equal to the number of instances of a single label
+#       nn = self.nearest_neighbour(hidden_states, k=k) # nearest neighbours matrix
+#       # labelize the nearest neighbours matrix
+#       # We substitute the indices with the labels of the associated instances, we keep a list_of_labels the track the label associated to each row
+#       # Generally there are blocks of n consecutive rows with the same label
+#       subject_per_row = hidden_states_df[label].reset_index(drop=True)
+#       nn = self.labelize_nearest_neighbour(nn, subject_per_row)
+
+#       overlaps[layer.value] = []
+#       for num_layer in range(hidden_states.shape[1]):
+#         overlap = np.empty([self.hidden_states[label].nunique(),self.hidden_states[label].nunique()])  
+#         for n,i in enumerate(self.hidden_states[label].unique()):
+#           for m,j in enumerate(self.hidden_states[label].unique()):
+#             labels = Labels(i,j)
+#             overlap[n,m] = label_neig_overlap(nn[num_layer],labels, subject_per_row)
+#         overlap = (overlap - np.min(overlap)) / (np.max(overlap) - np.min(overlap))
+#         overlap = overlap/overlap.shape[0]**2
+#         overlaps[layer.value].append(overlap)
+#     return overlaps
     
     
     # nn = []
