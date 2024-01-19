@@ -4,11 +4,15 @@ import torch
 
 from dataclasses import dataclass
 from typing import List, Dict, Tuple, Optional,  Type
-from .utils import  Match, Layer, neig_overlap, exact_match, quasi_exact_match, layer_overlap
+from .utils import  Match, Layer, neig_overlap, exact_match, quasi_exact_match, layer_overlap, hidden_states_collapse
 
 import tqdm
 from inference_id.generation.generation import  ScenarioResult
 import pandas as pd
+
+from dataclasses import asdict
+from dadapy.data import Data
+from dadapy.metric_comparisons import MetricComparisons
 
 from .hidden_states import HiddenStates
 from enum import Enum
@@ -87,7 +91,8 @@ class ShotMetrics():
     hidden_states = HiddenStates(self.hidden_states)
     intrinsic_dim = hidden_states.get_instances_id()
     return InstanceResult(self.dataset, self.train_instances, intrinsic_dim, basic_metric)
-  def compute_nn(self) -> Dict[str, Dict[str, np.ndarray]]:
+  
+  def compute_nn(self,k = 20) -> Dict[str, Dict[str, np.ndarray]]:
     """
     Compute the nearest neighbours of each instance in the run per layer
     using the provided methodv
@@ -96,23 +101,23 @@ class ShotMetrics():
     Dict[k-method, Array(num_layers, num_instances, k_neighbours)]
     """
     hidden_states = HiddenStates(self.hidden_states)
-    k = 20
-    warn("Computing nearest neighbours with k=20")
+    warn(f'Computing nearest neighbours with k={k}')
     return hidden_states.get_nearest_neighbour(k) 
+  
   #TODO use property decorator
   def basic_metric_mean(self) -> Dict[str, float]:
     output_dict = {column_name: self.basic_metric[column_name].mean() for column_name in self.basic_metric.columns}
     return output_dict  
 
 
-class LabelOverlap(ABC):
-  def __init__(self, scenario_results: List[ScenarioResult], label: str) -> None:
-    """
-    Compute overlap between MMLU subjects
-    """
+#TODO There's some code repetion between set_dataframe classes. Refactor it!
+class Overlap(ABC):
+  """
+  Abstract Class for compute different kinds of overlap 
+  """  
+  def __init__(self, scenario_results: List[ScenarioResult]) -> None:
     self.scenario_results = scenario_results
     self.hidden_states = self.set_dataframes()
-    self.label = label
   
   @abstractmethod
   def set_dataframes(self) -> pd.DataFrame:
@@ -123,9 +128,21 @@ class LabelOverlap(ABC):
     """
     pass
   
+  @abstractmethod
   def compute_overlap(self) -> Dict[str, Dict[str, np.ndarray]]:
+    pass
+  
+class LabelOverlap(Overlap):
+  def __init__(self, scenario_results: List[ScenarioResult]) -> None:
+    """
+    Compute overlap between MMLU subjects
+    """
+    self.scenario_results = scenario_results
+    self.hidden_states = self.set_dataframes()
+
+  def _compute_overlap(self, label) -> Dict[str, Dict[str, np.ndarray]]:
     hidden_states = HiddenStates(self.hidden_states)
-    return hidden_states.layer_overlap_label(self.label)
+    return hidden_states.layer_overlap_label(label)
 
 class SubjectOverlap(LabelOverlap):
   
@@ -135,15 +152,21 @@ class SubjectOverlap(LabelOverlap):
     ----------
     hidden_states: pd.DataFrame(num_instances, num_layers, model_dim)
     """
-    hidden_states_dict = {"hidden_states": [],"layer": [], "subject":[]}
+    hidden_states_dict = {"hidden_states": [],"layer": [], "subject":[], "model":[], "train_instances":[]}
     for scenario_result in self.scenario_results:
       for request_result in scenario_result.requests_results:
         for layer in ["last","sum"]:
           hidden_states_dict["hidden_states"].append(request_result.hidden_states[layer])
           hidden_states_dict["layer"].append(layer)
           hidden_states_dict["subject"].append(scenario_result.dataset)
+          hidden_states_dict["model"].append(scenario_result.model_name)
+          hidden_states_dict["train_instances"].append(scenario_result.train_instances)
     hidden_states = pd.DataFrame(hidden_states_dict)
-    return  hidden_states 
+    return  hidden_states
+  
+  def compute_overlap(self) -> Dict[str, Dict[str, np.ndarray]]:
+    hidden_states = HiddenStates(self.hidden_states)
+    return hidden_states.layer_overlap_subject()
   
 class LetterOverlap(LabelOverlap):
   def set_dataframes(self) -> pd.DataFrame:
@@ -152,47 +175,50 @@ class LetterOverlap(LabelOverlap):
     ----------
     hidden_states: pd.DataFrame(num_instances, num_layers, model_dim)
     """
-    hidden_states_dict = {"hidden_states": [],"layer": [], "letter":[]}
+    hidden_states_dict = {"hidden_states": [],"layer": [], "letter":[], "model":[], "dataset":[],"train_instances":[]}
     for scenario_result in self.scenario_results:
       for request_result in scenario_result.requests_results:
         for layer in ["last","sum"]:
           hidden_states_dict["hidden_states"].append(request_result.hidden_states[layer])
           hidden_states_dict["layer"].append(layer)
           hidden_states_dict["letter"].append(request_result.preds['only_ref_pred']['letter'])
+          hidden_states_dict["model"].append(scenario_result.model_name)
+          hidden_states_dict["dataset"].append(scenario_result.dataset)
+          hidden_states_dict["train_instances"].append(scenario_result.train_instances)
     hidden_states = pd.DataFrame(hidden_states_dict)
     return  hidden_states 
   
-
-class BaseFinetuneOverlap():
-  def __init__(self, data: Dict) -> None:
-    """
-    Compute overlap between base and finetuned model
-    """
-    self.data = data
-#  def get_couples(self, list_of_models: List) -> List[Tuple[str, str]]:
-#    """
-#    Get all the couples of base and finetuned model
-#    """
-#    base = list(filter(lambda x: "chat" not in x, list_of_models))
-#    finetuned = list(filter(lambda x: "chat" in x, list_of_models))
-#    couples = [(b,f) for f in finetuned for b in base if "chat" in list(set(b.split("-"))-set(f.split("-")))]
-#    import pdb; pdb.set_trace()
-#    return couples
-#  
   def compute_overlap(self) -> Dict[str, Dict[str, np.ndarray]]:
-    overlaps = {}
-    for couples in tqdm.tqdm([("Llama-2-7b-hf","Llama-2-7b-chat-hf"),("Llama-2-13b-hf","Llama-2-13b-chat-hf")]):
-      overlaps[couples] = {}
-      for dataset in self.data[couples[0]].keys():
-        overlaps[couples][dataset] = {}
-        for method in ["last", "sum"]:
-          overlaps[couples][dataset][method] = np.empty([6,6,self.data[couples[0]][dataset]['0']["all"][method].shape[0]])
-          for train_instances_i in self.data[couples[0]][dataset].keys():
-            for train_instances_j in self.data[couples[0]][dataset].keys():
-                overlaps[couples][dataset][method][int(train_instances_i),int(train_instances_j)] = layer_overlap(self.data[couples[0]][dataset][train_instances_i]["all"][method],
-                                                                              self.data[couples[1]][dataset][train_instances_j]["all"][method])
-    return overlaps
-    
+    return self._compute_overlap("letter")
+
+class BaseFinetuneOverlap(Overlap):
+  def set_dataframes(self) -> pd.DataFrame:
+    """
+    Aggregate in a dataframe the hidden states of all instances
+    ----------
+    hidden_states: pd.DataFrame(num_instances, num_layers, model_dim)
+    """
+    hidden_states_dict = {"hidden_states": [],"layer": [], "model":[], "dataset":[],"train_instances":[]}
+    for scenario_result in self.scenario_results:
+      for request_result in scenario_result.requests_results:
+        for layer in ["last","sum"]:
+          hidden_states_dict["hidden_states"].append(request_result.hidden_states[layer])
+          hidden_states_dict["layer"].append(layer)
+          hidden_states_dict["model"].append(scenario_result.model_name)
+          hidden_states_dict["dataset"].append(scenario_result.dataset)
+          hidden_states_dict["train_instances"].append(scenario_result.train_instances)
+          
+    hidden_states = pd.DataFrame(hidden_states_dict)
+    return  hidden_states
+
+  def compute_overlap(self) -> Dict[str, Dict[str, np.ndarray]]:
+    hidden_states = HiddenStates(self.hidden_states)
+    return hidden_states.layer_point_overlap()
+  
+
+
+  
+
   
 class DatasetMetrics():
   """

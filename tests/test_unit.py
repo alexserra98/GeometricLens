@@ -11,6 +11,7 @@ import pickle
 from inference_id.datasets.utils import *
 from inference_id.generation.generation import *
 from inference_id.metrics.metrics import *
+from inference_id.metrics.hidden_states import *
 #TODO change path so that it can be run from anywhere
 
 
@@ -107,7 +108,7 @@ def test_intrinsic_dim():
     #print(f'{id=}')
     #return metrics
 
-def test_letter_overlap():
+def old_test_letter_overlap():
     with open("tests/assets/unit/requests_results.pkl", "rb") as f:
        requests_results = pickle.load(f)
     scenario_result = ScenarioResult("commonsenseqa",0,"gpt2",requests_results)
@@ -120,17 +121,36 @@ def test_letter_overlap():
         pickle.dump(letter_overlap,f)
     #print(f'{letter_overlap=}')
     #return metrics
+    
+def test_letter_overlap():
+    with open("tests/assets/unit/Llama-2-7b-commonsenseqa-0/0/scenario_results.pkl", "rb") as f:
+       scenario_result = pickle.load(f)
+    letter_overlap: LetterOverlap = LetterOverlap([scenario_result])
+    overlaps = letter_overlap.compute_overlap()  
+    print(f'{overlaps}')
+    assert overlaps[overlaps["method"]=="last"].iloc[2]["overlap"].shape[0] == 33, "The number of layers is not correct"
+    
 
 def test_subject_overlap():
-    with open(Path("tests/assets/unit/result_per_train_instances.pkl"),"rb") as f:
-        results_per_train_instances = pickle.load(f)
-    subject_overlap: SubjectOverlap = SubjectOverlap(results_per_train_instances[0])
+    subjects = os.listdir("tests/assets/unit/subjects")
+    scenario_results = []
+    for s in subjects:
+        with open(Path(f'tests/assets/unit/subjects/{s}/0/scenario_results.pkl'),"rb") as f:
+            scenario_results.append(pickle.load(f))
+    subject_overlap: SubjectOverlap = SubjectOverlap(scenario_results)
     overlaps=subject_overlap.compute_overlap()  
-    assert len(overlaps["last"])==13, "The number of layers is not correct"
-    assert len(overlaps["sum"])==13, "The number of layers is not correct"
-    assert overlaps["last"][0].shape == (3,3),"The shape of overlap matrix is not correct"
+    print(f'{overlaps}')
+    assert overlaps[overlaps["method"]=="last"].iloc[2]["overlap"].shape[0] == 33, "The number of layers is not correct"
 
-  
+def test_chat_base_overlap():
+    with open("tests/assets/unit/Llama-2-7b-commonsenseqa-0/0/scenario_results.pkl", "rb") as f:
+       scenario_result_base = pickle.load(f)
+    with open("tests/assets/unit/Llama-2-7b-chat-commonsenseqa-0/0/scenario_results.pkl", "rb") as f:
+       scenario_result_chat = pickle.load(f)
+    bf_overlap = BaseFinetuneOverlap([scenario_result_base,scenario_result_chat])
+    overlaps = bf_overlap.compute_overlap()
+    print(f'{overlaps}')
+
 if __name__ == "__main__":
 #     test_scenario()
 #     test_generation()
@@ -140,6 +160,7 @@ if __name__ == "__main__":
 #     test_tokenizer()
 #     test_basic_metrics()
 #     test_intrinsic_dim()
-    test_letter_overlap()
-#     test_subject_overlap()
+     test_letter_overlap()
+     test_subject_overlap()
+#     test_chat_base_overlap()
     
