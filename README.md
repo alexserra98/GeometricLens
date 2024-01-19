@@ -1,4 +1,4 @@
-# Language Model Interpretability Research Tool
+# GeometricLens
 
 ## Introduction
 
