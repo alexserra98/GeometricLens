@@ -157,30 +157,24 @@ class HiddenStates():
     ----------
     Dict[layer: List[Array(num_layers, num_layers)]]
     """
-    warn("The last token is always the same, thus its first layer activation (embedding) is always the same")
-    warn("Computing overlap using k with  2 -25- 500")
-    iter_list=[k for k in range(0,125,25)]
-    iter_list[0]=2
-    iter_list.extend([k for k in range(100,550,50)])
+    #The last token is always the same, thus its first layer activation (embedding) is always the same
+    iter_list=[5,10,20,50]
     rows = []
     for k in tqdm.tqdm(iter_list, desc = "Computing overlap"):
-      for model in tqdm.tqdm(self.hidden_states["model"].unique().tolist(), desc = "Computing overlap"):
-        for dataset in self.hidden_states["dataset"].unique().tolist():
+      for model in self.hidden_states["model"].unique().tolist():
           for method in self.hidden_states["layer"].unique().tolist():
             for train_instances in self.hidden_states["train_instances"].unique().tolist():
-              
               hidden_states, hidden_states_df= hidden_states_collapse(self.hidden_states,{"match":Match.ALL.value, 
                                                                                           "layer":method,
                                                                                           "model":model,
-                                                                                          "dataset":dataset,
                                                                                           "train_instances": train_instances, 
                                                                                           "balanced":label})
               assert hidden_states_df[label].value_counts().nunique() == 1, "There must be the same number of instances for each label - Class imbalance not supported"
-              subject_per_row = hidden_states_df[label].reset_index(drop=True)
-              overlap = self.label_overlap(hidden_states, subject_per_row, k) 
-              rows.append([k, model, dataset, method, train_instances,overlap])
+              label_per_row = hidden_states_df[label].reset_index(drop=True)
+              overlap = self.label_overlap(hidden_states, label_per_row, k) 
+              rows.append([k, model, method, train_instances,overlap])
                   
-    df = pd.DataFrame(rows, columns = ["k","model","dataset","method","train_instances","overlap"])
+    df = pd.DataFrame(rows, columns = ["k","model","method","train_instances","overlap"])
     return df
   #HORRIBLE CODE REPETITION overlap will become a class itself
   def layer_overlap_subject(self) -> Dict[str, List[np.ndarray]]:
@@ -196,9 +190,11 @@ class HiddenStates():
     iter_list=[k for k in range(0,125,25)]
     iter_list[0]=2
     iter_list.extend([k for k in range(100,550,50)])
+    iter_list=[k for k in range(0,125,25)]
+    iter_list[0]=2
     rows = []
     for k in tqdm.tqdm(iter_list, desc = "Computing overlap"):
-      for model in tqdm.tqdm(self.hidden_states["model"].unique().tolist(), desc = "Computing overlap"):
+      for model in self.hidden_states["model"].unique().tolist():
         for method in self.hidden_states["layer"].unique().tolist():
           for train_instances in self.hidden_states["train_instances"].unique().tolist():
             
@@ -258,6 +254,8 @@ class HiddenStates():
     # Pairing base names with their corresponding 'chat' versions
     pairs = []
     for base_name, chat_name in zip(base_names, chat_names):
+      pairs.append((base_name, base_name))
+      pairs.append((chat_name, chat_name))
       pairs.append((base_name, chat_name))
 
     return pairs
@@ -272,19 +270,16 @@ class HiddenStates():
     Output
     df: pd.DataFrame (k,dataset,method,train_instances_i,train_instances_j,overlap)
     """
-    warn("Computing overlap using k with  2 -25- 500")
-    iter_list=[k for k in range(0,125,25)]
-    iter_list[0]=2
-    iter_list.extend([k for k in range(100,550,50)])
+    #warn("Computing overlap using k with  2 -25- 500")
+    iter_list = [5,10,30,100]
     rows = []
-    
-    for k in tqdm.tqdm(iter_list, desc = "Computing overlap"):
+    for k in tqdm.tqdm(iter_list, desc = "Computing overlaps k"):
       for couples in tqdm.tqdm(self.pair_names(self.hidden_states["model"].unique().tolist()), desc = "Computing overlap"):
+        #import pdb; pdb.set_trace()
         for dataset in self.hidden_states["dataset"].unique().tolist():
           for method in self.hidden_states["layer"].unique().tolist():
-            for train_instances_i in self.hidden_states["train_instances"].unique().tolist():
-              for train_instances_j in self.hidden_states["train_instances"].unique():
-                  ## Temporary hiddenstate collapse. Integrate with the rest!
+            for train_instances_i in ["0","5"]:#self.hidden_states["train_instances"].unique().tolist():
+              for train_instances_j in ["0","5"]:#self.hidden_states["train_instances"].unique():
                   hidden_states_i, _ = hidden_states_collapse(self.hidden_states,{"match":Match.ALL.value,
                                                                                               "layer":method, 
                                                                                               "model":couples[0], 

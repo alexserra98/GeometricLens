@@ -38,7 +38,7 @@ for model in models:
     datasets = os.listdir(os.path.join(results_path, model))
     datasets.sort()
     for dataset in datasets:
-        if dataset=="result":
+        if dataset != "commonsenseqa" or dataset=="result":
             continue
         max_train_instances = os.listdir(os.path.join(results_path, model, dataset))
         logging.info(f'Collecting results for {model}, {dataset}')
