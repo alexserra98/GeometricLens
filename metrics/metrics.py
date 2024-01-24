@@ -164,9 +164,13 @@ class SubjectOverlap(LabelOverlap):
     hidden_states = pd.DataFrame(hidden_states_dict)
     return  hidden_states
   
+  #def compute_overlap(self) -> Dict[str, Dict[str, np.ndarray]]:
+  #  hidden_states = HiddenStates(self.hidden_states)
+  #  return hidden_states.layer_overlap_subject()
   def compute_overlap(self) -> Dict[str, Dict[str, np.ndarray]]:
-    hidden_states = HiddenStates(self.hidden_states)
-    return hidden_states.layer_overlap_subject()
+    return self._compute_overlap("subject")
+
+
   
 class LetterOverlap(LabelOverlap):
   def set_dataframes(self) -> pd.DataFrame:
@@ -199,6 +203,8 @@ class BaseFinetuneOverlap(Overlap):
     hidden_states: pd.DataFrame(num_instances, num_layers, model_dim)
     """
     hidden_states_dict = {"hidden_states": [],"layer": [], "model":[], "dataset":[],"train_instances":[]}
+
+    #import pdb; pdb.set_trace()
     for scenario_result in self.scenario_results:
       for request_result in scenario_result.requests_results:
         for layer in ["last","sum"]:
@@ -213,6 +219,7 @@ class BaseFinetuneOverlap(Overlap):
 
   def compute_overlap(self) -> Dict[str, Dict[str, np.ndarray]]:
     hidden_states = HiddenStates(self.hidden_states)
+    #import pdb; pdb.syyet_trace()
     return hidden_states.layer_point_overlap()
   
 
