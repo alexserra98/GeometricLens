@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 import argparse
 import logging
-from inference_id.dataset_utils.utils import Scenario
+from inference_id.dataset_utils.utils import Scenario, ScenarioBuilder
 from inference_id.generation.generation import Huggingface_client, ScenarioResult
 import pickle
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s-%(message)s')
@@ -37,7 +37,8 @@ for dataset in datasets[0]:
         logging.info("Starting inference on %s with %s train instances...",
                      dataset, train_instances)
         #ADD DATASET FOLDER HERE
-        scenario = Scenario(dataset, train_instances, model_name, 2500)
+        scenario_builder = ScenarioBuilder(dataset,train_instances,model_name,2500)
+        scenario = scenario_builder.build()
         scenario_state = client.make_request(scenario)
         logging.info("Saving the results...")
         scratch_path = "/orfeo/scratch/dssc/zenocosini"

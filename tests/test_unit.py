@@ -17,7 +17,7 @@ from inference_id.metrics.hidden_states import *
 
     
 def test_scenario():
-    scenario_builder = ScenarioBuilder("cais/mmlu:all",0,"gpt2",1000)
+    scenario_builder = ScenarioBuilder("mmlu:all",0,"gpt2",1000)
     scenario = scenario_builder.build()
     def correct_letter(letter):
         out = []

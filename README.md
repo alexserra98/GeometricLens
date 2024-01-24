@@ -1,8 +1,8 @@
-# GeometricLens
+# MCQA_Benchmark
 
 ## Introduction
 
-This Python-based tool is designed for  interpretability research on Large Language Models (LLMs). The workflow handled by this repo conists in retrieving datasets, processing them, and feeding them into a language model to analyze and store the hidden states of instances. Its core functionality consists in integrating  methods from [DADApy](https://dadapy.readthedocs.io/en/latest/) to compute geoemtrical metrics such as *intrinsic dimension*, *neighbour overlap* and *clustering*. 
+This Python-based tool is a benchmark for multiple choice qa on Large Language Models (LLMs). The workflow handled by this repo conists in retrieving datasets, processing them, and feeding them into a language model to analyze and store the hidden states of instances. Its core functionality consists in integrating  methods from [DADApy](https://dadapy.readthedocs.io/en/latest/) to compute geoemtrical metrics such as *intrinsic dimension*, *neighbour overlap* and *clustering*. 
 This repo is still under construction and currently works only on the cluster of my university 
 
 ## Table of Contents

@@ -7,6 +7,13 @@ from datasets import load_dataset
 import random
 from tqdm import tqdm
 
+_KNOWN_DATASET_ALIASES: Dict[str, str] = {
+    "mmlu": "cais/mmlu"
+}
+def map_aliases(dataset):
+    if len(dataset.split(":"))==2:
+        dataset = f'{_KNOWN_DATASET_ALIASES.get(dataset.split(":")[0],dataset.split(":")[0])}:{dataset.split(":")[1]}'
+    return dataset
 @dataclass
 class RequestInstance():
     prompt: str
@@ -29,7 +36,11 @@ class ScenarioBuilder():
         self.number_of_instances = number_of_instances
     
     def retrieve_dataset(self):
-        dataset = load_dataset(*self.dataset.split(":"))
+        dataset_name  = map_aliases(self.dataset)
+        try:
+            dataset = load_dataset(*dataset_name.split(":"))
+        except:
+            raise ValueError("Huggingface raised an error, peraphs you didn't specify the subdataset?")
         return dataset
     
     def construct_request_instance(self):
