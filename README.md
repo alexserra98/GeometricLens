@@ -78,6 +78,9 @@ python inference.py --dataset your_dataset.csv
 
 (State the license under which your software is released.)
 
+## RoadMap
+
+- [ ] change storing logic (h5py)
 - [ ] add property
 - [ ] add linting
 - [ ] add annotations
