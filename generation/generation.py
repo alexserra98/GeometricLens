@@ -10,7 +10,7 @@ from inference_id.datasets.utils import *
 from inference_id.generation.utils import retry_on_failure
 from abc import ABC, abstractmethod
 from inference_id.generation.utils import *
-
+import pandas as pd
 @dataclass
 class RequestResult():
     loss: float
@@ -63,7 +63,7 @@ class Huggingface_client():
                         "pad_token_id":self.tokenizer.eos_token_id}
 
         tokens_answers = [self.encode(letter)[0] for letter in list(scenario.output_mapping.keys())]
-        #import pdb; pdb.set_trace()
+        
         requests_results = []
         for request_instance in tqdm(scenario.requests_instances, desc="Generating requests"):
             encoded_input = self.tokenizer(request_instance.prompt,return_tensors="pt", padding=True,return_token_type_ids=False).to(
@@ -77,10 +77,17 @@ class Huggingface_client():
             loss = torch.nn.functional.cross_entropy(request_result.logits,token_gold)
             Warning("Llama class return hidden states as a torch tensor while Auto class return it as a tuple of torch tensor")
             hidden_states = HiddenStatesHandler(request_result.hidden_states)
-            result = RequestResult(loss, request_result.logits,hidden_states.preprocess(request_instance,self.tokenizer), predictions,{"token":request_instance.token_gold,"letter":request_instance.letter_gold})
+            result = [scenario.dataset, scenario.train_instances, 
+                      scenario.model_name, loss, 
+                      request_result.logits, 
+                      hidden_states.preprocess(request_instance,self.tokenizer), 
+                      predictions,
+                      {"token":request_instance.token_gold,"letter":request_instance.letter_gold}]
             requests_results.append(result)
-            
-        return requests_results
+        return ScenarioResult(scenario.dataset, 
+                              scenario.train_instances, 
+                              scenario.model_name, 
+                              requests_results)
     
         
     def prediction(self, request_result: RequestResult, request_config: Dict, tokens_answers: List[int]):

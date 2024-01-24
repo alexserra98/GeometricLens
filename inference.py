@@ -1,16 +1,14 @@
 import os
 from pathlib import Path
-import pickle
 import argparse
 import logging
-from inference_id.dataset_util.utils import Scenario
+from inference_id.dataset_utils.utils import Scenario
 from inference_id.generation.generation import Huggingface_client, ScenarioResult
+import pickle
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s-%(message)s')
 
     
 working_path = Path(os.getcwd())
-#working_path = Path("/home/alexserra98/helm-suite/no-helm")
-#working_path = os.getcwd()
 
 #Getting commandline arguments
 parser = argparse.ArgumentParser()
@@ -40,7 +38,7 @@ for dataset in datasets[0]:
                      dataset, train_instances)
         #ADD DATASET FOLDER HERE
         scenario = Scenario(dataset, train_instances, model_name, 2500)
-        requests_results = client.make_request(scenario)
+        scenario_state = client.make_request(scenario)
         logging.info("Saving the results...")
         scratch_path = "/orfeo/scratch/dssc/zenocosini"
         if model_name != "gpt2":
@@ -50,9 +48,6 @@ for dataset in datasets[0]:
             result_path = Path(scratch_path, f'{dataset_folder}_result', 
                            model_name, dataset, train_instances)
         result_path.mkdir(parents=True, exist_ok=True)
-        scenario_state = ScenarioResult(dataset, train_instances, model_name,
-                                        requests_results)
-        with open(Path(result_path, "scenario_results.pkl"), "wb") as f:
+        with open(result_path / "scenario_state.pkl", "wb") as f:
             pickle.dump(scenario_state, f)
-
 

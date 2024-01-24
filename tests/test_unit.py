@@ -8,19 +8,21 @@ os.chdir(Path(__file__).resolve().parent.parent)
 
 
 import pickle
-from inference_id.datasets.utils import *
+from inference_id.dataset_utils.utils import *
 from inference_id.generation.generation import *
 from inference_id.metrics.metrics import *
 from inference_id.metrics.hidden_states import *
 #TODO change path so that it can be run from anywhere
 
 
+    
 def test_scenario():
-    scenario = Scenario("commonsenseqa",0,"gpt2",1000)
+    scenario_builder = ScenarioBuilder("cais/mmlu:all",0,"gpt2",1000)
+    scenario = scenario_builder.build()
     def correct_letter(letter):
         out = []
         for request in scenario.requests_instances:
-            condition = request.letter_gold in scenario.output_mapping.keys()    
+            condition = request.letter_gold in ["A","B","C","D","E"]    
             out.append(condition)
         return all(out)
     assert correct_letter(scenario.requests_instances[0].letter_gold)
@@ -38,8 +40,8 @@ def test_generation():
     assert request_result.hidden_states[0].shape == torch.Size([1, 63, 768]), "The hidden states shape is not correct"
     assert request_result.logits.shape == torch.Size([1, 63, 50257]), "The logits shape is not correct"
 
-    #print(f'{request_result}')
-    #return request_result
+    print(f'{request_result}')
+    return request_result
 
 def test_prediction():
     with open("tests/assets/unit/scenario.pkl", "rb") as f:
@@ -152,7 +154,7 @@ def test_chat_base_overlap():
     print(f'{overlaps}')
 
 if __name__ == "__main__":
-#     test_scenario()
+     test_scenario()
 #     test_generation()
 #     test_prediction()
 #     test_make_request()
@@ -160,7 +162,7 @@ if __name__ == "__main__":
 #     test_tokenizer()
 #     test_basic_metrics()
 #     test_intrinsic_dim()
-     test_letter_overlap()
-     test_subject_overlap()
+#     test_letter_overlap()
+#     test_subject_overlap()
 #     test_chat_base_overlap()
     
