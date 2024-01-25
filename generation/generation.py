@@ -6,11 +6,15 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, LlamaForCausalLM, 
 from typing import Any, Dict, List
 from helm.common.request import RequestResult
 from dataclasses import dataclass, field
-from inference_id.datasets.utils import *
+from inference_id.dataset_utils.utils import *
 from inference_id.generation.utils import retry_on_failure
 from abc import ABC, abstractmethod
 from inference_id.generation.utils import *
 import pandas as pd
+from inference_id.common.utils import _generate_hash
+from collections import namedtuple
+import inference_id.common.globals as g
+
 @dataclass
 class RequestResult():
     loss: float
@@ -35,7 +39,7 @@ class Huggingface_client():
         self.model_name = model_name
         model_kwargs = {}
         model_kwargs["output_hidden_states"] = True
-        if (cache_path:=Path("/orfeo/scratch/dssc/zenocosini/")).exists() :
+        if (cache_path:=Path(g._CACHE_DIR)).exists() :
             model_kwargs["cache_dir"]=cache_path
         if "llama" in model_name:
             model_kwargs["torch_dtype"]="auto"
@@ -62,9 +66,16 @@ class Huggingface_client():
                         "output_scores":True,
                         "pad_token_id":self.tokenizer.eos_token_id}
 
-        tokens_answers = [self.encode(letter)[0] for letter in list(scenario.output_mapping.keys())]
+        tokens_answers = [self.encode(letter)[0] for letter in scenario.output_mapping]
         
-        requests_results = []
+        DbRow = namedtuple("DbRow", ["id_hd", "id_logits", 
+                                     "dataset", "train_instances", 
+                                     "model_name", "loss", 
+                                     "std_pred", "only_ref_pred", 
+                                     "letter_gold", "method"])
+        hidden_states_rows = []
+        logits_rows = []
+        db_rows = []
         for request_instance in tqdm(scenario.requests_instances, desc="Generating requests"):
             encoded_input = self.tokenizer(request_instance.prompt,return_tensors="pt", padding=True,return_token_type_ids=False).to(
             self.device
@@ -77,17 +88,17 @@ class Huggingface_client():
             loss = torch.nn.functional.cross_entropy(request_result.logits,token_gold)
             Warning("Llama class return hidden states as a torch tensor while Auto class return it as a tuple of torch tensor")
             hidden_states = HiddenStatesHandler(request_result.hidden_states)
-            result = [scenario.dataset, scenario.train_instances, 
-                      scenario.model_name, loss, 
-                      request_result.logits, 
-                      hidden_states.preprocess(request_instance,self.tokenizer), 
-                      predictions,
-                      {"token":request_instance.token_gold,"letter":request_instance.letter_gold}]
-            requests_results.append(result)
-        return ScenarioResult(scenario.dataset, 
-                              scenario.train_instances, 
-                              scenario.model_name, 
-                              requests_results)
+            hidden_states_preprocess = hidden_states.preprocess(request_instance,self.tokenizer)
+            for method in ["last","sum"]:    
+                db_row = DbRow(_generate_hash(hidden_states_preprocess[method]), _generate_hash(request_result.logits.detach().cpu().numpy()), 
+                            scenario.dataset, scenario.train_instances,
+                            scenario.model_name, loss.item(),
+                            predictions["std_pred"]["letter"], predictions["only_ref_pred"]["letter"],
+                            request_instance.letter_gold,method)
+                db_rows.append(db_row)
+                hidden_states_rows.append(hidden_states_preprocess[method])
+           
+        return hidden_states_rows, logits_rows, db_rows
     
         
     def prediction(self, request_result: RequestResult, request_config: Dict, tokens_answers: List[int]):

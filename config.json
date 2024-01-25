@@ -1,0 +1,6 @@
+{
+    "dataset_folder": "prova",
+    "model_name": "gpt2",
+    "dataset": ["mmlu:all"],
+    "max_train_instances": [2]
+}
