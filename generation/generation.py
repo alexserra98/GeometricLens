@@ -1,7 +1,8 @@
 from pathlib import Path
 import torch
 from tqdm import tqdm
-
+from inference_id.common.tensor_storage import TensorStorage
+from inference_id.common.metadata_db import MetadataDB
 from transformers import AutoModelForCausalLM, AutoTokenizer, LlamaForCausalLM, LlamaTokenizer
 from typing import Any, Dict, List
 from helm.common.request import RequestResult
@@ -80,7 +81,11 @@ class Huggingface_client():
             encoded_input = self.tokenizer(request_instance.prompt,return_tensors="pt", padding=True,return_token_type_ids=False).to(
             self.device
             )
-            request_result=self.inference(encoded_input)
+            try:
+                request_result=self.inference(encoded_input)
+            except RuntimeError as e:
+                    e: str = f'Huggingface error: {e}'
+                    raise e
             request_result.logits = request_result.logits[:,-1].detach().cpu().to(torch.float32)
             predictions = self.prediction(request_result, request_config,tokens_answers)
             token_gold = torch.tensor(self.encode(request_instance.letter_gold)[0]).unsqueeze(0)

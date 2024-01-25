@@ -17,8 +17,11 @@ from inference_id.metrics.hidden_states import *
 
     
 def test_scenario():
-    scenario_builder = ScenarioBuilder("mmlu:all",0,"gpt2",1000)
+    scenario_builder = ScenarioBuilder("mmlu:all",0,"gpt2",100)
     scenario = scenario_builder.build()
+    with open("tests/assets/unit/scenario.pkl", "wb") as f:
+        pickle.dump(scenario,f)
+           
     def correct_letter(letter):
         out = []
         for request in scenario.requests_instances:
@@ -157,7 +160,7 @@ if __name__ == "__main__":
      test_scenario()
 #     test_generation()
 #     test_prediction()
-#     test_make_request()
+     test_make_request()
 #     test_prediction()
 #     test_tokenizer()
 #     test_basic_metrics()
