@@ -15,6 +15,12 @@ def map_aliases(dataset):
     if len(dataset.split(":"))==2:
         dataset = f'{_KNOWN_DATASET_ALIASES.get(dataset.split(":")[0],dataset.split(":")[0])}:{dataset.split(":")[1]}'
     return dataset
+def subject_retriever(dataset):
+    if len(dataset.split(":"))==2:
+        return dataset.split(":")[1]
+    else:
+        return dataset
+
 @dataclass
 class RequestInstance():
     prompt: str
@@ -64,7 +70,7 @@ class ScenarioBuilder():
         dataset["test"] = dataset["test"].select(range(self.number_of_instances)) \
                                   if self.number_of_instances != -1 else dataset["test"]
         for row in tqdm(dataset["test"], desc="Constructing Prompts"):
-            prompt = f'The following are multiple choice questions (with answers) about {row["subject"]}.\n\n'
+            prompt = f'The following are multiple choice questions (with answers) about {subject_retriever(self.dataset)}.\n\n'
             for i in range(self.train_instances):
                 random_row = random.choice(dataset["dev"])
                 prompt += construct_question(random_row,shot=True)
