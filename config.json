@@ -1,6 +1,6 @@
 {
     "dataset_folder": "prova",
     "model_name": "gpt2",
-    "dataset": ["mmlu:all"],
+    "dataset": ["mmlu:high_school_microeconomics" ],
     "max_train_instances": [2]
 }

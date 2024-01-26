@@ -37,6 +37,8 @@ dataset_folder = args.dataset_folder
 model_name = args.model_name
 datasets = args.dataset
 max_train_instances = args.max_train_instances
+print(f'{datasets=}')
+
 
 # Getting the dataset
 # find files inside datasets that contain the name of the dataset
@@ -50,6 +52,11 @@ hidden_states_rows = []
 logits_rows = []
 db_rows = []
 
+result_path = Path(g._OUTPUT_DIR, f'{dataset_folder}_result')
+result_path.mkdir(parents=True, exist_ok=True)
+metadata_db = MetadataDB(Path(result_path,'metadata.db'))
+tensor_storage = TensorStorage(Path(result_path,'tensor_files'))
+
 for dataset in datasets:
     print(dataset)
     for train_instances in max_train_instances:
@@ -62,14 +69,11 @@ for dataset in datasets:
         hidden_states_rows.extend(hidden_states_rows_i)
         logits_rows.extend(logits_rows_i)
         db_rows.extend(db_rows_i)
-logging.info("Saving the results...")
+    logging.info("Saving run results..")
+    metadata_db.add_metadata(db_rows)
+    tensor_storage.save_tensors(hidden_states_rows,"hidden_states")
+    tensor_storage.save_tensors(logits_rows,"logits")
 
-result_path = Path(g._OUTPUT_DIR, f'{dataset_folder}_result')
-result_path.mkdir(parents=True, exist_ok=True)
-metadata_db = MetadataDB(Path(result_path,'metadata.db'))
-tensor_storage = TensorStorage(Path(result_path,'tensor_files'))
-metadata_db.add_metadata(db_rows)
-tensor_storage.save_tensors(hidden_states_rows,"hidden_states")
-tensor_storage.save_tensors(logits_rows,"logits")
+logging.info("Closing...")
 
 metadata_db.close()

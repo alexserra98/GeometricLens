@@ -14,10 +14,16 @@ class TensorStorage:
 
     def save_tensors(self, tensors, file_name):
         file_path = os.path.join(self.storage_dir, file_name + '.h5')
-        with h5py.File(file_path, 'w') as h5f:
+        mode = 'a' if os.path.exists(file_path) else 'w'
+        with h5py.File(file_path, mode) as h5f:
+            existing_datasets = set(h5f.keys())
             for tensor in tensors:
                 hash_code = _generate_hash(tensor)
-                h5f.create_dataset(f'tensor_{hash_code}', data=tensor)
+                dataset_name = f'tensor_{hash_code}'
+                if dataset_name not in existing_datasets:
+                    h5f.create_dataset(dataset_name, data=tensor)
+                
+
 
     def load_tensors(self, file_name, key_user=None):
         file_path = os.path.join(self.storage_dir, file_name + '.h5')
