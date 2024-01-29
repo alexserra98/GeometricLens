@@ -12,7 +12,7 @@ from MCQA_Benchmark.generation.utils import retry_on_failure
 from abc import ABC, abstractmethod
 from MCQA_Benchmark.generation.utils import *
 import pandas as pd
-from MCQA_Benchmark.common.utils import _generate_hash
+from MCQA_Benchmark.common.utils import _generate_hash, retry_on_failure
 from collections import namedtuple
 import MCQA_Benchmark.common.globals as g
 

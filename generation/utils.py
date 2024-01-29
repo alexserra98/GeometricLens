@@ -4,23 +4,6 @@ from einops import reduce
 import time
 from dataclasses import dataclass, field
             
-def retry_on_failure(max_retries, delay=1):
-    def decorator(func):
-        def wrapper(*args, **kwargs):
-            for _ in range(max_retries):
-                try:
-                    result = func(*args, **kwargs)
-                    return result
-                except Exception as e:
-                    print(f"Error occurred: {e}. Retrying...")
-                    time.sleep(delay)
-                    delay *= 1.5
-            raise Exception("Maximum retries exceeded. Function failed.")
-        return wrapper
-    return decorator
-
-
-
 def hidden_states_preprocess(hidden_states,len_tokens_question):
     hs = torch.stack(hidden_states)[:,0,-len_tokens_question:,:].clone().detach().cpu().numpy()
     return {"last": hs[:,-1],"sum":reduce(hs[:,-len_tokens_question:], "l s d -> l d", "mean")}
