@@ -17,18 +17,16 @@ def create_bash_script(script_name, arguments, config_path):
         script_file.write(f'#SBATCH --time={arguments.time}\n')
         script_file.write(f'#SBATCH --job-name={arguments.job_name}\n')
         script_file.write(f'#SBATCH --output=output_job/{arguments.output}_job_%j.out\n')
-        script_file.write(f'cd /u/dssc/zenocosini/helm_suite/inference_id\n \
-                            module load cuda/11.8\n \
-                            eval "$(conda shell.bash hook)"\n \
-                            conda activate crfm-helm\n \
-                            export PYTHONPATH=/u/dssc/zenocosini/helm_suite/\n \
-                            export CUDA_VISIBLE_DEVICES=0,1,2,3\n \
-                            ')
-        
-        if arguments.type == 'inference':
-            script_file.write(f'python inference.py --conf-path {config_path}')
-        elif arguments.type == 'metrics':
-            script_file.write(f'python metrics/metrics_computer.py --conf-path {config_path}')
+        script_file.write(f'cd /u/dssc/zenocosini/helm_suite/inference_id\n') 
+        script_file.write(f'module load cuda/11.8\n')
+        script_file.write(f'eval "$(conda shell.bash hook)"\n')
+        script_file.write(f'conda activate crfm-helm\n')
+        script_file.write(f'export PYTHONPATH=/u/dssc/zenocosini/helm_suite/\n')
+        script_file.write(f'export CUDA_VISIBLE_DEVICES=0,1,2,3\n') 
+        if arguments.job_type == 'inference':
+            script_file.write(f'python inference.py --conf-path {config_path}\n')
+        elif arguments.job_type == 'metrics':
+            script_file.write(f'python metrics/metrics_computer.py --conf-path {config_path}\n')
 
         # Example command to run
         script_file.write(f'echo "Running job: {arguments.job_name}"\n')
@@ -45,7 +43,7 @@ def main():
     job_type = args.job_type
     config_path = args.config_path 
     
-    SbatchArgs = namedtuple('SbatchArgs', [ 'type'
+    SbatchArgs = namedtuple('SbatchArgs', [ 'job_type',
                                         'partition', 
                                         'nodes', 
                                         'ntasks_per_node', 
@@ -57,7 +55,7 @@ def main():
     
     
     if job_type == 'inference':
-        sbatch_args = SbatchArgs(type='inference',
+        sbatch_args = SbatchArgs(job_type='inference',
                                  partition='DGX',
                                  nodes=1,
                                  ntasks_per_node=1,
@@ -67,7 +65,7 @@ def main():
                                  job_name='inference',
                                  output='inference')
     elif job_type == 'metrics':
-        sbatch_args = SbatchArgs(type='metrics',
+        sbatch_args = SbatchArgs(job_type='metrics',
                                  partition='THIN',
                                  nodes=1,
                                  ntasks_per_node=1,

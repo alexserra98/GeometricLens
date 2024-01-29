@@ -9,7 +9,7 @@ from tqdm import tqdm
 import string
 
 _KNOWN_DATASET_ALIASES: Dict[str, str] = {
-    "mmlu": "cais/mmlu"
+    "mmlu": "Stevross/mmlu"
 }
 def map_aliases(dataset):
     if len(dataset.split(":"))==2:
@@ -67,9 +67,9 @@ class ScenarioBuilder():
                 prompt += f'{output_mapping[n]}. {choice}\n'
             prompt += f'Answer: {output_mapping[row["answer"]]}\n\n' if shot else  f'Answer:' 
             return prompt 
-        dataset["test"] = dataset["test"].select(range(self.number_of_instances)) \
+        dataset_test = dataset["test"].select(range(self.number_of_instances)) \
                                   if self.number_of_instances != -1 else dataset["test"]
-        for row in tqdm(dataset["test"], desc="Constructing Prompts"):
+        for row in tqdm(dataset_test, desc="Constructing Prompts"):
             prompt = f'The following are multiple choice questions (with answers) about {subject_retriever(self.dataset)}.\n\n'
             for i in range(self.train_instances):
                 random_row = random.choice(dataset["dev"])

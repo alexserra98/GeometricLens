@@ -63,7 +63,7 @@ for dataset in datasets:
         logging.info("Starting inference on %s with %s train instances...",
                      dataset, train_instances)
         #ADD DATASET FOLDER HERE
-        scenario_builder = ScenarioBuilder(dataset,train_instances,model_name,100)
+        scenario_builder = ScenarioBuilder(dataset,train_instances,model_name,-1)
         scenario = scenario_builder.build()
         hidden_states_rows_i, logits_rows_i, db_rows_i = client.make_request(scenario)
         hidden_states_rows.extend(hidden_states_rows_i)
