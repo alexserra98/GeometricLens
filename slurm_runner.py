@@ -56,11 +56,11 @@ def main():
     
     if job_type == 'inference':
         sbatch_args = SbatchArgs(job_type='inference',
-                                 partition='DGX',
+                                 partition='GPU',
                                  nodes=1,
                                  ntasks_per_node=1,
                                  cpus_per_task=1,
-                                 mem='600G',
+                                 mem='200G',
                                  time='08:00:00',
                                  job_name='inference',
                                  output='inference')
