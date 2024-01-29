@@ -1,20 +1,20 @@
 from pathlib import Path
 import torch
 from tqdm import tqdm
-from inference_id.common.tensor_storage import TensorStorage
-from inference_id.common.metadata_db import MetadataDB
+from MCQA_Benchmark.common.tensor_storage import TensorStorage
+from MCQA_Benchmark.common.metadata_db import MetadataDB
 from transformers import AutoModelForCausalLM, AutoTokenizer, LlamaForCausalLM, LlamaTokenizer
 from typing import Any, Dict, List
 from helm.common.request import RequestResult
 from dataclasses import dataclass, field
-from inference_id.dataset_utils.utils import *
-from inference_id.generation.utils import retry_on_failure
+from MCQA_Benchmark.dataset_utils.utils import *
+from MCQA_Benchmark.generation.utils import retry_on_failure
 from abc import ABC, abstractmethod
-from inference_id.generation.utils import *
+from MCQA_Benchmark.generation.utils import *
 import pandas as pd
-from inference_id.common.utils import _generate_hash
+from MCQA_Benchmark.common.utils import _generate_hash
 from collections import namedtuple
-import inference_id.common.globals as g
+import MCQA_Benchmark.common.globals as g
 
 @dataclass
 class RequestResult():

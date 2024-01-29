@@ -7,7 +7,7 @@ from typing import List, Dict, Tuple, Optional,  Type
 from .utils import  Match, Layer, neig_overlap, exact_match, quasi_exact_match, layer_overlap, hidden_states_collapse
 
 import tqdm
-from inference_id.generation.generation import  ScenarioResult
+from MCQA_Benchmark.generation.generation import  ScenarioResult
 import pandas as pd
 
 from dataclasses import asdict

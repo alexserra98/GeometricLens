@@ -3,7 +3,7 @@ import os
 #append to Pyhton path the path to the parent directory
 sys.path.append("/home/alexserra98/helm-suite")
 
-from inference_id.metrics.metrics import *
+from MCQA_Benchmark.metrics.metrics import *
 
 import pickle
 import logging

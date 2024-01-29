@@ -1,4 +1,4 @@
-from inference_id.metrics.metrics import *
+from MCQA_Benchmark.metrics.metrics import *
 import os
 import pickle
 import logging

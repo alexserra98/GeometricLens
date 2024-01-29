@@ -2,12 +2,12 @@ import os
 from pathlib import Path
 import argparse
 import logging
-from inference_id.dataset_utils.utils import ScenarioBuilder
-from inference_id.generation.generation import Huggingface_client
-from inference_id.common.metadata_db import MetadataDB
-from inference_id.common.tensor_storage import TensorStorage
-import inference_id.common.globals as g
-from inference_id.common.utils import *
+from MCQA_Benchmark.dataset_utils.utils import ScenarioBuilder
+from MCQA_Benchmark.generation.generation import Huggingface_client
+from MCQA_Benchmark.common.metadata_db import MetadataDB
+from MCQA_Benchmark.common.tensor_storage import TensorStorage
+import MCQA_Benchmark.common.globals as g
+from MCQA_Benchmark.common.utils import *
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s-%(message)s')
 

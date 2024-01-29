@@ -8,10 +8,10 @@ os.chdir(Path(__file__).resolve().parent.parent)
 
 
 import pickle
-from inference_id.dataset_utils.utils import *
-from inference_id.generation.generation import *
-from inference_id.metrics.metrics import *
-from inference_id.metrics.hidden_states import *
+from MCQA_Benchmark.dataset_utils.utils import *
+from MCQA_Benchmark.generation.generation import *
+from MCQA_Benchmark.metrics.metrics import *
+from MCQA_Benchmark.metrics.hidden_states import *
 #TODO change path so that it can be run from anywhere
 
 

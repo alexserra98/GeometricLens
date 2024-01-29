@@ -2,7 +2,7 @@ import torch
 import dadapy
 import numpy
 import sklearn
-from inference_id.metrics.metrics import Geometry, RunGeometry
+from MCQA_Benchmark.metrics.metrics import Geometry, RunGeometry
 import os
 import pickle
 import logging
