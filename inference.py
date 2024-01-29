@@ -8,6 +8,8 @@ from MCQA_Benchmark.common.metadata_db import MetadataDB
 from MCQA_Benchmark.common.tensor_storage import TensorStorage
 import MCQA_Benchmark.common.globals as g
 from MCQA_Benchmark.common.utils import *
+from safetensors.torch import save_file
+import torch
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s-%(message)s')
 
@@ -37,6 +39,7 @@ dataset_folder = args.dataset_folder
 model_name = args.model_name
 datasets = args.dataset
 max_train_instances = args.max_train_instances
+device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f'{datasets=}')
 
 
@@ -71,9 +74,11 @@ for dataset in datasets:
         db_rows.extend(db_rows_i)
     logging.info("Saving run results..")
     metadata_db.add_metadata(db_rows)
-    tensor_storage.save_tensors(hidden_states_rows,"hidden_states")
-    tensor_storage.save_tensors(logits_rows,"logits")
-
+    dataset_path = Path(result_path,dataset)
+    dataset_path.mkdir(parents=True, exist_ok=True)
+    save_file(hidden_states_rows,Path(dataset_path,'hidden_states.safetensors'), device=device)
+    save_file(logits_rows,Path(dataset_path,'logits.safetensors'), device=device)
+    
 logging.info("Closing...")
 
 metadata_db.close()

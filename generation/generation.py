@@ -74,8 +74,8 @@ class Huggingface_client():
                                      "model_name", "loss", 
                                      "std_pred", "only_ref_pred", 
                                      "letter_gold", "method"])
-        hidden_states_rows = []
-        logits_rows = []
+        hidden_states_rows = {}
+        logits_rows = {}
         db_rows = []
         for request_instance in tqdm(scenario.requests_instances, desc="Generating requests"):
             encoded_input = self.tokenizer(request_instance.prompt,return_tensors="pt", padding=True,return_token_type_ids=False).to(
@@ -94,14 +94,17 @@ class Huggingface_client():
             Warning("Llama class return hidden states as a torch tensor while Auto class return it as a tuple of torch tensor")
             hidden_states = HiddenStatesHandler(request_result.hidden_states)
             hidden_states_preprocess = hidden_states.preprocess(request_instance,self.tokenizer)
-            for method in ["last","sum"]:    
-                db_row = DbRow(_generate_hash(hidden_states_preprocess[method]), _generate_hash(request_result.logits.detach().cpu().numpy()), 
+            for method in ["last","sum"]:
+                hd_hash = _generate_hash(hidden_states_preprocess[method])
+                logits_hash = _generate_hash(request_result.logits.detach().cpu().numpy())    
+                db_row = DbRow(hd_hash, logits_hash, 
                             scenario.dataset, scenario.train_instances,
                             scenario.model_name, loss.item(),
                             predictions["std_pred"]["letter"], predictions["only_ref_pred"]["letter"],
                             request_instance.letter_gold,method)
                 db_rows.append(db_row)
-                hidden_states_rows.append(hidden_states_preprocess[method])
+                hidden_states_rows[hd_hash] = hidden_states_preprocess[method]
+                logits_rows[logits_hash] = request_result.logits.detach().cpu().numpy()
            
         return hidden_states_rows, logits_rows, db_rows
     
