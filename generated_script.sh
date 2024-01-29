@@ -1,11 +1,11 @@
 #!/bin/bash
-#SBATCH --partition=DGX
+#SBATCH --partition=GPU
 #SBATCH --account=LADE
 #SBATCH --nodes=1
 #SBATCH --exclusive
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=600G
+#SBATCH --mem=200G
 #SBATCH --time=08:00:00
 #SBATCH --job-name=inference
 #SBATCH --output=output_job/inference_job_%j.out

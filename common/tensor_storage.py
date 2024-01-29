@@ -1,8 +1,9 @@
 import torch
 import h5py
 import os
-from .utils import _generate_hash
+from .utils import _generate_hash, retry_on_failure
 import numpy as np
+
 
 class TensorStorage:
     def __init__(self, storage_dir):
@@ -10,7 +11,9 @@ class TensorStorage:
         if not os.path.exists(storage_dir):
             os.makedirs(storage_dir)
 
-
+    @retry_on_failure(3)
+    def create_dataset(h5f, dataset_name, tensors):
+        h5f.create_dataset(dataset_name, data=tensor)
 
     def save_tensors(self, tensors, file_name):
         file_path = os.path.join(self.storage_dir, file_name + '.h5')
@@ -21,7 +24,7 @@ class TensorStorage:
                 hash_code = _generate_hash(tensor)
                 dataset_name = f'tensor_{hash_code}'
                 if dataset_name not in existing_datasets:
-                    h5f.create_dataset(dataset_name, data=tensor)
+                    create_dataset(h5f,dataset_name, tensors)
                 
 
 

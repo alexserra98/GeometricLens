@@ -5,10 +5,8 @@ from MCQA_Benchmark.common.tensor_storage import TensorStorage
 from MCQA_Benchmark.common.metadata_db import MetadataDB
 from transformers import AutoModelForCausalLM, AutoTokenizer, LlamaForCausalLM, LlamaTokenizer
 from typing import Any, Dict, List
-from helm.common.request import RequestResult
 from dataclasses import dataclass, field
 from MCQA_Benchmark.dataset_utils.utils import *
-from MCQA_Benchmark.generation.utils import retry_on_failure
 from abc import ABC, abstractmethod
 from MCQA_Benchmark.generation.utils import *
 import pandas as pd
