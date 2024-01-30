@@ -1,18 +1,18 @@
 from pathlib import Path
 import torch
 from tqdm import tqdm
-from MCQA_Benchmark.common.tensor_storage import TensorStorage
-from MCQA_Benchmark.common.metadata_db import MetadataDB
+from common.tensor_storage import TensorStorage
+from common.metadata_db import MetadataDB
 from transformers import AutoModelForCausalLM, AutoTokenizer, LlamaForCausalLM, LlamaTokenizer
 from typing import Any, Dict, List
 from dataclasses import dataclass, field
-from MCQA_Benchmark.dataset_utils.utils import *
+from dataset_utils.utils import *
 from abc import ABC, abstractmethod
-from MCQA_Benchmark.generation.utils import *
+from generation.utils import *
 import pandas as pd
-from MCQA_Benchmark.common.utils import _generate_hash, retry_on_failure
+from common.utils import _generate_hash, retry_on_failure
 from collections import namedtuple
-import MCQA_Benchmark.common.globals as g
+import common.globals as g
 
 @dataclass
 class RequestResult():

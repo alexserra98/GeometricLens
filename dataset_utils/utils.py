@@ -58,7 +58,7 @@ class ScenarioBuilder():
         """
         dataset = self.retrieve_dataset()
         output_mapping = [letter 
-                          for letter in string.ascii_uppercase[:len(dataset["test"]["choices"])]]
+                          for letter in string.ascii_uppercase[:len(dataset["test"][0]["choices"])]]
         
         ri = []
         def construct_question(row,shot=False):

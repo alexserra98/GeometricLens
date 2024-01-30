@@ -7,9 +7,11 @@ from typing import List, Dict, Tuple, Optional,  Type
 from .utils import  Match, Layer, neig_overlap, exact_match, quasi_exact_match, layer_overlap, hidden_states_collapse
 
 import tqdm
-from MCQA_Benchmark.generation.generation import  ScenarioResult
+from generation.generation import  ScenarioResult
 import pandas as pd
+from collections import namedtuple
 
+from common.metadata_db import MetadataDB
 from dataclasses import asdict
 from dadapy.data import Data
 from dadapy.metric_comparisons import MetricComparisons
@@ -19,10 +21,14 @@ from enum import Enum
 from abc import ABC, abstractmethod
 
 from warnings import warn
+from .query import DataFrameQuery
+from pathlib import Path
 
 #Define a type hint 
 Array = Type[np.ndarray]
 Tensor = Type[torch.Tensor]
+
+
 
 class Match(Enum):
     CORRECT = "correct"
@@ -40,8 +46,25 @@ class InstanceResult():
   metrics: Dict[str, Dict[str, float]]
   label_nn: Optional[Dict[str, Dict[str, np.ndarray]]] = None
   
-  
-class ShotMetrics():
+
+class Metrics():
+    def __init__(self, db: MetadataDB, query: DataFrameQuery, path_result: Path) -> None:
+      self.db = db
+      self.query = query
+      self.df = self.set_dataframes()
+      self.path_result = path_result
+    
+    @abstractmethod
+    def set_dataframes(self) -> pd.DataFrame:
+      """
+      Aggregate in a dataframe the hidden states of all instances
+      ----------
+      hidden_states: pd.DataFrame(num_instances, num_layers, model_dim)
+      """
+      pass
+    def evaluate(self) -> InstanceResult:
+      pass
+class ShotMetrics(Metrics):
   """
   Class to compute the metrics of a run. It takes a list of request results computed by generate.py
   and compute the per instance metrics 
@@ -110,14 +133,16 @@ class ShotMetrics():
     return output_dict  
 
 
-#TODO There's some code repetion between set_dataframe classes. Refactor it!
+
 class Overlap(ABC):
   """
   Abstract Class for compute different kinds of overlap 
   """  
-  def __init__(self, scenario_results: List[ScenarioResult]) -> None:
-    self.scenario_results = scenario_results
-    self.hidden_states = self.set_dataframes()
+  def __init__(self, db: MetadataDB, query: DataFrameQuery, path_result: Path) -> None:
+    self.db = db
+    self.query = query
+    self.df = self.set_dataframes()
+    self.path_result = path_result
   
   @abstractmethod
   def set_dataframes(self) -> pd.DataFrame:
@@ -133,15 +158,23 @@ class Overlap(ABC):
     pass
   
 class LabelOverlap(Overlap):
-  def __init__(self, scenario_results: List[ScenarioResult]) -> None:
+  def set_dataframes(self) -> pd.DataFrame:
     """
-    Compute overlap between MMLU subjects
+    Aggregate in a dataframe the hidden states of all instances
+    ----------
+    hidden_states: pd.DataFrame(num_instances, num_layers, model_dim)
     """
-    self.scenario_results = scenario_results
-    self.hidden_states = self.set_dataframes()
-
+    df = pd.read_sql("SELECT * FROM metadata", self.db.conn)
+    columns = ['id_instance', 
+               'dataset', 
+               'train_instances', 
+               'model_name',
+               'only_ref_pred', 
+               'method']
+    df = df[columns]  # Keep only the columns in the list "columns"
+    return df
   def _compute_overlap(self, label) -> Dict[str, Dict[str, np.ndarray]]:
-    hidden_states = HiddenStates(self.hidden_states)
+    hidden_states = HiddenStates(self.df, self.path_result)
     return hidden_states.layer_overlap_label(label)
 
 class SubjectOverlap(LabelOverlap):
@@ -152,45 +185,23 @@ class SubjectOverlap(LabelOverlap):
     ----------
     hidden_states: pd.DataFrame(num_instances, num_layers, model_dim)
     """
-    hidden_states_dict = {"hidden_states": [],"layer": [], "subject":[], "model":[], "train_instances":[]}
-    for scenario_result in self.scenario_results:
-      for request_result in scenario_result.requests_results:
-        for layer in ["last","sum"]:
-          hidden_states_dict["hidden_states"].append(request_result.hidden_states[layer])
-          hidden_states_dict["layer"].append(layer)
-          hidden_states_dict["subject"].append(scenario_result.dataset)
-          hidden_states_dict["model"].append(scenario_result.model_name)
-          hidden_states_dict["train_instances"].append(scenario_result.train_instances)
-    hidden_states = pd.DataFrame(hidden_states_dict)
-    return  hidden_states
+    df = super().set_dataframes()
+    df = self.query.apply_query(df)
+    df = df.rename(columns={'dataset': 'subject'})
+    df["train_instances"] = df["train_instances"].astype(str)
+    return df 
   
-  #def compute_overlap(self) -> Dict[str, Dict[str, np.ndarray]]:
-  #  hidden_states = HiddenStates(self.hidden_states)
-  #  return hidden_states.layer_overlap_subject()
   def compute_overlap(self) -> Dict[str, Dict[str, np.ndarray]]:
     return self._compute_overlap("subject")
 
 
   
 class LetterOverlap(LabelOverlap):
-  def set_dataframes(self) -> pd.DataFrame:
-    """
-    Aggregate in a dataframe the hidden states of all instances
-    ----------
-    hidden_states: pd.DataFrame(num_instances, num_layers, model_dim)
-    """
-    hidden_states_dict = {"hidden_states": [],"layer": [], "letter":[], "model":[], "dataset":[],"train_instances":[]}
-    for scenario_result in self.scenario_results:
-      for request_result in scenario_result.requests_results:
-        for layer in ["last","sum"]:
-          hidden_states_dict["hidden_states"].append(request_result.hidden_states[layer])
-          hidden_states_dict["layer"].append(layer)
-          hidden_states_dict["letter"].append(request_result.preds['only_ref_pred']['letter'])
-          hidden_states_dict["model"].append(scenario_result.model_name)
-          hidden_states_dict["dataset"].append(scenario_result.dataset)
-          hidden_states_dict["train_instances"].append(scenario_result.train_instances)
-    hidden_states = pd.DataFrame(hidden_states_dict)
-    return  hidden_states 
+  def set_dataframes(self) -> DataFrame:
+    df= super().set_dataframes()
+    df = self.query.apply_query(df)
+    df["train_instances"] = df["train_instances"].astype(str)
+    return df 
   
   def compute_overlap(self) -> Dict[str, Dict[str, np.ndarray]]:
     return self._compute_overlap("letter")
@@ -202,24 +213,14 @@ class BaseFinetuneOverlap(Overlap):
     ----------
     hidden_states: pd.DataFrame(num_instances, num_layers, model_dim)
     """
-    hidden_states_dict = {"hidden_states": [],"layer": [], "model":[], "dataset":[],"train_instances":[]}
+    df= super().set_dataframes()
+    df = self.query.apply_query(df)
+    df["train_instances"] = df["train_instances"].astype(str)
+    return df
 
-    #import pdb; pdb.set_trace()
-    for scenario_result in self.scenario_results:
-      for request_result in scenario_result.requests_results:
-        for layer in ["last","sum"]:
-          hidden_states_dict["hidden_states"].append(request_result.hidden_states[layer])
-          hidden_states_dict["layer"].append(layer)
-          hidden_states_dict["model"].append(scenario_result.model_name)
-          hidden_states_dict["dataset"].append(scenario_result.dataset)
-          hidden_states_dict["train_instances"].append(scenario_result.train_instances)
-          
-    hidden_states = pd.DataFrame(hidden_states_dict)
-    return  hidden_states
 
   def compute_overlap(self) -> Dict[str, Dict[str, np.ndarray]]:
-    hidden_states = HiddenStates(self.hidden_states)
-    #import pdb; pdb.syyet_trace()
+    hidden_states = HiddenStates(self.df, self.path_result)
     return hidden_states.layer_point_overlap()
   
 

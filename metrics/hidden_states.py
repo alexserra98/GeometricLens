@@ -13,6 +13,9 @@ from dataclasses import asdict
 from dadapy.data import Data
 from dadapy.metric_comparisons import MetricComparisons
 from warnings import warn
+from metrics.query import DataFrameQuery
+from pathlib  import Path
+from common.tensor_storage import TensorStorage
 
 def compute_id(hidden_states: np.ndarray ,query: Dict,  algorithm = "2nn") -> np.ndarray:
     """
@@ -46,7 +49,7 @@ def compute_id(hidden_states: np.ndarray ,query: Dict,  algorithm = "2nn") -> np
         #print(f"layer {i} with {id_per_layer[-1].shape}")
     return  np.stack(id_per_layer[1:])
 
-def hidden_states_collapse(df_hiddenstates: pd.DataFrame(), query: Dict)-> np.ndarray:
+def hidden_states_collapse(df_hiddenstates: pd.DataFrame(), query: DataFrameQuery, tensor_storage: TensorStorage)-> np.ndarray:
     """
     Collect hidden states of all instances and collapse them in one tensor
     using the provided method
@@ -61,26 +64,21 @@ def hidden_states_collapse(df_hiddenstates: pd.DataFrame(), query: Dict)-> np.nd
     (num_instances, num_layers, model_dim)
     """ 
 
-    for condition in query.keys():
-        if condition == "match" and query[condition] == Match.ALL.value:
-            continue
-        elif condition== "balanced":
-            label = query[condition]
-            df_hiddenstates = class_imbalance(df_hiddenstates, label)
-        else:
-          df_hiddenstates = df_hiddenstates[df_hiddenstates[condition] == query[condition]]
-    hidden_states = df_hiddenstates["hidden_states"].tolist()
+    df_hiddenstates = query.apply_query(df_hiddenstates)
+    hidden_states = tensor_storage.load_tensors("hidden_states", df_hiddenstates["id_instance"].tolist())
     return np.stack(hidden_states), df_hiddenstates
 
 
 
 class HiddenStates():
-  def __init__(self,hidden_states):
-    self.hidden_states = hidden_states
+  def __init__(self,hidden_states: pd.DataFrame(), hidden_states_path: Path):
+    self.df = hidden_states
+    self.tesnsor_storage = TensorStorage(hidden_states_path) 
+    
   
   #TODO use a decorator
   def preprocess_hiddenstates(self,func, query, *args, **kwargs):
-    hidden_states_collapsed,_ = hidden_states_collapse(self.hidden_states, query)
+    hidden_states_collapsed,_ = hidden_states_collapse(self.df, query)
 
     return func(hidden_states_collapsed, *args, **kwargs)
 
@@ -93,7 +91,7 @@ class HiddenStates():
     Dict[str, np.array(num_layers)]
     """
     id = {match.value: 
-            {layer.value: compute_id(self.hidden_states,{"match":match.value,"layer":layer.value}, "gride") 
+            {layer.value: compute_id(self.df,{"match":match.value,"layer":layer.value}, "gride") 
             for layer in [Layer.LAST, Layer.SUM]} 
             for match in [Match.CORRECT, Match.WRONG, Match.ALL]}
     return id
@@ -128,24 +126,20 @@ class HiddenStates():
     Dict[str, np.array(num_layers, num_instances, k_neighbours)]
     """
     nn = {match.value: 
-            {layer.value: self.nearest_neighbour(self.hidden_states,{"match":match.value,"layer":layer.value}, k) 
+            {layer.value: self.nearest_neighbour(self.df,{"match":match.value,"layer":layer.value}, k) 
             for layer in [Layer.LAST, Layer.SUM]} 
             for match in [Match.CORRECT, Match.WRONG, Match.ALL]}
     return nn
   
-  def labelize_nearest_neighbour(self, neigh_matrix_list: np.ndarray, subject_per_row: pd.Series) -> np.ndarray:
-    def substitute_with_list(matrix, subject_per_row):
-      vectorized_get = np.vectorize(lambda k: subject_per_row.iloc[k])
-      return vectorized_get(matrix)
 
-    # Apply the function to each matrix
-    substituted_matrices = substitute_with_list(neigh_matrix_list, subject_per_row)
-    return np.stack(substituted_matrices)
+
+
   
   def label_overlap(self, hidden_states, labels, k) -> Dict[str, List[np.ndarray]]:
     overlaps = []
     for num_layer in range(hidden_states.shape[1]):
-      mc = MetricComparisons(hidden_states[:,num_layer,:])
+      mc = Data(hidden_states[:,num_layer,:])
+      mc.compute_distances()
       overlap = mc.return_label_overlap(labels, k)
       overlaps.append(overlap)
     return np.stack(overlaps)
@@ -161,14 +155,15 @@ class HiddenStates():
     iter_list=[5,10,20,50]
     rows = []
     for k in tqdm.tqdm(iter_list, desc = "Computing overlap"):
-      for model in self.hidden_states["model"].unique().tolist():
-          for method in self.hidden_states["layer"].unique().tolist():
-            for train_instances in self.hidden_states["train_instances"].unique().tolist():
-              hidden_states, hidden_states_df= hidden_states_collapse(self.hidden_states,{"match":Match.ALL.value, 
-                                                                                          "layer":method,
-                                                                                          "model":model,
-                                                                                          "train_instances": train_instances, 
-                                                                                          "balanced":label})
+      for model in self.df["model_name"].unique().tolist():
+          for method in self.df["method"].unique().tolist():
+            for train_instances in self.df["train_instances"].unique().tolist():
+              query = DataFrameQuery({"match":Match.ALL.value, 
+                                      "method":method,
+                                      "model_name":model,
+                                      "train_instances": train_instances}, 
+                                      {"balanced":label})
+              hidden_states, hidden_states_df= hidden_states_collapse(self.df,query, self.tesnsor_storage)
               assert hidden_states_df[label].value_counts().nunique() == 1, "There must be the same number of instances for each label - Class imbalance not supported"
               label_per_row = hidden_states_df[label].reset_index(drop=True)
               overlap = self.label_overlap(hidden_states, label_per_row, k) 
@@ -176,6 +171,8 @@ class HiddenStates():
                   
     df = pd.DataFrame(rows, columns = ["k","model","method","train_instances","overlap"])
     return df
+  
+  
   #HORRIBLE CODE REPETITION overlap will become a class itself
   def layer_overlap_subject(self) -> Dict[str, List[np.ndarray]]:
     """
@@ -194,11 +191,11 @@ class HiddenStates():
     iter_list[0]=2
     rows = []
     for k in tqdm.tqdm(iter_list, desc = "Computing overlap"):
-      for model in self.hidden_states["model"].unique().tolist():
-        for method in self.hidden_states["layer"].unique().tolist():
-          for train_instances in self.hidden_states["train_instances"].unique().tolist():
+      for model in self.df["model"].unique().tolist():
+        for method in self.df["layer"].unique().tolist():
+          for train_instances in self.df["train_instances"].unique().tolist():
             
-            hidden_states, hidden_states_df= hidden_states_collapse(self.hidden_states,{"match":Match.ALL.value, 
+            hidden_states, hidden_states_df= hidden_states_collapse(self.df,{"match":Match.ALL.value, 
                                                                                         "layer":method,
                                                                                         "model":model,
                                                                                         "train_instances": train_instances, 
@@ -274,18 +271,18 @@ class HiddenStates():
     iter_list = [5,10,30,100]
     rows = []
     for k in tqdm.tqdm(iter_list, desc = "Computing overlaps k"):
-      for couples in tqdm.tqdm(self.pair_names(self.hidden_states["model"].unique().tolist()), desc = "Computing overlap"):
+      for couples in tqdm.tqdm(self.pair_names(self.df["model"].unique().tolist()), desc = "Computing overlap"):
         #import pdb; pdb.set_trace()
-        for dataset in self.hidden_states["dataset"].unique().tolist():
-          for method in self.hidden_states["layer"].unique().tolist():
+        for dataset in self.df["dataset"].unique().tolist():
+          for method in self.df["layer"].unique().tolist():
             for train_instances_i in ["0","5"]:#self.hidden_states["train_instances"].unique().tolist():
               for train_instances_j in ["0","5"]:#self.hidden_states["train_instances"].unique():
-                  hidden_states_i, _ = hidden_states_collapse(self.hidden_states,{"match":Match.ALL.value,
+                  hidden_states_i, _ = hidden_states_collapse(self.df,{"match":Match.ALL.value,
                                                                                               "layer":method, 
                                                                                               "model":couples[0], 
                                                                                               "dataset":dataset,
                                                                                               "train_instances": train_instances_i,})
-                  hidden_states_j, _ = hidden_states_collapse(self.hidden_states,{"match":Match.ALL.value,
+                  hidden_states_j, _ = hidden_states_collapse(self.df,{"match":Match.ALL.value,
                                                                                               "layer":method, 
                                                                                               "model":couples[1], 
                                                                                               "dataset":dataset,

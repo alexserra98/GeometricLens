@@ -2,12 +2,12 @@ import os
 from pathlib import Path
 import argparse
 import logging
-from MCQA_Benchmark.dataset_utils.utils import ScenarioBuilder
-from MCQA_Benchmark.generation.generation import Huggingface_client
-from MCQA_Benchmark.common.metadata_db import MetadataDB
-from MCQA_Benchmark.common.tensor_storage import TensorStorage
-import MCQA_Benchmark.common.globals as g
-from MCQA_Benchmark.common.utils import *
+from dataset_utils.utils import ScenarioBuilder
+from generation.generation import Huggingface_client
+from common.metadata_db import MetadataDB
+from common.tensor_storage import TensorStorage
+import common.globals as g
+from common.utils import *
 from safetensors.numpy import save_file
 import gc
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s-%(message)s')
@@ -49,9 +49,7 @@ logging.info("Getting the datasets...")
 logging.info("Loading model and tokenizer...")
 client = Huggingface_client(model_name)
 
-hidden_states_rows = {}
-logits_rows = {}
-db_rows = []
+
 
 result_path = Path(g._OUTPUT_DIR, f'{dataset_folder}_result')
 result_path.mkdir(parents=True, exist_ok=True)
@@ -59,21 +57,26 @@ metadata_db = MetadataDB(Path(result_path,'metadata.db'))
 tensor_storage = TensorStorage(Path(result_path,'tensor_files'))
 
 for dataset in datasets:
+    hidden_states_rows = {}
+    logits_rows = {}
+    db_rows = []
     for train_instances in max_train_instances:
         logging.info("Starting inference on %s with %s train instances...",
                      dataset, train_instances)
         scenario_builder = ScenarioBuilder(dataset,train_instances,model_name,-1)
         scenario = scenario_builder.build()
         hidden_states_rows_i, logits_rows_i, db_rows_i = client.make_request(scenario,metadata_db)
+        if not hidden_states_rows_i or not logits_rows_i  or not db_rows_i:
+            logging.info("Skipping inference on %s with %s train instances...",
+                     dataset, train_instances)
+            continue
         hidden_states_rows.update(hidden_states_rows_i)
         logits_rows.update(logits_rows_i)
         db_rows.extend(db_rows_i)
     logging.info("Saving run results..")
     metadata_db.add_metadata(db_rows)
-    dataset_path = Path(result_path,dataset)
-    dataset_path.mkdir(parents=True, exist_ok=True)
-    save_file(hidden_states_rows,Path(dataset_path,'hidden_states.safetensors'))
-    save_file(logits_rows,Path(dataset_path,'logits.safetensors'))
+    tensor_storage.save_tensors(hidden_states_rows.values(),hidden_states_rows.keys(), 'hidden_states')
+    tensor_storage.save_tensors(logits_rows.values(),logits_rows.keys(),'logits')
     del hidden_states_rows
     del logits_rows
     gc.collect()
