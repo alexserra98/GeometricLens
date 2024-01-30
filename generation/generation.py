@@ -67,7 +67,7 @@ class Huggingface_client():
 
         tokens_answers = [self.encode(letter)[0] for letter in scenario.output_mapping]
         
-        DbRow = namedtuple("DbRow", ["id_hd", "id_logits", 
+        DbRow = namedtuple("DbRow", ["id_instance", 
                                      "dataset", "train_instances", 
                                      "model_name", "loss", 
                                      "std_pred", "only_ref_pred", 
@@ -93,16 +93,15 @@ class Huggingface_client():
             hidden_states = HiddenStatesHandler(request_result.hidden_states)
             hidden_states_preprocess = hidden_states.preprocess(request_instance,self.tokenizer)
             for method in ["last","sum"]:
-                hd_hash = _generate_hash(hidden_states_preprocess[method])
-                logits_hash = _generate_hash(request_result.logits.detach().cpu().numpy())    
-                db_row = DbRow(hd_hash, logits_hash, 
+                id_instance = _generate_hash(request_instance.prompt+method)
+                db_row = DbRow(id_instance, 
                             scenario.dataset, scenario.train_instances,
                             scenario.model_name, loss.item(),
                             predictions["std_pred"]["letter"], predictions["only_ref_pred"]["letter"],
                             request_instance.letter_gold,method)
                 db_rows.append(db_row)
-                hidden_states_rows[hd_hash] = hidden_states_preprocess[method]
-                logits_rows[logits_hash] = request_result.logits.detach().cpu().numpy()
+                hidden_states_rows[id_instance] = hidden_states_preprocess[method]
+                logits_rows[id_instance] = request_result.logits.detach().cpu().numpy()
            
         return hidden_states_rows, logits_rows, db_rows
     

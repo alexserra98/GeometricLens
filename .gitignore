@@ -6,3 +6,4 @@ downloads/
 output_job/
 generated_script.sh
 config*
+globals.py

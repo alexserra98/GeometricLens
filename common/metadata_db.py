@@ -10,8 +10,7 @@ class MetadataDB:
         create_table_query = '''
         CREATE TABLE IF NOT EXISTS metadata (
             id INTEGER PRIMARY KEY,
-            id_hd TEXT,
-            id_logits TEXT,
+            id_instance TEXT,
             dataset TEXT,
             train_instances INTEGER,
             model_name TEXT,
@@ -33,11 +32,10 @@ class MetadataDB:
             self._add_metadata(entry)
             
     def _add_metadata(self, entry):
-        if self.query_metadata(f'id_hd="{entry.id_hd}"'):
+        if self.query_metadata(f'id_instance = "{entry.id_instance}"'):
             return
         insert_query = '''
-        INSERT INTO metadata (id_hd, 
-                              id_logits,
+        INSERT INTO metadata (id_instance,
                               dataset, 
                               train_instances, 
                               model_name, 
@@ -46,10 +44,9 @@ class MetadataDB:
                               only_ref_pred, 
                               letter_gold, 
                               method)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?);
         '''
-        self.conn.execute(insert_query, (entry.id_hd, 
-                                         entry.id_logits,
+        self.conn.execute(insert_query, (entry.id_instance,
                                          entry.dataset, 
                                          entry.train_instances, 
                                          entry.model_name, 

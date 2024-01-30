@@ -37,7 +37,7 @@ def create_bash_script(script_name, arguments, config_path):
 def main():
     parser = argparse.ArgumentParser(description="Create and submit a job to Slurm.")
     parser.add_argument('--job-type', type=str, help='Job name', required=True)
-    parser.add_argument('--config-path', type=str, help='Path to configuration file', required=False)
+    parser.add_argument('--conf-path', type=str, help='Path to configuration file', required=False)
     args = parser.parse_args()
     
     job_type = args.job_type

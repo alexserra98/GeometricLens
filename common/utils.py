@@ -3,9 +3,13 @@ import argparse
 import json
 import time
 import functools
+import numpy as np
 
-def _generate_hash(numpy_array):
-    return hashlib.sha256(numpy_array.tobytes()).hexdigest()
+def _generate_hash(input):
+    if isinstance(input, str):
+        return hashlib.sha256(input.encode()).hexdigest()
+    elif isinstance(input, np.ndarray):
+        return hashlib.sha256(input.tobytes()).hexdigest()
 
 def read_config(file_path):
     try:
