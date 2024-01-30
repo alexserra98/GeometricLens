@@ -8,9 +8,7 @@ from MCQA_Benchmark.common.metadata_db import MetadataDB
 from MCQA_Benchmark.common.tensor_storage import TensorStorage
 import MCQA_Benchmark.common.globals as g
 from MCQA_Benchmark.common.utils import *
-from safetensors.torch import save_file
-import torch
-
+from safetensors.numpy import save_file
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s-%(message)s')
 
 
@@ -39,7 +37,6 @@ dataset_folder = args.dataset_folder
 model_name = args.model_name
 datasets = args.dataset
 max_train_instances = args.max_train_instances
-device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f'{datasets=}')
 
 
@@ -51,8 +48,8 @@ logging.info("Getting the datasets...")
 logging.info("Loading model and tokenizer...")
 client = Huggingface_client(model_name)
 
-hidden_states_rows = []
-logits_rows = []
+hidden_states_rows = {}
+logits_rows = {}
 db_rows = []
 
 result_path = Path(g._OUTPUT_DIR, f'{dataset_folder}_result')
@@ -61,23 +58,21 @@ metadata_db = MetadataDB(Path(result_path,'metadata.db'))
 tensor_storage = TensorStorage(Path(result_path,'tensor_files'))
 
 for dataset in datasets:
-    print(dataset)
     for train_instances in max_train_instances:
         logging.info("Starting inference on %s with %s train instances...",
                      dataset, train_instances)
-        #ADD DATASET FOLDER HERE
         scenario_builder = ScenarioBuilder(dataset,train_instances,model_name,-1)
         scenario = scenario_builder.build()
         hidden_states_rows_i, logits_rows_i, db_rows_i = client.make_request(scenario)
-        hidden_states_rows.extend(hidden_states_rows_i)
-        logits_rows.extend(logits_rows_i)
+        hidden_states_rows.update(hidden_states_rows_i)
+        logits_rows.update(logits_rows_i)
         db_rows.extend(db_rows_i)
     logging.info("Saving run results..")
     metadata_db.add_metadata(db_rows)
     dataset_path = Path(result_path,dataset)
     dataset_path.mkdir(parents=True, exist_ok=True)
-    save_file(hidden_states_rows,Path(dataset_path,'hidden_states.safetensors'), device=device)
-    save_file(logits_rows,Path(dataset_path,'logits.safetensors'), device=device)
+    save_file(hidden_states_rows,Path(dataset_path,'hidden_states.safetensors'))
+    save_file(logits_rows,Path(dataset_path,'logits.safetensors'))
     
 logging.info("Closing...")
 

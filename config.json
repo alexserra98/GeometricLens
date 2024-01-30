@@ -1,6 +1,6 @@
 {
     "dataset_folder": "/orfeo/scratch/dssc/zenocosini/mmlu",
-    "model_name": "meta-llama/Llama-2-7b-chat-hf",
+    "model_name": "meta-llama/Llama-2-7b-hf",
     "dataset": ["mmlu:abstract_algebra", 
 		 "mmlu:anatomy", 
 		 "mmlu:astronomy", 
@@ -58,5 +58,5 @@
 		 "mmlu:us_foreign_policy",
 		 "mmlu:virology",
 		 "mmlu:world_religions"],
-    "max_train_instances": [0, 1, 2, 3, 4, 5]
+    "max_train_instances": [0,1,2,3,4,5]
 }

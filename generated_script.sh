@@ -9,7 +9,7 @@
 #SBATCH --time=08:00:00
 #SBATCH --job-name=inference
 #SBATCH --output=output_job/inference_job_%j.out
-cd /u/dssc/zenocosini/helm_suite/inference_id
+cd /u/dssc/zenocosini/helm_suite/MCQA_Benchmark/inference_id
 module load cuda/11.8
 eval "$(conda shell.bash hook)"
 conda activate crfm-helm

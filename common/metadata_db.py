@@ -33,6 +33,8 @@ class MetadataDB:
             self._add_metadata(entry)
             
     def _add_metadata(self, entry):
+        if self.query_metadata(f'id_hd="{entry.id_hd}"'):
+            return
         insert_query = '''
         INSERT INTO metadata (id_hd, 
                               id_logits,

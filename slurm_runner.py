@@ -17,7 +17,7 @@ def create_bash_script(script_name, arguments, config_path):
         script_file.write(f'#SBATCH --time={arguments.time}\n')
         script_file.write(f'#SBATCH --job-name={arguments.job_name}\n')
         script_file.write(f'#SBATCH --output=output_job/{arguments.output}_job_%j.out\n')
-        script_file.write(f'cd /u/dssc/zenocosini/helm_suite/inference_id\n') 
+        script_file.write(f'cd /u/dssc/zenocosini/helm_suite/MCQA_Benchmark/inference_id\n') 
         script_file.write(f'module load cuda/11.8\n')
         script_file.write(f'eval "$(conda shell.bash hook)"\n')
         script_file.write(f'conda activate crfm-helm\n')

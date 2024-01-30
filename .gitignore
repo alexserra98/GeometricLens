@@ -1,8 +1,8 @@
 *.pkl
 **/__pycache__/
-<<<<<<< HEAD
-=======
 **/assets/
 ../
 downloads/
->>>>>>> c207a28 (heavy_files_remove)
+output_job/
+generated_script.sh
+config*
