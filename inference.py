@@ -9,6 +9,7 @@ from MCQA_Benchmark.common.tensor_storage import TensorStorage
 import MCQA_Benchmark.common.globals as g
 from MCQA_Benchmark.common.utils import *
 from safetensors.numpy import save_file
+import gc
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s-%(message)s')
 
 
@@ -63,7 +64,7 @@ for dataset in datasets:
                      dataset, train_instances)
         scenario_builder = ScenarioBuilder(dataset,train_instances,model_name,-1)
         scenario = scenario_builder.build()
-        hidden_states_rows_i, logits_rows_i, db_rows_i = client.make_request(scenario)
+        hidden_states_rows_i, logits_rows_i, db_rows_i = client.make_request(scenario,metadata_db)
         hidden_states_rows.update(hidden_states_rows_i)
         logits_rows.update(logits_rows_i)
         db_rows.extend(db_rows_i)
@@ -73,7 +74,9 @@ for dataset in datasets:
     dataset_path.mkdir(parents=True, exist_ok=True)
     save_file(hidden_states_rows,Path(dataset_path,'hidden_states.safetensors'))
     save_file(logits_rows,Path(dataset_path,'logits.safetensors'))
-    
+    del hidden_states_rows
+    del logits_rows
+    gc.collect()
 logging.info("Closing...")
 
 metadata_db.close()

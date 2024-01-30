@@ -17,7 +17,7 @@ def create_bash_script(script_name, arguments, config_path):
         script_file.write(f'#SBATCH --time={arguments.time}\n')
         script_file.write(f'#SBATCH --job-name={arguments.job_name}\n')
         script_file.write(f'#SBATCH --output=output_job/{arguments.output}_job_%j.out\n')
-        script_file.write(f'cd /u/dssc/zenocosini/helm_suite/MCQA_Benchmark/inference_id\n') 
+        script_file.write(f'cd /u/dssc/zenocosini/helm_suite/MCQA_Benchmark\n') 
         script_file.write(f'module load cuda/11.8\n')
         script_file.write(f'eval "$(conda shell.bash hook)"\n')
         script_file.write(f'conda activate crfm-helm\n')
@@ -41,7 +41,7 @@ def main():
     args = parser.parse_args()
     
     job_type = args.job_type
-    config_path = args.config_path 
+    config_path = args.conf_path 
     
     SbatchArgs = namedtuple('SbatchArgs', [ 'job_type',
                                         'partition', 
@@ -60,7 +60,7 @@ def main():
                                  nodes=1,
                                  ntasks_per_node=1,
                                  cpus_per_task=1,
-                                 mem='200G',
+                                 mem='230G',
                                  time='08:00:00',
                                  job_name='inference',
                                  output='inference')

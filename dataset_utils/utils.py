@@ -72,7 +72,7 @@ class ScenarioBuilder():
         for row in tqdm(dataset_test, desc="Constructing Prompts"):
             prompt = f'The following are multiple choice questions (with answers) about {subject_retriever(self.dataset)}.\n\n'
             for i in range(self.train_instances):
-                random_row = random.choice(dataset["dev"])
+                random_row = dataset["dev"][i]
                 prompt += construct_question(random_row,shot=True)
             prompt += construct_question(row)
             ri.append(RequestInstance(prompt, output_mapping[row["answer"]]))
