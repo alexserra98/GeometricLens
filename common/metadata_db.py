@@ -24,14 +24,36 @@ class MetadataDB:
         self.conn.execute(create_table_query)
         self.conn.commit()
 
-    def add_metadata(self, entry):
-        if isinstance(entry, list):
-            for e in entry:
-                self._add_metadata(e)
-        else:
-            self._add_metadata(entry)
+    def add_metadata(self, metadata_list):
+        insert_query = '''
+        INSERT INTO metadata (id_instance,
+                              dataset, 
+                              train_instances, 
+                              model_name, 
+                              loss, 
+                              std_pred, 
+                              only_ref_pred, 
+                              letter_gold, 
+                              method)
+        VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        '''
+        
+        try:
+            for metadata in metadata_list:
+                if self.row_already_exists(metadata):
+                    metadata_list.remove(metadata)
             
-    def _add_metadata(self, entry):
+            self.conn.executemany(insert_query, metadata_list)
+            self.conn.commit()
+        except sqlite3.Error as e:
+            print(f"Database error: {e}")
+        except Exception as e:
+            print(f"Exception in insert operation: {e}")
+    
+    def row_already_exists(self, entry):
+        return self.query_metadata(f'id_instance = "{entry.id_instance}"')
+            
+    def add_single_metadata(self, entry):
         if self.query_metadata(f'id_instance = "{entry.id_instance}"'):
             return
         insert_query = '''
