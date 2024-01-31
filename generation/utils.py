@@ -1,4 +1,5 @@
 import torch
+import gc
 
 from einops import reduce
 import time
@@ -16,6 +17,8 @@ class HiddenStatesHandler():
     def preprocess(self,request_instance, tokenizer):
         len_tokens_question = self.index_last_question(request_instance.prompt, tokenizer)
         hs = torch.stack(self.hidden_states)[:,0,-len_tokens_question:,:].clone().detach().cpu().numpy()
+        del self.hidden_states
+        gc.collect()
         return {"last": hs[:,-1],"sum":reduce(hs[:,-len_tokens_question:], "l s d -> l d", "mean")}
    
     def index_last_question(self,prompt, tokenizer):
