@@ -1,16 +1,11 @@
-from dataset_utils.utils import ScenarioBuilder
-from generation.generation import Huggingface_client
 from common.metadata_db import MetadataDB
-from common.tensor_storage import TensorStorage
-from metrics.metrics import ShotMetrics, LetterOverlap, SubjectOverlap, BaseFinetuneOverlap
 import common.globals as g
+from metrics.metrics import Metrics
 from common.utils import *
 import os
-import pickle
 import logging
 from tqdm import tqdm
 from pathlib import Path
-import sys
 import argparse
 from enum import Enum
 from metrics.query import DataFrameQuery
@@ -30,41 +25,25 @@ if args.conf_path:
     
 
 parser.add_argument('--dataset-folder', type=str, help='The name of the dataset folder')
-parser.add_argument('--label', choices=["letter", "subject", "base_finetune"], type=str, help='Label for label overlap')
-parser.add_argument('--metric-type', choices=["per_instance", "across_instances"], type=str, help='Metrics on the single instance or Metrics computed across different instances')
-parser.add_argument('--dataset',  nargs='+', action='append', type=str, help='The name of the dataset')
-parser.add_argument('--model-name', type=str, help='The name of the model')
-
+parser.add_argument('--metrics',  nargs='+', action='append',type=str, help='Metrics to compute')
 args = parser.parse_args(remaining_argv)
 
-
 dataset_folder = args.dataset_folder
-label = args.label
-metric_type = args.metric_type
-dataset = args.dataset
-model_name = args.model_name
-
-
-class OverlapClasses(Enum):
-    letter = LetterOverlap
-    subject = SubjectOverlap
-    base_finetune = BaseFinetuneOverlap
-    
+metrics_list = args.metrics
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 results_path = os.path.join(g._OUTPUT_DIR, dataset_folder)
+db = MetadataDB(Path(results_path,'metadata.db'))
 
-if metric_type == "across_instances":
-    db = MetadataDB(Path(results_path,'metadata.db'))
-    query = DataFrameQuery({'dataset':dataset, 'model_name':model_name})
-    overlap_instance = OverlapClasses[label].value(db, query, Path(results_path,"tensor_files"))
-    overlaps = overlap_instance.compute_overlap()
-    logging.info(f'Saving results...')
-    file_name = f"{label}_overlaps.pkl"
-    final_path = Path(results_path,"result") 
-    final_path.mkdir(parents=True, exist_ok=True)
-    overlaps.to_pickle(Path(final_path,file_name))
+# Evaluate metrics
+metrics = Metrics(db, metrics_list,Path(results_path,"tensor_files") )
+out = metrics.evaluate()
+logging.info(f'Saving results...')
+for metric in out.keys():
+    with open(Path(results_path,f"{metric}.pkl"), 'wb') as f:
+        out[metric].to_pickle(f)
+    
 
 
 

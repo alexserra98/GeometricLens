@@ -4,6 +4,7 @@ import gc
 from einops import reduce
 import time
 from dataclasses import dataclass, field
+import gc
             
 def hidden_states_preprocess(hidden_states,len_tokens_question):
     hs = torch.stack(hidden_states)[:,0,-len_tokens_question:,:].clone().detach().cpu().numpy()
