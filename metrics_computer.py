@@ -29,7 +29,7 @@ metrics_list = args.metrics
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-results_path = os.path.join(g._OUTPUT_DIR, dataset_folder)
+results_path = os.path.join(g._OUTPUT_RESULT_DIR, dataset_folder)
 db = MetadataDB(Path(results_path,'metadata.db'))
 
 # Evaluate metrics
