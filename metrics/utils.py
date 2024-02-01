@@ -88,7 +88,7 @@ def exact_match(answers, letters_gold):
     return answers.strip() == letters_gold
 
 def quasi_exact_match(answers, letters_gold):
-    is_in_string = answers.strip().lower() in letters_gold.lower()
+    is_in_string = answers.strip().lower() == letters_gold.strip().lower()
     return is_in_string
 
 
