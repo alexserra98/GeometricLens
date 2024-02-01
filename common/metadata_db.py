@@ -39,9 +39,12 @@ class MetadataDB:
         '''
         
         try:
+            counter = 0
             for metadata in metadata_list:
                 if self.row_already_exists(metadata):
+                    counter +=1
                     metadata_list.remove(metadata)
+            print(f'{counter} elements already in the DB\n')
             
             self.conn.executemany(insert_query, metadata_list)
             self.conn.commit()

@@ -80,8 +80,8 @@ class Huggingface_client():
             self.device
             )
            
-            id_instance ={"last": _generate_hash(request_instance.prompt+"last"),
-                          "sum": _generate_hash(request_instance.prompt+"sum")}
+            id_instance ={"last": _generate_hash(request_instance.prompt+"last"+scenario.model_name+scenario.dataset),
+                          "sum": _generate_hash(request_instance.prompt+"sum"+scenario.model_name+scenario.dataset)}
             if metadata_db.query_metadata(f'id_instance = "{id_instance["last"]}"'):
                 continue
  
