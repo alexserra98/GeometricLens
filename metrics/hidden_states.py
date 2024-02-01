@@ -152,7 +152,7 @@ class HiddenStates():
       data = Data(hidden_states[:,num_layer,:])
       data.compute_distances(maxk=k)
       warnings.filterwarnings("ignore")
-      overlap = data.return_label_overlap(labels,k)
+      overlap = data.return_label_overlap(labels,k_per_classes=k)
       overlaps.append(overlap)
     return np.stack(overlaps)
       
@@ -164,7 +164,7 @@ class HiddenStates():
     Dict[layer: List[Array(num_layers, num_layers)]]
     """
     #The last token is always the same, thus its first layer activation (embedding) is always the same
-    iter_list=[5,10,20,50]
+    iter_list=[0.05,0.10,0.20,0.50]
     rows = []
     for k in tqdm.tqdm(iter_list, desc = "Computing overlap"):
       for model in self.df["model_name"].unique().tolist():
