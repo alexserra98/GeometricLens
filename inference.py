@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 import argparse
 import logging
-from dataset_utils.utils import ScenarioBuilder
+from dataset_utils.utils import ScenarioAdapter
 from generation.generation import Huggingface_client
 from common.metadata_db import MetadataDB
 from common.tensor_storage import TensorStorage
@@ -69,7 +69,7 @@ for model_name in models_names:
         for train_instances in max_train_instances:
             logging.info("Starting inference on %s with %s train instances...",
                         dataset, train_instances)
-            scenario_builder = ScenarioBuilder(dataset,train_instances,model_name,-1)
+            scenario_builder = ScenarioAdapter(dataset,train_instances,model_name,-1)
             scenario = scenario_builder.build()
             hidden_states_rows_i, logits_rows_i, db_rows_i = client.make_request(scenario,metadata_db)
             
