@@ -133,26 +133,28 @@ class HiddenStates():
                        hidden_states_df.apply(lambda r: exact_match(r["std_pred"], r["letter_gold"]), axis=1).mean(), 
                        hidden_states_df.apply(lambda r: quasi_exact_match(r["std_pred"], r["letter_gold"]), axis=1).mean(), 
                        hidden_states_df.apply(lambda r: exact_match(r["only_ref_pred"], r["letter_gold"]), axis=1).mean()])
-            # ADD INTRINISC DIMENSION!      
 
-      df = pd.DataFrame(rows, columns = ["dataset",
-                                        "model",
-                                        "train_instances",
-                                        "loss", 
-                                        "exact_match", 
-                                        "quasi_exact_match", 
-                                        "only_ref_exact_match", 
-                                        ])
-      return df
+    df = pd.DataFrame(rows, columns = ["dataset",
+                                      "model",
+                                      "train_instances",
+                                      "loss", 
+                                      "exact_match", 
+                                      "quasi_exact_match", 
+                                      "only_ref_exact_match", 
+                                      ])
+    return df
 
   
-  def _label_overlap(self, hidden_states, labels, k) -> Dict[str, List[np.ndarray]]:
+  def _label_overlap(self, hidden_states, labels, k=None, class_fraction = None) -> Dict[str, List[np.ndarray]]:
     overlaps = []
+    if k is None and class_fraction is None:
+      raise ValueError("You must provide either k or class_fraction")
     for num_layer in range(hidden_states.shape[1]):
       data = Data(hidden_states[:,num_layer,:])
       data.compute_distances(maxk=k)
       warnings.filterwarnings("ignore")
-      overlap = data.return_label_overlap(labels,k_per_classes=k)
+      args = {"class_fraction":class_fraction, "k": k}
+      overlap = data.return_label_overlap(labels,args)
       overlaps.append(overlap)
     return np.stack(overlaps)
       
@@ -166,7 +168,7 @@ class HiddenStates():
     #The last token is always the same, thus its first layer activation (embedding) is always the same
     iter_list=[0.05,0.10,0.20,0.50]
     rows = []
-    for k in tqdm.tqdm(iter_list, desc = "Computing overlap"):
+    for class_fraction in tqdm.tqdm(iter_list, desc = "Computing overlap"):
       for model in self.df["model_name"].unique().tolist():
           for method in self.df["method"].unique().tolist():
             for train_instances in self.df["train_instances"].unique().tolist():
@@ -178,9 +180,9 @@ class HiddenStates():
               hidden_states, hidden_states_df= hidden_states_collapse(self.df,query, self.tensor_storage)
               #assert hidden_states_df[label].value_counts().nunique() == 1, "There must be the same number of instances for each label - Class imbalance not supported"
               label_per_row = hidden_states_df[label].reset_index(drop=True)
-              overlap = self._label_overlap(hidden_states, label_per_row, k) 
-              rows.append([k, model, method, train_instances,overlap])
-                  
+              overlap = self._label_overlap(hidden_states, label_per_row, class_fraction=class_fraction) 
+              rows.append([class_fraction, model, method, train_instances,overlap])
+                    
     df = pd.DataFrame(rows, columns = ["k","model","method","train_instances","overlap"])
     return df
   
