@@ -39,6 +39,7 @@ class Metrics():
       self.metrics_list = metrics_list
       self.df = self.set_dataframes()
       self.path_result = path_result
+      self.tensor_path = Path(path_result, "tensor_files")
     
     def set_dataframes(self) -> pd.DataFrame:
       """
@@ -50,7 +51,7 @@ class Metrics():
       df["train_instances"] = df["train_instances"].astype(str)
       return df
         
-    def evaluate(self, results_path) -> List[pd.DataFrame]:
+    def evaluate(self) -> List[pd.DataFrame]:
       """
       Compute all the implemented metrics
       Output
@@ -61,7 +62,7 @@ class Metrics():
       for metric in tqdm.tqdm(self.metrics_list, desc = "Computing metrics"):
         logging.info(f'Computing {metric}...')
         out = self._compute_metric(metric)
-        out.to_pickle(Path(results_path,f'{metric}.pkl'))
+        out.to_pickle(Path(self.path_result,f'{metric}.pkl'))
       return df_out
     
     def _compute_metric(self, metric) -> pd.DataFrame:
@@ -75,12 +76,24 @@ class Metrics():
         return self._compute_base_finetune_overlap()
       elif metric == "intrinsic_dim":
         return self._compute_intrinsic_dim()
+      elif metric == "last_layer_id_diff":
+        return self._compute_layer_id_diff()
       else:
         raise NotImplementedError
     
     def _compute_overlap(self, df,label) -> pd.DataFrame:
-      hidden_states = HiddenStates(df, self.path_result)
+      hidden_states = HiddenStates(df, self.tensor_path)
       return hidden_states.label_overlap(label)
+    
+    def _compute_layer_id_diff(self):
+      shot_metric_path = Path(self.path_result, 'shot_metric.pkl')
+      id_path = Path(self.path_result, 'intrinsic_dim.pkl')
+      try:
+        shot_metrics_df = pd.read_pickle(shot_metric_path)
+        id_df = pd.read_pickle(id_path)
+      except FileNotFoundError:
+        print("You need to computer intrinisic dimension and shot metrics first")
+      return self.get_last_layer_id_diff(id_df, shot_metrics_df)
     
     def _compute_letter_overlap(self) -> pd.DataFrame:
       return self._compute_overlap(self.df,"only_ref_pred")
@@ -89,7 +102,7 @@ class Metrics():
       return self._compute_overlap(self.df,"dataset")
     
     def _compute_intrinsic_dim(self) -> pd.DataFrame:
-      hidden_states = HiddenStates(self.df, self.path_result)
+      hidden_states = HiddenStates(self.df, self.tensor_path)
       return hidden_states.intrinsic_dim()
 
     def shot_metrics(self):
@@ -103,7 +116,7 @@ class Metrics():
       return hidden_states.shot_metrics()
     
     def _compute_base_finetune_overlap(self) -> pd.DataFrame:
-      hidden_states = HiddenStates(self.df, self.path_result)
+      hidden_states = HiddenStates(self.df, self.tensor_path)
       return hidden_states.point_overlap()
     
     
@@ -116,21 +129,13 @@ class Metrics():
       """
       # The last token is always the same, thus its first layer activation (embedding) is always the same
       rows = []
-      for model in self.df["model_name"].unique().tolist():
-        for method in self.df["method"].unique().tolist():
-          query_template = {"match": Match.ALL.value,
-                    "method": method,
-                    "model_name": model,
-                    "train_instances": '0'}
-          query = DataFrameQuery(query_template)
-          id_metrics_iter = id_df.apply_query(query)
-          shot_metrics_df_iter = shot_metrics_df.apply_query(query)
-
-          df_iter = id_metrics_iter.join(shot_metrics_df_iter, how='outer')
-          df_iter["accuracy"] = df.groupby("train_instances")["accuracy"].transform(lambda x: x - x.iloc[0])
-          df_iter["id"] = df.groupby("train_instances")["id_per_layer"].transform(lambda x: x - x.iloc[0])
-          rows.append([model, method, df["accuracy"].tolist(), df["id"].tolist()])              
-      df = pd.DataFrame(rows, columns = ["k","model","method","train_instances","id_per_layer"])
+      shot_metrics_df.drop(["dataset"], axis=1, inplace=True)
+      shot_metrics_df= shot_metrics_df.groupby(['train_instances','model']).mean().reset_index()
+      query_template = {"match": "all",
+                  "method": "last"}
+      query = DataFrameQuery(query_template)
+      id_df = query.apply_query(id_df)
+      df = pd.merge(id_df,shot_metrics_df, on=['train_instances','model'], how='inner')
       return df
       
   

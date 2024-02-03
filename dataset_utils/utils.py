@@ -60,11 +60,11 @@ class ScenarioBuilder(ABC):
 class MMLU_ScenarioBuilder(ScenarioBuilder):
     def __init__(self, subject, train_instances, model_name, number_of_instances = -1):
         super().__init__(train_instances, model_name, number_of_instances)
-        self.dataset = subject
+        self.dataset = f'mmlu:{subject}'
+        self.subject = subject
     def retrieve_dataset(self):
-        dataset_name  = map_aliases(self.dataset)
         try:
-            dataset = load_dataset(*dataset_name.split(":"))
+            dataset = load_dataset("cais/mmlu", self.subject, trust_remote_code=True)
         except Exception as e:
             error : str = f'Huggingface error {e}, peraphs you didnt specify the subdataset?'
             raise ValueError(error)
@@ -93,7 +93,7 @@ class MMLU_ScenarioBuilder(ScenarioBuilder):
                 random_row = dataset["dev"][i]
                 prompt += construct_question(random_row,shot=True)
             prompt += construct_question(row)
-            ri.append(RequestInstance(prompt, output_mapping[row["answerKey"]]))
+            ri.append(RequestInstance(prompt, output_mapping[row["answer"]]))
         return ri, output_mapping
     def build(self) -> Scenario:
         """

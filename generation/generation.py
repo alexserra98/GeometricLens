@@ -80,15 +80,15 @@ class Huggingface_client():
             self.device
             )
            
-            id_instance ={"last": _generate_hash(request_instance.prompt)+"last"+scenario.model_name+scenario.dataset,
-                          "sum": _generate_hash(request_instance.prompt)+"sum"+scenario.model_name+scenario.dataset}
+            id_instance ={"last": _generate_hash(request_instance.prompt)+"last"+scenario.model_name.replace("/","-")+scenario.dataset.replace("_","")+str(scenario.train_instances),
+                          "sum": _generate_hash(request_instance.prompt)+"sum"+scenario.model_name.replace("/","-")+scenario.dataset.replace("_","")+str(scenario.train_instances)}
             if metadata_db.query_metadata(f'id_instance = "{id_instance["last"]}"'):
                 continue
  
             try:
                 request_result=self.inference(encoded_input)
             except RuntimeError as e:
-                    e: str = f'Huggingface error: {e}'
+                    e: str = f'Huggingface error during inference: {e}'
                     raise e
             request_result.logits = request_result.logits[:,-1].detach().cpu().to(torch.float32)
             predictions = self.prediction(request_result, request_config,tokens_answers)

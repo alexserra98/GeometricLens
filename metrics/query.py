@@ -6,9 +6,7 @@ class DataFrameQuery:
 
     def _build_query(self, parameter, argument):
 
-        if argument == 'all':
-            return None
-        elif isinstance(argument, list):
+        if isinstance(argument, list):
             return f"{parameter} in {argument}"
         else:  # assuming it's a string
             return f"{parameter} == '{argument}'"

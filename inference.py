@@ -38,9 +38,7 @@ dataset_folder = args.dataset_folder
 models_names = args.model_name
 datasets = args.dataset
 max_train_instances = args.max_train_instances
-print(f"Starting inference on {dataset_folder}\
-        with {models_names} and {datasets}\
-        with {max_train_instances} train instances")
+print(f"Starting inference on {dataset_folder} with {models_names} and {datasets} with {max_train_instances} train instances")
 
 
 # Getting the dataset
@@ -60,7 +58,7 @@ tensor_storage = TensorStorage(Path(result_path,_TENSOR_FILE))
 for model_name in models_names:
     logging.info("Loading model and tokenizer...")
     client = Huggingface_client(model_name)
-    model_path = Path(Path(result_path,_TENSOR_FILE), model_name)
+    model_path = Path(Path(result_path,_TENSOR_FILE), model_name.replace("/","-"))
     model_path.mkdir(exist_ok=True,parents=True)
     for dataset in datasets:
         db_rows = []
@@ -82,8 +80,8 @@ for model_name in models_names:
             # Saving tensors
             tensor_path = Path(dataset_path,str(train_instances))
             tensor_path.mkdir(exist_ok=True,parents=True)
-            tensor_storage.save_tensors(hidden_states_rows_i.values(),hidden_states_rows_i.keys(), f'{str(tensor_path)}/hidden_states')
-            tensor_storage.save_tensors(logits_rows_i.values(),logits_rows_i.keys(),f'{str(tensor_path)}/logits')
+            tensor_storage.save_tensors(hidden_states_rows_i.values(),hidden_states_rows_i.keys(), f'{model_name.replace("/","-")}/{dataset}/{train_instances}/hidden_states')
+            tensor_storage.save_tensors(logits_rows_i.values(),logits_rows_i.keys(),f'{model_name.replace("/","-")}/{dataset}/{train_instances}/logits')
             
             db_rows.extend(db_rows_i)
             
