@@ -168,6 +168,7 @@ class HiddenStates():
     rows = []
     for k in tqdm.tqdm(iter_list, desc = "Computing overlap"):
       for model in self.df["model_name"].unique().tolist():
+
           for method in self.df["method"].unique().tolist():
             for train_instances in self.df["train_instances"].unique().tolist():
               query = DataFrameQuery({"match":Match.ALL.value, 
@@ -262,32 +263,38 @@ class HiddenStates():
     for k in tqdm.tqdm(iter_list, desc = "Computing overlaps k"):
       for couples in self.pair_names(self.df["model_name"].unique().tolist()):
         #import pdb; pdb.set_trace()
-        for method in self.df["method"].unique().tolist():
-          for train_instances_i in ["0","5"]:#self.hidden_states["train_instances"].unique().tolist():
-            for train_instances_j in ["0","5"]:#self.hidden_states["train_instances"].unique():
-                query_i = DataFrameQuery({"match":Match.ALL.value, 
-                        "method":method,
-                        "model_name":couples[0], 
-                        "train_instances": train_instances_i,})
-                query_j = DataFrameQuery({"match":Match.ALL.value, 
-                        "method":method,
-                        "model_name":couples[1], 
-                        "train_instances": train_instances_j,})
-                hidden_states_i, _ = hidden_states_collapse(self.df,query_i, self.tensor_storage)
-                hidden_states_j, _ = hidden_states_collapse(self.df,query_j, self.tensor_storage)
-                clustering_out = self._clustering_overlap(hidden_states_i, hidden_states_j, k, comparison_metrics)
+        for dataset in self.df["dataset"].unique().tolist():
+          for method in self.df["method"].unique().tolist():
+            for train_instances_i in ["0","5"]:#self.hidden_states["train_instances"].unique().tolist():
+              for train_instances_j in ["0","5"]:#self.hidden_states["train_instances"].unique():
+                  query_i = DataFrameQuery({"match":Match.ALL.value, 
+                          "method":method,
+                          "model_name":couples[0], 
+                          "dataset":dataset,
+                          "train_instances": train_instances_i,})
+                  query_j = DataFrameQuery({"match":Match.ALL.value, 
+                          "method":method,
+                          "model_name":couples[1], 
+                          "dataset":dataset,
+                          "train_instances": train_instances_j,})
+                  hidden_states_i, _ = hidden_states_collapse(self.df,query_i, self.tensor_storage)
+                  hidden_states_j, _ = hidden_states_collapse(self.df,query_j, self.tensor_storage)
+                  import pdb; pdb.set_trace()
+                  clustering_out = self._clustering_overlap(hidden_states_i, hidden_states_j, k, comparison_metrics)
 
-                rows.append([k,
-                             couples,
-                             method,
-                             train_instances_i,
-                             train_instances_j, 
-                             clustering_out["adjusted_rand_score"],
-                             clustering_out["adjusted_mutual_info_score"],
-                             clustering_out["mutual_info_score"],
-                             self._point_overlap(hidden_states_i, hidden_states_j, k)])
+                  rows.append([k,
+                               couples,
+                               dataset,
+                               method,
+                               train_instances_i,
+                               train_instances_j, 
+                               clustering_out["adjusted_rand_score"],
+                               clustering_out["adjusted_mutual_info_score"],
+                               clustering_out["mutual_info_score"],
+                               self._point_overlap(hidden_states_i, hidden_states_j, k)])
     df = pd.DataFrame(rows, columns = ["k",
                                        "couple",
+                                       "dataset",
                                        "method",
                                        "train_instances_i",
                                        "train_instances_j",

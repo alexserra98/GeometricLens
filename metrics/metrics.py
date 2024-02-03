@@ -50,7 +50,7 @@ class Metrics():
       df["train_instances"] = df["train_instances"].astype(str)
       return df
         
-    def evaluate(self) -> List[pd.DataFrame]:
+    def evaluate(self, results_path) -> List[pd.DataFrame]:
       """
       Compute all the implemented metrics
       Output
@@ -60,7 +60,8 @@ class Metrics():
       df_out = {}
       for metric in tqdm.tqdm(self.metrics_list, desc = "Computing metrics"):
         logging.info(f'Computing {metric}...')
-        df_out[metric] = self._compute_metric(metric)
+        out = self._compute_metric(metric)
+        out.to_pickle(Path(results_path,f'{metric}.pkl'))
       return df_out
     
     def _compute_metric(self, metric) -> pd.DataFrame:

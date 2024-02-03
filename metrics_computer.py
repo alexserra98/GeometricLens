@@ -34,10 +34,10 @@ db = MetadataDB(Path(results_path,'metadata.db'))
 
 # Evaluate metrics
 metrics = Metrics(db, metrics_list,Path(results_path,"tensor_files") )
-out = metrics.evaluate()
+out = metrics.evaluate(results_path)
 logging.info(f'Saving results...')
-for metric in out.keys():
-    out[metric].to_pickle(Path(results_path,f'{metric}.pkl'))
+#for metric in out.keys():
+#    out[metric].to_pickle(Path(results_path,f'{metric}.pkl'))
     
 
     
