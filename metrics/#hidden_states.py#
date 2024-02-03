@@ -145,17 +145,14 @@ class HiddenStates():
     return df
 
   
-  def _label_overlap(self, hidden_states, labels, k=None, class_fraction = None) -> Dict[str, List[np.ndarray]]:
+  def _label_overlap(self, hidden_states, labels, k) -> Dict[str, List[np.ndarray]]:
     overlaps = []
-    if k is None and class_fraction is None:
-      raise ValueError("You must provide either k or class_fraction")
     for num_layer in range(hidden_states.shape[1]):
       data = Data(hidden_states[:,num_layer,:])
       #data.compute_distances(maxk=k)
       #import pdb; pdb.set_trace()
       warnings.filterwarnings("ignore")
-      args = {"class_fraction":class_fraction, "k": k}
-      overlap = data.return_label_overlap(labels,args)
+      overlap = data.return_label_overlap(labels,k_per_classes=k)
       overlaps.append(overlap)
     return np.stack(overlaps)
       
@@ -169,8 +166,9 @@ class HiddenStates():
     #The last token is always the same, thus its first layer activation (embedding) is always the same
     iter_list=[0.05,0.10,0.20,0.50]
     rows = []
-    for class_fraction in tqdm.tqdm(iter_list, desc = "Computing overlap"):
+    for k in tqdm.tqdm(iter_list, desc = "Computing overlap"):
       for model in self.df["model_name"].unique().tolist():
+
           for method in self.df["method"].unique().tolist():
             for train_instances in self.df["train_instances"].unique().tolist():
               query = DataFrameQuery({"match":Match.ALL.value, 
@@ -188,9 +186,9 @@ class HiddenStates():
               label_per_row = np.array(label_per_row)
               #import pdb; pdb.set_trace() 
               label_per_row = label_per_row[:hidden_states.shape[0]]
-              overlap = self._label_overlap(hidden_states, label_per_row, class_fraction=class_fraction) 
-              rows.append([class_fraction, model, method, train_instances,overlap])
-                    
+              overlap = self._label_overlap(hidden_states, label_per_row, k) 
+              rows.append([k, model, method, train_instances,overlap])
+                  
     df = pd.DataFrame(rows, columns = ["k","model","method","train_instances","overlap"])
     return df
   
@@ -265,32 +263,38 @@ class HiddenStates():
     for k in tqdm.tqdm(iter_list, desc = "Computing overlaps k"):
       for couples in self.pair_names(self.df["model_name"].unique().tolist()):
         #import pdb; pdb.set_trace()
-        for method in self.df["method"].unique().tolist():
-          for train_instances_i in ["0","5"]:#self.hidden_states["train_instances"].unique().tolist():
-            for train_instances_j in ["0","5"]:#self.hidden_states["train_instances"].unique():
-                query_i = DataFrameQuery({"match":Match.ALL.value, 
-                        "method":method,
-                        "model_name":couples[0], 
-                        "train_instances": train_instances_i,})
-                query_j = DataFrameQuery({"match":Match.ALL.value, 
-                        "method":method,
-                        "model_name":couples[1], 
-                        "train_instances": train_instances_j,})
-                hidden_states_i, _ = hidden_states_collapse(self.df,query_i, self.tensor_storage)
-                hidden_states_j, _ = hidden_states_collapse(self.df,query_j, self.tensor_storage)
-                clustering_out = self._clustering_overlap(hidden_states_i, hidden_states_j, k, comparison_metrics)
+        for dataset in self.df["dataset"].unique().tolist():
+          for method in self.df["method"].unique().tolist():
+            for train_instances_i in ["0","5"]:#self.hidden_states["train_instances"].unique().tolist():
+              for train_instances_j in ["0","5"]:#self.hidden_states["train_instances"].unique():
+                  query_i = DataFrameQuery({"match":Match.ALL.value, 
+                          "method":method,
+                          "model_name":couples[0], 
+                          "dataset":dataset,
+                          "train_instances": train_instances_i,})
+                  query_j = DataFrameQuery({"match":Match.ALL.value, 
+                          "method":method,
+                          "model_name":couples[1], 
+                          "dataset":dataset,
+                          "train_instances": train_instances_j,})
+                  hidden_states_i, _ = hidden_states_collapse(self.df,query_i, self.tensor_storage)
+                  hidden_states_j, _ = hidden_states_collapse(self.df,query_j, self.tensor_storage)
+                  import pdb; pdb.set_trace()
+                  clustering_out = self._clustering_overlap(hidden_states_i, hidden_states_j, k, comparison_metrics)
 
-                rows.append([k,
-                             couples,
-                             method,
-                             train_instances_i,
-                             train_instances_j, 
-                             clustering_out["adjusted_rand_score"],
-                             clustering_out["adjusted_mutual_info_score"],
-                             clustering_out["mutual_info_score"],
-                             self._point_overlap(hidden_states_i, hidden_states_j, k)])
+                  rows.append([k,
+                               couples,
+                               dataset,
+                               method,
+                               train_instances_i,
+                               train_instances_j, 
+                               clustering_out["adjusted_rand_score"],
+                               clustering_out["adjusted_mutual_info_score"],
+                               clustering_out["mutual_info_score"],
+                               self._point_overlap(hidden_states_i, hidden_states_j, k)])
     df = pd.DataFrame(rows, columns = ["k",
                                        "couple",
+                                       "dataset",
                                        "method",
                                        "train_instances_i",
                                        "train_instances_j",
