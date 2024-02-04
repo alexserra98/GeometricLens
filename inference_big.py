@@ -6,7 +6,7 @@ from dataset_utils.utils import ScenarioBuilder
 from generation.generation import Huggingface_client
 from common.metadata_db import MetadataDB
 from common.tensor_storage import TensorStorage
-import common.globals as g
+import MCQA_Benchmark.common.globals_vars as g
 from common.utils import *
 from safetensors.numpy import save_file
 import gc

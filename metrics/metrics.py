@@ -112,7 +112,7 @@ class Metrics():
       ----------
       InstanceResult object
       """
-      hidden_states = HiddenStates(self.df, self.path_result)
+      hidden_states = HiddenStates(self.df, self.tensor_path)
       return hidden_states.shot_metrics()
     
     def _compute_base_finetune_overlap(self) -> pd.DataFrame:

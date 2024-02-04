@@ -12,7 +12,7 @@ from generation.utils import *
 import pandas as pd
 from common.utils import _generate_hash, retry_on_failure
 from collections import namedtuple
-import common.globals as g
+import MCQA_Benchmark.common.globals_vars as g
 
 @dataclass
 class RequestResult():

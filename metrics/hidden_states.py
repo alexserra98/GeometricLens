@@ -129,8 +129,7 @@ class HiddenStates():
     for dataset in tqdm.tqdm(self.df["dataset"].unique().tolist()):
       for model in self.df["model_name"].unique().tolist():
         for train_instances in self.df["train_instances"].unique().tolist():
-          query = DataFrameQuery({"match":Match.ALL.value,
-                                  "dataset":dataset, 
+          query = DataFrameQuery({"dataset":dataset, 
                                   "method":"last",
                                   "model_name":model,
                                   "train_instances": train_instances})

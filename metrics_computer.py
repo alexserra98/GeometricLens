@@ -1,5 +1,5 @@
 from common.metadata_db import MetadataDB
-import common.globals as g
+import common.globals_vars as g
 from metrics.metrics import Metrics
 from common.utils import *
 import os
