@@ -14,7 +14,6 @@ from sklearn.feature_selection import mutual_info_regression
 from sklearn.metrics.cluster import adjusted_rand_score, adjusted_mutual_info_score
 from sklearn.metrics import mutual_info_score
 import warnings
-
 import os, sys
 
 _DEBUG = False
@@ -167,6 +166,20 @@ class HiddenStates():
       overlap = data.return_label_overlap(labels,class_fraction=class_fraction,k=k)
       overlaps.append(overlap)
     return np.stack(overlaps)
+  
+  def _clustering_label_overlap(self, hidden_states, labels, k) -> np.ndarray:
+    bincounts = []
+    for num_layer in range(1,hidden_states.shape[1]):
+      data = Data(hidden_states[:,num_layer,:])
+      data.compute_distances(maxk=k)
+      data.remove_identical_points()
+      clusters_assignement = data.compute_clustering_ADP()
+      unique_clusters, cluster_counts = np.unique(clusters_assignement, return_counts=True)
+      bincount = np.zeros((len(unique_clusters), len(np.unique(labels))))
+      for unique_cluster in unique_clusters:
+        bincount[unique_cluster] = np.bincount(labels[clusters_assignement == unique_cluster], minlength=len(np.unique(labels)))
+      bincounts.append(bincount)
+    return tuple(bincounts)
       
   def label_overlap(self,label) -> Dict[str, List[np.ndarray]]:
     """
@@ -182,8 +195,7 @@ class HiddenStates():
       for model in self.df["model_name"].unique().tolist():
         for method in self.df["method"].unique().tolist():
           for train_instances in self.df["train_instances"].unique().tolist():
-            query = DataFrameQuery({"match":Match.ALL.value, 
-                                    "method":method,
+            query = DataFrameQuery({"method":method,
                                     "model_name":model,
                                     "train_instances": train_instances}) 
                                     #{"balanced":label})
@@ -198,9 +210,20 @@ class HiddenStates():
             #import pdb; pdb.set_trace() 
             label_per_row = label_per_row[:hidden_states.shape[0]]
             overlap = self._label_overlap(hidden_states, label_per_row, class_fraction=class_fraction) 
-            rows.append([class_fraction, model, method, train_instances,overlap])
+            clustering_bincount = self._clustering_label_overlap(hidden_states, label_per_row, 100)
+            rows.append([class_fraction,
+                         model, 
+                         method, 
+                         train_instances,
+                         overlap, 
+                         clustering_bincount])
                     
-    df = pd.DataFrame(rows, columns = ["k","model","method","train_instances","overlap"])
+    df = pd.DataFrame(rows, columns = ["k",
+                                       "model",
+                                       "method",
+                                       "train_instances",
+                                       "overlap", 
+                                       "clustering_bincount"])
     return df
   
   
