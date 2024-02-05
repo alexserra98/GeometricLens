@@ -196,8 +196,8 @@ class HiddenStates():
           for train_instances in self.df["train_instances"].unique().tolist():
             query = DataFrameQuery({"method":method,
                                     "model_name":model,
-                                    "train_instances": train_instances}) 
-                                    #{"balanced":label})
+                                    "train_instances": train_instances}, 
+                                    {"balanced":label})
             hidden_states, hidden_states_df= hidden_states_collapse(self.df,query, self.tensor_storage)
             #assert hidden_states_df[label].value_counts().nunique() == 1, "There must be the same number of instances for each label - Class imbalance not supported"
             labels_literals = hidden_states_df[label].unique()
@@ -209,20 +209,20 @@ class HiddenStates():
             #import pdb; pdb.set_trace() 
             label_per_row = label_per_row[:hidden_states.shape[0]]
             overlap = self._label_overlap(hidden_states, label_per_row, class_fraction=class_fraction) 
-            clustering_bincount = self._clustering_label_overlap(hidden_states, label_per_row, 100)
+            #clustering_bincount = self._clustering_label_overlap(hidden_states, label_per_row, 100)
             rows.append([class_fraction,
                          model, 
                          method, 
                          train_instances,
-                         overlap, 
-                         clustering_bincount])
+                         overlap]) 
+                         #clustering_bincount])
                     
     df = pd.DataFrame(rows, columns = ["k",
                                        "model",
                                        "method",
                                        "train_instances",
-                                       "overlap", 
-                                       "clustering_bincount"])
+                                       "overlap"]) 
+                                       #"clustering_bincount"])
     return df
   
   
@@ -262,7 +262,7 @@ class HiddenStates():
     list: A list of tuples, each containing a base name and its 'chat' version.
     """
     # Separating base names and 'chat' names
-    difference = 'openai'
+    difference = 'chat'
     base_names = [name for name in names_list if difference not in name]
     chat_names = [name for name in names_list if difference in name]
     base_names.sort()

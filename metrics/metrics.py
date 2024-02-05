@@ -62,6 +62,9 @@ class Metrics():
       for metric in tqdm.tqdm(self.metrics_list, desc = "Computing metrics"):
         logging.info(f'Computing {metric}...')
         out = self._compute_metric(metric)
+        if metric == "letter_overlap":
+            print("change the file name I am doing a test!!!\n")
+            out.to_pickle(Path(self.path_result,f'{metric}-balanced.pkl'))
         out.to_pickle(Path(self.path_result,f'{metric}.pkl'))
       return df_out
     

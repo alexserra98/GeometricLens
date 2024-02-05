@@ -21,7 +21,7 @@ def create_bash_script(script_name, arguments, config_path):
         script_file.write(f'cd /u/dssc/zenocosini/helm_suite/MCQA_Benchmark\n') 
         script_file.write(f'module load cuda/11.8\n')
         script_file.write(f'eval "$(conda shell.bash hook)"\n')
-        script_file.write(f'conda activate crfm-helm\n')
+        script_file.write(f'conda activate mcqa\n')
         script_file.write(f'export PYTHONPATH=/u/dssc/zenocosini/helm_suite/MCQA_Benchmark\n')
         script_file.write(f'export CUDA_VISIBLE_DEVICES=0,1,2,3\n') 
         if arguments.job_type == 'inference':
@@ -67,12 +67,12 @@ def main():
                                  output='inference')
     elif job_type == 'metrics':
         sbatch_args = SbatchArgs(job_type='metrics',
-                                 partition='THIN',
+                                 partition='GPU',
                                  nodes=1,
                                  ntasks_per_node=1,
                                  cpus_per_task=1,
-                                 mem='600G',
-                                 time='20:00:00',
+                                 mem='230G',
+                                 time='1-20:00:00',
                                  job_name='metrics',
                                  output='metrics')    
     
