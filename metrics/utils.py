@@ -20,7 +20,12 @@ class Match(Enum):
 class Layer(Enum):
     LAST = "last"
     SUM = "sum"
-
+    
+def softmax(logits):
+    # Exponentiate each element
+    exp_logits = np.exp(logits - np.max(logits, axis=1, keepdims=True))
+    # Normalize each row to get probabilities
+    return exp_logits / np.sum(exp_logits, axis=1, keepdims=True)
     
 @dataclass
 class InstanceHiddenStates():

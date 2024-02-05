@@ -62,9 +62,6 @@ class Metrics():
       for metric in tqdm.tqdm(self.metrics_list, desc = "Computing metrics"):
         logging.info(f'Computing {metric}...')
         out = self._compute_metric(metric)
-        if metric == "letter_overlap":
-            print("change the file name I am doing a test!!!\n")
-            out.to_pickle(Path(self.path_result,f'{metric}-balanced.pkl'))
         out.to_pickle(Path(self.path_result,f'{metric}.pkl'))
       return df_out
     
@@ -84,9 +81,6 @@ class Metrics():
       else:
         raise NotImplementedError
     
-    def _compute_overlap(self, df,label) -> pd.DataFrame:
-      hidden_states = HiddenStates(df, self.tensor_path)
-      return hidden_states.label_overlap(label)
     
     def _compute_layer_id_diff(self):
       shot_metric_path = Path(self.path_result, 'shot_metric.pkl')
@@ -99,10 +93,12 @@ class Metrics():
       return self.get_last_layer_id_diff(id_df, shot_metrics_df)
     
     def _compute_letter_overlap(self) -> pd.DataFrame:
-      return self._compute_overlap(self.df,"only_ref_pred")
+      hidden_states = HiddenStates(self.df, self.tensor_path)
+      return hidden_states.letter_overlap()
     
     def _compute_subject_overlap(self) -> pd.DataFrame:
-      return self._compute_overlap(self.df,"dataset")
+      hidden_states = HiddenStates(self.df, self.tensor_path)
+      return hidden_states.subject_overlap()
     
     def _compute_intrinsic_dim(self) -> pd.DataFrame:
       hidden_states = HiddenStates(self.df, self.tensor_path)

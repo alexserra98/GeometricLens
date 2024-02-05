@@ -4,7 +4,7 @@ from .utils import  hidden_states_collapse, Match
 import tqdm
 import pandas as pd
 from typing import Dict, List
-from .utils import  Match,  exact_match, quasi_exact_match, hidden_states_collapse
+from .utils import  Match,  exact_match, quasi_exact_match, hidden_states_collapse,softmax
 from dadapy.data import Data
 from dadapy.data import Data
 from metrics.query import DataFrameQuery
@@ -48,8 +48,8 @@ def hidden_states_collapse(df_hiddenstates: pd.DataFrame(), query: DataFrameQuer
       for dataset in df_hiddenstates["dataset"].unique():
         for train_instances in df_hiddenstates["train_instances"].unique():
           hidden_states.extend(tensor_storage.load_tensors(f'{model.replace("/","-")}/{dataset}/{train_instances}/hidden_states', df_hiddenstates["id_instance"].tolist()))
-          #logits.extend(tensor_storage.load_tensors(f'{model.replace("/","-")}/{dataset}/{train_instances}/logits', df_hiddenstates["id_instance"].tolist()))
-    return np.stack(hidden_states), df_hiddenstates
+          logits.extend(tensor_storage.load_tensors(f'{model.replace("/","-")}/{dataset}/{train_instances}/logits', df_hiddenstates["id_instance"].tolist()))
+    return np.stack(hidden_states),np.stack(logits), df_hiddenstates
 
 
 
@@ -100,7 +100,7 @@ class HiddenStates():
               df = self.df[self.df.apply(lambda r: not exact_match(r["std_pred"], r["letter_gold"]), axis=1)]
             else:
               df = self.df
-            hidden_states, _= hidden_states_collapse(df,query, self.tensor_storage)
+            hidden_states,_, _= hidden_states_collapse(df,query, self.tensor_storage)
             id_per_layer = self._compute_id(hidden_states)
             rows.append([model, 
                         method,
@@ -119,7 +119,7 @@ class HiddenStates():
   
   #TODO use a decorator
   def preprocess_hiddenstates(self,func, query, *args, **kwargs):
-    hidden_states_collapsed,_ = hidden_states_collapse(self.df, query)
+    hidden_states_collapsed,_,_ = hidden_states_collapse(self.df, query)
 
     return func(hidden_states_collapsed, *args, **kwargs)
   
@@ -133,7 +133,7 @@ class HiddenStates():
                                   "method":"last",
                                   "model_name":model,
                                   "train_instances": train_instances})
-          _, hidden_states_df= hidden_states_collapse(self.df,query, self.tensor_storage)
+          _,_, hidden_states_df= hidden_states_collapse(self.df,query, self.tensor_storage)
           rows.append([dataset, 
                        model, 
                        train_instances, 
@@ -179,8 +179,31 @@ class HiddenStates():
         bincount[unique_cluster] = np.bincount(labels[clusters_assignement == unique_cluster], minlength=len(np.unique(labels)))
       bincounts.append(bincount)
     return tuple(bincounts)
+  
+  def _label_overlap_core(self,hidden_states,
+                          logits, 
+                          hidden_states_df,
+                          label, 
+                          k=None, 
+                          class_fraction = None):
+    logits = softmax(logits)
+    #assert hidden_states_df[label].value_counts().nunique() == 1, "There must be the same number of instances for each label - Class imbalance not supported"
+    labels_literals = hidden_states_df[label].unique()
+    labels_literals.sort()
+    map_labels = {class_name: n for n,class_name in enumerate(labels_literals)}
+    label_per_row = hidden_states_df[label].reset_index(drop=True)
+    label_per_row = [map_labels[class_name] for class_name in label_per_row]
+    label_per_row = np.array(label_per_row)
+    #import pdb; pdb.set_trace() 
+    label_per_row = label_per_row[:hidden_states.shape[0]]
+    overlap = self._label_overlap(hidden_states, label_per_row, class_fraction=class_fraction) 
+    overlap_logits = self._label_overlap(logits, label_per_row, class_fraction=class_fraction)
+    overlap = np.concatenate([overlap, overlap_logits])
+    #clustering_bincount = self._clustering_label_overlap(hidden_states, label_per_row, 100)
+    return overlap
+                #clustering_bincount]
       
-  def label_overlap(self,label) -> Dict[str, List[np.ndarray]]:
+  def subject_overlap(self) -> Dict[str, List[np.ndarray]]:
     """
     Compute the overlap between the layers of instances in which the model answered with the same letter
     Output
@@ -190,41 +213,74 @@ class HiddenStates():
     #The last token is always the same, thus its first layer activation (embedding) is always the same
     iter_list=[0.05,0.10,0.20,0.50]
     rows = []
+    label = "dataset"
     for class_fraction in tqdm.tqdm(iter_list, desc = "Computing overlap"):
       for model in self.df["model_name"].unique().tolist():
         for method in self.df["method"].unique().tolist():
           for train_instances in self.df["train_instances"].unique().tolist():
             query = DataFrameQuery({"method":method,
                                     "model_name":model,
-                                    "train_instances": train_instances}, 
-                                    {"balanced":label})
-            hidden_states, hidden_states_df= hidden_states_collapse(self.df,query, self.tensor_storage)
-            #assert hidden_states_df[label].value_counts().nunique() == 1, "There must be the same number of instances for each label - Class imbalance not supported"
-            labels_literals = hidden_states_df[label].unique()
-            labels_literals.sort()
-            map_labels = {class_name: n for n,class_name in enumerate(labels_literals)}
-            label_per_row = hidden_states_df[label].reset_index(drop=True)
-            label_per_row = [map_labels[class_name] for class_name in label_per_row]
-            label_per_row = np.array(label_per_row)
-            #import pdb; pdb.set_trace() 
-            label_per_row = label_per_row[:hidden_states.shape[0]]
-            overlap = self._label_overlap(hidden_states, label_per_row, class_fraction=class_fraction) 
-            #clustering_bincount = self._clustering_label_overlap(hidden_states, label_per_row, 100)
-            rows.append([class_fraction,
-                         model, 
-                         method, 
-                         train_instances,
-                         overlap]) 
-                         #clustering_bincount])
-                    
-    df = pd.DataFrame(rows, columns = ["k",
-                                       "model",
+                                    "train_instances": train_instances}) 
+                                    #{"balanced":label})
+            hidden_states, logits, hidden_states_df= hidden_states_collapse(self.df,query, self.tensor_storage)
+            args = {"hidden_states":hidden_states,
+                    "logits":logits,
+                    "hidden_states_df":hidden_states_df,
+                    "label":label,
+                    "class_fraction":class_fraction}
+            row = [model, method, train_instances, class_fraction]
+            row.append(self._label_overlap_core(**args))
+            rows.append(row)
+                      
+    df = pd.DataFrame(rows, columns = ["model",
                                        "method",
                                        "train_instances",
+                                       "class_fraction",
                                        "overlap"]) 
-                                       #"clustering_bincount"])
+                                        #"clustering_bincount"])
     return df
-  
+    
+  def letter_overlap(self) -> Dict[str, List[np.ndarray]]:
+    """
+    Compute the overlap between the layers of instances in which the model answered with the same letter
+    Output
+    ----------
+    Dict[layer: List[Array(num_layers, num_layers)]]
+    """
+    #The last token is always the same, thus its first layer activation (embedding) is always the same
+    iter_list=[0.05,0.10,0.20,0.50]
+    rows = []
+    label = "only_ref_pred"
+    for class_fraction in tqdm.tqdm(iter_list, desc = "Computing overlap"):
+      for model in self.df["model_name"].unique().tolist():
+        for dataset in self.df["dataset"].unique().tolist():
+          for method in self.df["method"].unique().tolist():
+            for train_instances in self.df["train_instances"].unique().tolist():
+              query = DataFrameQuery({"method":method,
+                                      "dataset":dataset,
+                                      "model_name":model,
+                                      "train_instances": train_instances}) 
+                                      #{"balanced":label})
+              hidden_states, logits, hidden_states_df= hidden_states_collapse(self.df,query, self.tensor_storage)
+              args = {"hidden_states":hidden_states,
+                      "logits":logits,
+                      "hidden_states_df":hidden_states_df,
+                      "label":label,
+                      "class_fraction":class_fraction}
+              
+              row = [model, method, train_instances,dataset, class_fraction]
+              row.append(self._label_overlap_core(**args))
+              rows.append(row)
+                    
+    df = pd.DataFrame(rows, columns = ["model",
+                                       "method",
+                                       "train_instances",
+                                       "dataset",
+                                       "class_fraction",
+                                       "overlap",
+                                       ]) 
+                                      #"clustering_bincount"])
+    return df
   
   def _point_overlap(self, data_i: np.ndarray, data_j: np.ndarray, k: int) -> np.ndarray:
     """
@@ -305,8 +361,8 @@ class HiddenStates():
                 query_j = DataFrameQuery({"method":method,
                         "model_name":couples[1], 
                         "train_instances": train_instances_j,})
-                hidden_states_i, _ = hidden_states_collapse(self.df,query_i, self.tensor_storage)
-                hidden_states_j, _ = hidden_states_collapse(self.df,query_j, self.tensor_storage)
+                hidden_states_i, _,_ = hidden_states_collapse(self.df,query_i, self.tensor_storage)
+                hidden_states_j, _,_ = hidden_states_collapse(self.df,query_j, self.tensor_storage)
                 clustering_out = self._clustering_overlap(hidden_states_i, hidden_states_j, k, comparison_metrics)
 
                 rows.append([k,
@@ -374,7 +430,7 @@ class HiddenStates():
                                       "method":method,
                                       "model_name":model,
                                       "train_instances": train_instances})
-              hidden_states, hidden_states_df= hidden_states_collapse(self.df,query, self.tensor_storage)
+              hidden_states,_, hidden_states_df= hidden_states_collapse(self.df,query, self.tensor_storage)
               label_per_row = hidden_states_df[label].reset_index(drop=True)
               clustering = self._clustering(hidden_states, label_per_row, k) 
               rows.append([k, model, method, train_instances,clustering, ])
