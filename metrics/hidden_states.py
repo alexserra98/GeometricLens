@@ -196,8 +196,8 @@ class HiddenStates():
     label_per_row = np.array(label_per_row)
     #import pdb; pdb.set_trace() 
     label_per_row = label_per_row[:hidden_states.shape[0]]
-    overlap = self._label_overlap(hidden_states, label_per_row, class_fraction=class_fraction) 
-    overlap_logits = self._label_overlap(logits, label_per_row, class_fraction=class_fraction)
+    overlap = self._label_overlap(hidden_states, label_per_row,k=k, class_fraction=class_fraction) 
+    overlap_logits = self._label_overlap(logits, label_per_row, k=k, class_fraction=class_fraction)
     overlap = np.concatenate([overlap, overlap_logits])
     #clustering_bincount = self._clustering_label_overlap(hidden_states, label_per_row, 100)
     return overlap
@@ -221,7 +221,7 @@ class HiddenStates():
     for class_fraction in tqdm.tqdm(iter_list, desc = "Computing overlap"):
       for model in self.df["model_name"].unique().tolist():
         for method in ["last"]: #self.df["method"].unique().tolist():
-          for train_instances in ["0","5"]:#self.df["train_instances"].unique().tolist():
+          for train_instances in ["5"]:#self.df["train_instances"].unique().tolist():
             if balanced:
               query = DataFrameQuery({"method":method,
                                       "model_name":model,
@@ -233,11 +233,18 @@ class HiddenStates():
                                       "train_instances": train_instances}) 
                                     
             hidden_states, logits, hidden_states_df= hidden_states_collapse(self.df,query, self.tensor_storage)
-            args = {"hidden_states":hidden_states,
-                    "logits":logits,
-                    "hidden_states_df":hidden_states_df,
-                    "label":label,
-                    "class_fraction":class_fraction}
+            if balanced:
+              args = {"hidden_states":hidden_states,
+                      "logits":logits,
+                      "hidden_states_df":hidden_states_df,
+                      "label":label,
+                      "k":class_fraction}
+            else:
+              args = {"hidden_states":hidden_states,
+                      "logits":logits,
+                      "hidden_states_df":hidden_states_df,
+                      "label":label,
+                      "class_fraction":class_fraction}
             row = [model, method, train_instances, class_fraction]
             row.append(self._label_overlap_core(**args))
             rows.append(row)
