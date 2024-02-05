@@ -68,10 +68,14 @@ class Huggingface_client():
         tokens_answers = [self.encode(letter)[0] for letter in scenario.output_mapping]
         
         DbRow = namedtuple("DbRow", ["id_instance", 
-                                     "dataset", "train_instances", 
-                                     "model_name", "loss", 
-                                     "std_pred", "only_ref_pred", 
-                                     "letter_gold", "method"])
+                                     "dataset",
+                                     "train_instances", 
+                                     "model_name", 
+                                     "loss", 
+                                     "std_pred", 
+                                     "only_ref_pred", 
+                                     "letter_gold", 
+                                     "method"])
         hidden_states_rows = {}
         logits_rows = {}
         db_rows = []
@@ -100,10 +104,14 @@ class Huggingface_client():
             hidden_states_preprocess = hidden_states.preprocess(request_instance,self.tokenizer)
             for method in ["last","sum"]:
                 db_row = DbRow(id_instance[method], 
-                            scenario.dataset, scenario.train_instances,
-                            scenario.model_name, loss.item(),
-                            predictions["std_pred"]["letter"], predictions["only_ref_pred"]["letter"],
-                            request_instance.letter_gold,method)
+                               scenario.dataset, 
+                               scenario.train_instances,
+                               scenario.model_name, 
+                               loss.item(),
+                               predictions["std_pred"]["letter"], 
+                               predictions["only_ref_pred"]["letter"],
+                               request_instance.letter_gold,
+                               method)
                 db_rows.append(db_row)
                 hidden_states_rows[id_instance[method]] = hidden_states_preprocess[method]
                 logits_rows[id_instance[method]] = request_result.logits.detach().cpu().numpy()

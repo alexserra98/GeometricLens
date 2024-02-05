@@ -186,7 +186,7 @@ class HiddenStates():
                           label, 
                           k=None, 
                           class_fraction = None):
-    logits = softmax(logits)
+    #logits = softmax(logits)
     #assert hidden_states_df[label].value_counts().nunique() == 1, "There must be the same number of instances for each label - Class imbalance not supported"
     labels_literals = hidden_states_df[label].unique()
     labels_literals.sort()
@@ -203,7 +203,7 @@ class HiddenStates():
     return overlap
                 #clustering_bincount]
       
-  def subject_overlap(self) -> Dict[str, List[np.ndarray]]:
+  def label_overlap(self, label, balanced=None) -> Dict[str, List[np.ndarray]]:
     """
     Compute the overlap between the layers of instances in which the model answered with the same letter
     Output
@@ -211,17 +211,27 @@ class HiddenStates():
     Dict[layer: List[Array(num_layers, num_layers)]]
     """
     #The last token is always the same, thus its first layer activation (embedding) is always the same
-    iter_list=[0.05,0.10,0.20,0.50]
+    #iter_list=[0.05,0.10,0.20,0.50]
+    if balanced:
+      iter_list=[10,20,50]
+    else:
+      iter_list=[0.003,0.01,0.05,0.10]
     rows = []
-    label = "dataset"
+    
     for class_fraction in tqdm.tqdm(iter_list, desc = "Computing overlap"):
       for model in self.df["model_name"].unique().tolist():
-        for method in self.df["method"].unique().tolist():
-          for train_instances in self.df["train_instances"].unique().tolist():
-            query = DataFrameQuery({"method":method,
-                                    "model_name":model,
-                                    "train_instances": train_instances}) 
-                                    #{"balanced":label})
+        for method in ["last"]: #self.df["method"].unique().tolist():
+          for train_instances in ["0","5"]:#self.df["train_instances"].unique().tolist():
+            if balanced:
+              query = DataFrameQuery({"method":method,
+                                      "model_name":model,
+                                      "train_instances": train_instances},
+                                      {"balanced":label})
+            else:
+              query = DataFrameQuery({"method":method,
+                                      "model_name":model,
+                                      "train_instances": train_instances}) 
+                                    
             hidden_states, logits, hidden_states_df= hidden_states_collapse(self.df,query, self.tensor_storage)
             args = {"hidden_states":hidden_states,
                     "logits":logits,
@@ -248,14 +258,16 @@ class HiddenStates():
     Dict[layer: List[Array(num_layers, num_layers)]]
     """
     #The last token is always the same, thus its first layer activation (embedding) is always the same
-    iter_list=[0.05,0.10,0.20,0.50]
+    #iter_list=[0.05,0.10,0.20,0.50]
+    iter_list=[0.003,0.01,0.05,0.10]
     rows = []
-    label = "only_ref_pred"
+    #label = "only_ref_pred"
+    label = "std_pred"
     for class_fraction in tqdm.tqdm(iter_list, desc = "Computing overlap"):
       for model in self.df["model_name"].unique().tolist():
         for dataset in self.df["dataset"].unique().tolist():
-          for method in self.df["method"].unique().tolist():
-            for train_instances in self.df["train_instances"].unique().tolist():
+          for method in ["last"]:#self.df["method"].unique().tolist():
+            for train_instances in ["0","5"]: #self.df["train_instances"].unique().tolist():
               query = DataFrameQuery({"method":method,
                                       "dataset":dataset,
                                       "model_name":model,

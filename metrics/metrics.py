@@ -68,9 +68,15 @@ class Metrics():
     def _compute_metric(self, metric) -> pd.DataFrame:
       if metric == "shot_metric":
         return self.shot_metrics()
-      elif metric == "letter_overlap":
+      elif "letter_overlap" in metric:
+        if len(condition:=metric.split(":"))>1:
+          return self._compute_letter_overlap(condition[1])
         return self._compute_letter_overlap()
-      elif metric == "subject_overlap":
+      elif metric == "letter_overlap_temporary":
+        return self._compute_letter_overlap_temporary()
+      elif "subject_overlap" in metric:
+        if len(condition:=metric.split(":"))>1:
+          return self._compute_subject_overlap(condition[1])
         return self._compute_subject_overlap()
       elif metric == "base_finetune_overlap":
         return self._compute_base_finetune_overlap()
@@ -92,13 +98,17 @@ class Metrics():
         print("You need to computer intrinisic dimension and shot metrics first")
       return self.get_last_layer_id_diff(id_df, shot_metrics_df)
     
-    def _compute_letter_overlap(self) -> pd.DataFrame:
+    def _compute_letter_overlap(self, condition=None) -> pd.DataFrame:
+      hidden_states = HiddenStates(self.df, self.tensor_path)
+      return hidden_states.label_overlap(balanced = condition,label = "std_pred")
+    
+    def _compute_letter_overlap_temporary(self) -> pd.DataFrame:
       hidden_states = HiddenStates(self.df, self.tensor_path)
       return hidden_states.letter_overlap()
     
-    def _compute_subject_overlap(self) -> pd.DataFrame:
+    def _compute_subject_overlap(self, condition=None) -> pd.DataFrame:
       hidden_states = HiddenStates(self.df, self.tensor_path)
-      return hidden_states.subject_overlap()
+      return hidden_states.subject_overlap(balanced = condition, label="dataset")
     
     def _compute_intrinsic_dim(self) -> pd.DataFrame:
       hidden_states = HiddenStates(self.df, self.tensor_path)
