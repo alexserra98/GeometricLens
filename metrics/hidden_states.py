@@ -44,11 +44,10 @@ def hidden_states_collapse(df_hiddenstates: pd.DataFrame(), query: DataFrameQuer
     df_hiddenstates = query.apply_query(df_hiddenstates)
     hidden_states = []
     logits = []
-    for model in df_hiddenstates["model_name"].unique(): 
-      for dataset in df_hiddenstates["dataset"].unique():
-        for train_instances in df_hiddenstates["train_instances"].unique():
-          hidden_states.extend(tensor_storage.load_tensors(f'{model.replace("/","-")}/{dataset}/{train_instances}/hidden_states', df_hiddenstates["id_instance"].tolist()))
-          logits.extend(tensor_storage.load_tensors(f'{model.replace("/","-")}/{dataset}/{train_instances}/logits', df_hiddenstates["id_instance"].tolist()))
+    for rows in df_hiddenstates.iterrows():
+        row = rows[1]
+        hidden_states.extend(tensor_storage.load_tensors(f'{row["model_name"].replace("/","-")}/{row["dataset"]}/{row["train_instances"]}/hidden_states', [row["id_instance"]]))
+        logits.extend(tensor_storage.load_tensors(f'{row["model_name"].replace("/","-")}/{row["dataset"]}/{row["train_instances"]}/logits', [row["id_instance"]]))
     return np.stack(hidden_states),np.stack(logits), df_hiddenstates
 
 
