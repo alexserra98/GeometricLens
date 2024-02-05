@@ -62,15 +62,16 @@ class Metrics():
       for metric in tqdm.tqdm(self.metrics_list, desc = "Computing metrics"):
         logging.info(f'Computing {metric}...')
         out = self._compute_metric(metric)
-        out.to_pickle(Path(self.path_result,f'{metric}.pkl'))
+        out.to_pickle(Path(self.path_result,f'{metric.replace(":","_")}.pkl'))
       return df_out
     
     def _compute_metric(self, metric) -> pd.DataFrame:
       if metric == "shot_metric":
         return self.shot_metrics()
       elif "letter_overlap" in metric:
+        #import pdb; pdb.set_trace()
         if len(condition:=metric.split(":"))>1:
-          return self._compute_letter_overlap(condition[1])
+          return self._compute_letter_overlap(True)
         return self._compute_letter_overlap()
       elif metric == "letter_overlap_temporary":
         return self._compute_letter_overlap_temporary()
@@ -100,7 +101,7 @@ class Metrics():
     
     def _compute_letter_overlap(self, condition=None) -> pd.DataFrame:
       hidden_states = HiddenStates(self.df, self.tensor_path)
-      return hidden_states.label_overlap(balanced = condition,label = "std_pred")
+      return hidden_states.label_overlap(balanced = condition,label = "only_ref_pred")
     
     def _compute_letter_overlap_temporary(self) -> pd.DataFrame:
       hidden_states = HiddenStates(self.df, self.tensor_path)
