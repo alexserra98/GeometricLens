@@ -18,6 +18,7 @@ import os, sys
 from functools import partial
 from multiprocessing import Pool
 import time
+from safetensors import safe_open
 
 _DEBUG = False
 _NUM_PROC = 32 
@@ -78,11 +79,38 @@ def load_tensors_for_row(row,tensor_storage: TensorStorage):
     hidden_state_path = f'{row["model_name"].replace("/","-")}/{row["dataset"]}/{row["train_instances"]}/hidden_states'
     logits_path = f'{row["model_name"].replace("/","-")}/{row["dataset"]}/{row["train_instances"]}/logits'
 
-    hidden_states = tensor_storage.load_tensor(hidden_state_path, [row["id_instance"]])
-    logits = tensor_storage.load_tensor(logits_path, [row["id_instance"]])
+    hidden_states = tensor_storage.load_tensor(hidden_state_path, row["id_instance"])
+    logits = tensor_storage.load_tensor(logits_path, row["id_instance"])
 
     return hidden_states, logits
           
+# def hidden_states_collapse(df_hiddenstates: pd.DataFrame(), query: DataFrameQuery, tensor_storage: TensorStorage)-> np.ndarray:
+#     """
+#     Collect hidden states of all instances and collapse them in one tensor
+#     using the provided method
+
+#     Parameters
+#     ----------
+#     df_hiddenstates: pd.DataFrame(hiddens_states, match, layer, answered letter, gold letter)
+#                      dataframe containing the hidden states of all instances
+#     query: Dict[condition, value] --> what instances to select
+#     Output
+#     ----------
+#     (num_instances, num_layers, model_dim)
+#     """ 
+
+#     df_hiddenstates = query.apply_query(df_hiddenstates)
+#     hidden_states = []
+#     logits = []
+#     load_tensors_for_row_t = partial(load_tensors_for_row, tensor_storage=tensor_storage)
+#     start_time = time.time()
+#     with Pool(processes=_NUM_PROC) as pool:
+#         results = pool.map(load_tensors_for_row_t, [row for _, row in df_hiddenstates.iterrows()])
+#     end_time = time.time()
+#     print(f"Tensor retrieval took: {end_time-start_time}")
+#     hidden_states, logits = zip(*results)
+#     return np.squeeze(np.stack(hidden_states),1),np.squeeze(np.stack(logits),1), df_hiddenstates
+
 def hidden_states_collapse(df_hiddenstates: pd.DataFrame(), query: DataFrameQuery, tensor_storage: TensorStorage)-> np.ndarray:
     """
     Collect hidden states of all instances and collapse them in one tensor
@@ -101,16 +129,16 @@ def hidden_states_collapse(df_hiddenstates: pd.DataFrame(), query: DataFrameQuer
     df_hiddenstates = query.apply_query(df_hiddenstates)
     hidden_states = []
     logits = []
-    load_tensors_for_row_t = partial(load_tensors_for_row, tensor_storage=tensor_storage)
     start_time = time.time()
-    with Pool(processes=_NUM_PROC) as pool:
-        results = pool.map(load_tensors_for_row_t, [row for _, row in df_hiddenstates.iterrows()])
+    keys = [row["id_instance"] for _, row in df_hiddenstates.iterrows()]
+    hidden_states = []
+    with safe_open("/home/alexserra98/helm-suite/MCQA_Benchmark/model.safetensors", framework="pt", device=0) as f:
+      for k in keys:
+          hidden_states.append(f.get_tensor(f'tensor_{k}').cpu())
     end_time = time.time()
     print(f"Tensor retrieval took: {end_time-start_time}")
-    hidden_states, logits = zip(*results)
-    return np.squeeze(np.stack(hidden_states),1),np.squeeze(np.stack(logits),1), df_hiddenstates
-
-
+    
+    return np.stack(hidden_states),None, df_hiddenstates
 
 
 class HiddenStates():
@@ -329,7 +357,7 @@ class HiddenStates():
                           label, 
                           k=None, 
                           class_fraction = None):
-    logits = softmax(logits)
+    #logits = softmax(logits)
     #assert hidden_states_df[label].value_counts().nunique() == 1, "There must be the same number of instances for each label - Class imbalance not supported"
     labels_literals = hidden_states_df[label].unique()
     labels_literals.sort()
