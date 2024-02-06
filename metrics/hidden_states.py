@@ -15,8 +15,53 @@ from sklearn.metrics.cluster import adjusted_rand_score, adjusted_mutual_info_sc
 from sklearn.metrics import mutual_info_score
 import warnings
 import os, sys
+from functools import partial
+from multiprocessing import Pool
 
 _DEBUG = False
+_NUM_PROC = 4
+
+def process_layer_label_overlap(num_layer, hidden_states, labels, class_fraction, k):
+    """
+    Process a single layer.
+    """
+    data = Data(hidden_states[:, num_layer, :])
+    warnings.filterwarnings("ignore")
+    overlap = data.return_label_overlap(labels, class_fraction=class_fraction, k=k)
+    return overlap
+
+def process_layer_point_overlap(layer, data_i, data_j, k):
+    """
+    Process a single layer.
+    """
+    data = Data(data_i[:,layer,:])
+    warnings.filterwarnings("ignore")
+    data.compute_distances(maxk=k)
+    overlap = data.return_data_overlap(data_j[:,layer,:])
+    return overlap
+  
+def process_layer_point_cluster(layer, input_i, input_j, k, comparison_metrics):
+    """
+    Process a single layer.
+    """
+    data_i = Data(input_i[:, layer, :])
+    data_j = Data(input_j[:, layer, :])
+
+    with HiddenPrints():
+        data_i.remove_identical_points()
+        data_j.remove_identical_points()
+
+    data_i.compute_distances(maxk=k)
+    data_j.compute_distances(maxk=k)
+
+    clusters_i = data_i.compute_clustering_ADP(Z=1.68)
+    clusters_j = data_j.compute_clustering_ADP()
+
+    layer_results = {}
+    for key, func in comparison_metrics.items():
+        layer_results[key] = func(clusters_i, clusters_j)
+
+    return layer_results
 class HiddenPrints:
     def __enter__(self):
         self._original_stdout = sys.stdout
@@ -25,7 +70,18 @@ class HiddenPrints:
     def __exit__(self, exc_type, exc_val, exc_tb):
         sys.stdout.close()
         sys.stdout = self._original_stdout
-        
+def load_tensors_for_row(row,tensor_storage: TensorStorage):
+    """
+    Load tensors for a given row.
+    """
+    hidden_state_path = f'{row["model_name"].replace("/","-")}/{row["dataset"]}/{row["train_instances"]}/hidden_states'
+    logits_path = f'{row["model_name"].replace("/","-")}/{row["dataset"]}/{row["train_instances"]}/logits'
+
+    hidden_states = tensor_storage.load_tensors(hidden_state_path, [row["id_instance"]])
+    logits = tensor_storage.load_tensors(logits_path, [row["id_instance"]])
+
+    return hidden_states, logits
+          
 def hidden_states_collapse(df_hiddenstates: pd.DataFrame(), query: DataFrameQuery, tensor_storage: TensorStorage)-> np.ndarray:
     """
     Collect hidden states of all instances and collapse them in one tensor
@@ -44,10 +100,12 @@ def hidden_states_collapse(df_hiddenstates: pd.DataFrame(), query: DataFrameQuer
     df_hiddenstates = query.apply_query(df_hiddenstates)
     hidden_states = []
     logits = []
-    for rows in df_hiddenstates.iterrows():
-        row = rows[1]
-        hidden_states.extend(tensor_storage.load_tensors(f'{row["model_name"].replace("/","-")}/{row["dataset"]}/{row["train_instances"]}/hidden_states', [row["id_instance"]]))
-        logits.extend(tensor_storage.load_tensors(f'{row["model_name"].replace("/","-")}/{row["dataset"]}/{row["train_instances"]}/logits', [row["id_instance"]]))
+    load_tensors_for_row_t = partial(load_tensors_for_row, tensor_storage=tensor_storage)
+
+    with Pool(processes=_NUM_PROC) as pool:
+        results = pool.map(load_tensors_for_row_t, [row for _, row in df_hiddenstates.iterrows()])
+
+    hidden_states, logits = zip(*results)
     return np.stack(hidden_states),np.stack(logits), df_hiddenstates
 
 
@@ -150,19 +208,98 @@ class HiddenStates():
                                         "only_ref_exact_match", 
                                         ])
     return df
+  
+  def _label_clustering_core(self,hidden_states,
+                          logits, 
+                          hidden_states_df,
+                          label, 
+                          k=None, 
+                          class_fraction = None):
+    logits = softmax(logits)
+    #assert hidden_states_df[label].value_counts().nunique() == 1, "There must be the same number of instances for each label - Class imbalance not supported"
+    labels_literals = hidden_states_df[label].unique()
+    labels_literals.sort()
+    map_labels = {class_name: n for n,class_name in enumerate(labels_literals)}
+    label_per_row = hidden_states_df[label].reset_index(drop=True)
+    label_per_row = [map_labels[class_name] for class_name in label_per_row]
+    label_per_row = np.array(label_per_row)
+    #import pdb; pdb.set_trace() 
+    label_per_row = label_per_row[:hidden_states.shape[0]]
+    clustering_bincount = self._clustering_label_overlap(hidden_states, label_per_row, 100)
+    clustering_bincount_logits = self._clustering_label_overlap(logits, label_per_row, 100)
+    clustering_bincount = np.concatenate([clustering_bincount, clustering_bincount_logits])
+    return clustering_bincount
+  
+  def clustering_label(self, label, balanced=None) -> Dict[str, List[np.ndarray]]:
+    """
+    Compute the overlap between the layers of instances in which the model answered with the same letter
+    Output
+    ----------
+    Dict[layer: List[Array(num_layers, num_layers)]]
+    """
+    #The last token is always the same, thus its first layer activation (embedding) is always the same
+    #iter_list=[0.05,0.10,0.20,0.50]
+    iter_list=[0.05,0.10,0.20,0.50]
+    rows = []
+    
+    for class_fraction in tqdm.tqdm(iter_list, desc = "Computing overlap"):
+      for model in self.df["model_name"].unique().tolist():
+        for method in ["last"]: #self.df["method"].unique().tolist():
+          for train_instances in ["0","2","5"]:#self.df["train_instances"].unique().tolist():
+            if balanced:
+              query = DataFrameQuery({"method":method,
+                                      "model_name":model,
+                                      "train_instances": train_instances},
+                                      {"balanced":label})
+            else:
+              query = DataFrameQuery({"method":method,
+                                      "model_name":model,
+                                      "train_instances": train_instances}) 
+                                    
+            hidden_states, logits, hidden_states_df= hidden_states_collapse(self.df,query, self.tensor_storage)
+            if balanced:
+              args = {"hidden_states":hidden_states,
+                      "logits":logits,
+                      "hidden_states_df":hidden_states_df,
+                      "label":label,
+                      "k":class_fraction}
+            else:
+              args = {"hidden_states":hidden_states,
+                      "logits":logits,
+                      "hidden_states_df":hidden_states_df,
+                      "label":label,
+                      "class_fraction":class_fraction}
+            row = [model, method, train_instances, class_fraction]
+            row.append(self._label_clustering_core(**args))
+            rows.append(row)
+                      
+    df = pd.DataFrame(rows, columns = ["model",
+                                       "method",
+                                       "train_instances",
+                                       "class_fraction",
+                                        "clustering_bincount"])
+    return df
+  
+  def process_layer_label_overlap(num_layer, hidden_states, labels, class_fraction, k):
+    """
+    Process a single layer.
+    """
+    data = Data(hidden_states[:, num_layer, :])
+    warnings.filterwarnings("ignore")
+    overlap = data.return_label_overlap(labels, class_fraction=class_fraction, k=k)
+    return overlap
 
   
   def _label_overlap(self, hidden_states, labels, k=None, class_fraction = None) -> Dict[str, List[np.ndarray]]:
     overlaps = []
     if k is None and class_fraction is None:
       raise ValueError("You must provide either k or class_fraction")
-    for num_layer in range(hidden_states.shape[1]):
-      data = Data(hidden_states[:,num_layer,:])
-      #data.compute_distances(maxk=k)
-      #import pdb; pdb.set_trace()
-      warnings.filterwarnings("ignore")
-      overlap = data.return_label_overlap(labels,class_fraction=class_fraction,k=k)
-      overlaps.append(overlap)
+    
+    with Pool(processes=_NUM_PROC) as pool:
+        results = pool.starmap(process_layer_label_overlap, [(num_layer, hidden_states, labels, class_fraction, k) for num_layer in range(hidden_states.shape[1])])
+
+    overlaps = list(results)
+
     return np.stack(overlaps)
   
   def _clustering_label_overlap(self, hidden_states, labels, k) -> np.ndarray:
@@ -317,13 +454,12 @@ class HiddenStates():
     assert data_i.shape[1] == data_j.shape[1], "The two runs must have the same number of layers"
     number_of_layers = data_i.shape[1]
     overlap_per_layer = []
-    for layer in range(number_of_layers):
-      data = Data(data_i[:,layer,:])
-      warnings.filterwarnings("ignore")
-      data.compute_distances(maxk=k)
-      overlap_per_layer.append(data.return_data_overlap(data_j[:,layer,:]))
+    with Pool(processes=_NUM_PROC) as pool:
+        results = pool.starmap(process_layer_point_overlap, [(layer, data_i, data_j, k) for layer in range(number_of_layers)])
+
+    overlaps = list(results)
     
-    return np.stack(overlap_per_layer)
+    return np.stack(overlaps)
   
   def pair_names(self,names_list):
     """
@@ -370,9 +506,9 @@ class HiddenStates():
     for k in tqdm.tqdm(iter_list, desc = "Computing overlaps k"):
       for couples in self.pair_names(self.df["model_name"].unique().tolist()):
         #import pdb; pdb.set_trace()
-        for method in self.df["method"].unique().tolist():
+        for method in ["last"]:#self.df["method"].unique().tolist():
           for train_instances_i in ["0","5"]:#self.hidden_states["train_instances"].unique().tolist():
-            for train_instances_j in ["0","5"]:#self.hidden_states["train_instances"].unique():
+            for train_instances_j in ["5"]:#self.hidden_states["train_instances"].unique():
                 query_i = DataFrameQuery({"method":method,
                         "model_name":couples[0], 
                         "train_instances": train_instances_i,})
@@ -408,18 +544,21 @@ class HiddenStates():
       number_of_layers = input_i.shape[1]
       k = 100 if not _DEBUG else 50
       comparison_output = {key:[] for key in comparison_metrics.keys()}
-      for layer in range(1,number_of_layers):
-        data_i = Data(input_i[:,layer,:]); data_j = Data(input_j[:,layer,:])
-        with HiddenPrints():
-          data_i.remove_identical_points(); data_j.remove_identical_points()
-        data_i.compute_distances(maxk=k); data_j.compute_distances(maxk=k)
-        clusters_i = data_i.compute_clustering_ADP(Z=1.68)
-        clusters_j = data_j.compute_clustering_ADP()
-        for key, func in comparison_metrics.items():
-          comparison_output[key].append(func(clusters_i, clusters_j))        
-        
-      for key in comparison_metrics.keys():
-        comparison_output[key] = np.stack(comparison_output[key])
+      # Number of processes; adjust based on your CPU
+
+      # Prepare the arguments for each process
+      layer_args = [(layer, input_i, input_j, k, comparison_metrics) for layer in range(1, number_of_layers)]
+
+      # Create a pool of worker processes
+      with Pool(processes=_NUM_PROC) as pool:
+        # Map the process_layer function to each layer
+        results = pool.starmap(process_layer_point_cluster, layer_args)
+
+      # Organize the results
+      comparison_output = {key: [] for key in comparison_metrics}
+      for layer_result in results:
+          for key in comparison_output:
+              comparison_output[key].append(layer_result[key])
       return comparison_output
     
   def _clustering(hidden_states, k):
