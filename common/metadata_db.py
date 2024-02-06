@@ -1,4 +1,5 @@
 import sqlite3
+from utils import retry_on_failure
 
 class MetadataDB:
     def __init__(self, db_path):
@@ -82,6 +83,7 @@ class MetadataDB:
                                          entry.method))
         self.conn.commit()
 
+    @retry_on_failure(3)
     def query_metadata(self, condition):
         query = f'SELECT * FROM metadata WHERE {condition};'
         cursor = self.conn.execute(query)

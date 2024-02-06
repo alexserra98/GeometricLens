@@ -26,7 +26,11 @@ class TensorStorage:
                     h5f.create_dataset(dataset_name, data=tensor)
                 
 
-
+    def load_tensor(self, file_name, id):
+        file_path = os.path.join(self.storage_dir, file_name + '.h5')
+        with h5py.File(file_path, 'r') as h5f:
+            return torch.from_numpy(np.array(h5f[f'tensor_{id}'][:]))
+    
     def load_tensors(self, file_name, key_user=None):
         file_path = os.path.join(self.storage_dir, file_name + '.h5')
         tensors = []

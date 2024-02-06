@@ -20,7 +20,7 @@ from multiprocessing import Pool
 import time
 
 _DEBUG = False
-_NUM_PROC = 8
+_NUM_PROC = 32 
 
 def process_layer_label_overlap(num_layer, hidden_states, labels, class_fraction, k):
     """
@@ -78,8 +78,8 @@ def load_tensors_for_row(row,tensor_storage: TensorStorage):
     hidden_state_path = f'{row["model_name"].replace("/","-")}/{row["dataset"]}/{row["train_instances"]}/hidden_states'
     logits_path = f'{row["model_name"].replace("/","-")}/{row["dataset"]}/{row["train_instances"]}/logits'
 
-    hidden_states = tensor_storage.load_tensors(hidden_state_path, [row["id_instance"]])
-    logits = tensor_storage.load_tensors(logits_path, [row["id_instance"]])
+    hidden_states = tensor_storage.load_tensor(hidden_state_path, [row["id_instance"]])
+    logits = tensor_storage.load_tensor(logits_path, [row["id_instance"]])
 
     return hidden_states, logits
           
