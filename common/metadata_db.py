@@ -1,5 +1,5 @@
 import sqlite3
-from utils import retry_on_failure
+from .utils import retry_on_failure
 
 class MetadataDB:
     def __init__(self, db_path):
