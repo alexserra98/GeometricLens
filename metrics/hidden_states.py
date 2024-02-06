@@ -17,9 +17,10 @@ import warnings
 import os, sys
 from functools import partial
 from multiprocessing import Pool
+import time
 
 _DEBUG = False
-_NUM_PROC = 4
+_NUM_PROC = 8
 
 def process_layer_label_overlap(num_layer, hidden_states, labels, class_fraction, k):
     """
@@ -101,12 +102,14 @@ def hidden_states_collapse(df_hiddenstates: pd.DataFrame(), query: DataFrameQuer
     hidden_states = []
     logits = []
     load_tensors_for_row_t = partial(load_tensors_for_row, tensor_storage=tensor_storage)
-
+    start_time = time.time()
     with Pool(processes=_NUM_PROC) as pool:
         results = pool.map(load_tensors_for_row_t, [row for _, row in df_hiddenstates.iterrows()])
-
+    end_time = time.time()
+    print(f"Tensor retrieval took: {end_time-start_time}")
     hidden_states, logits = zip(*results)
-    return np.stack(hidden_states),np.stack(logits), df_hiddenstates
+    return np.squeeze(np.stack(hidden_states),1),np.squeeze(np.stack(logits),1), df_hiddenstates
+
 
 
 
@@ -229,7 +232,7 @@ class HiddenStates():
     clustering_bincount_logits = self._clustering_label_overlap(logits, label_per_row, 100)
     clustering_bincount = np.concatenate([clustering_bincount, clustering_bincount_logits])
     return clustering_bincount
-  
+
   def clustering_label(self, label, balanced=None) -> Dict[str, List[np.ndarray]]:
     """
     Compute the overlap between the layers of instances in which the model answered with the same letter
@@ -285,6 +288,7 @@ class HiddenStates():
     Process a single layer.
     """
     data = Data(hidden_states[:, num_layer, :])
+
     warnings.filterwarnings("ignore")
     overlap = data.return_label_overlap(labels, class_fraction=class_fraction, k=k)
     return overlap
@@ -295,9 +299,12 @@ class HiddenStates():
     if k is None and class_fraction is None:
       raise ValueError("You must provide either k or class_fraction")
     
+    start_time = time.time()
+    
     with Pool(processes=_NUM_PROC) as pool:
         results = pool.starmap(process_layer_label_overlap, [(num_layer, hidden_states, labels, class_fraction, k) for num_layer in range(hidden_states.shape[1])])
-
+    end_time = time.time()
+    print(f"Label overlap over batch of data took: {end_time-start_time}")
     overlaps = list(results)
 
     return np.stack(overlaps)
@@ -333,8 +340,8 @@ class HiddenStates():
     #import pdb; pdb.set_trace() 
     label_per_row = label_per_row[:hidden_states.shape[0]]
     overlap = self._label_overlap(hidden_states, label_per_row,k=k, class_fraction=class_fraction) 
-    overlap_logits = self._label_overlap(logits, label_per_row, k=k, class_fraction=class_fraction)
-    overlap = np.concatenate([overlap, overlap_logits])
+    #overlap_logits = self._label_overlap(logits, label_per_row, k=k, class_fraction=class_fraction)
+    #overlap = np.concatenate([overlap, overlap_logits])
     #clustering_bincount = self._clustering_label_overlap(hidden_states, label_per_row, 100)
     return overlap
                 #clustering_bincount]

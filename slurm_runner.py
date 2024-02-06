@@ -24,7 +24,7 @@ def create_bash_script(script_name, arguments, config_path):
         script_file.write(f'conda activate mcqa\n')
         script_file.write(f'export PYTHONPATH=/u/dssc/zenocosini/helm_suite/MCQA_Benchmark\n')
         script_file.write(f'export CUDA_VISIBLE_DEVICES=0,1,2,3\n') 
-        script_file.write(f'export OMP_NUM_THREADS=1\n') 
+        #script_file.write(f'export OMP_NUM_THREADS=1\n') 
         if arguments.job_type == 'inference':
             script_file.write(f'python inference.py --conf-path {config_path}\n')
         elif arguments.job_type == 'metrics':
@@ -68,11 +68,11 @@ def main():
                                  output='inference')
     elif job_type == 'metrics':
         sbatch_args = SbatchArgs(job_type='metrics',
-                                 partition='GPU',
+                                 partition='THIN',
                                  nodes=1,
                                  ntasks_per_node=1,
                                  cpus_per_task=1,
-                                 mem='230G',
+                                 mem='580G',
                                  time='1-20:00:00',
                                  job_name='metrics',
                                  output='metrics')    
