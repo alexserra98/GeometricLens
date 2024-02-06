@@ -1,11 +1,11 @@
 #!/bin/bash
-#SBATCH --partition=THIN
+#SBATCH --partition=GPU
 #SBATCH --account=LADE
 #SBATCH --nodes=1
 #SBATCH --exclusive
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=530G
+#SBATCH --mem=230G
 #SBATCH --time=1-20:00:00
 #SBATCH --job-name=metrics
 #SBATCH --output=output_job/metrics_job_%j.out

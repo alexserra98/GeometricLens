@@ -109,7 +109,7 @@ class Metrics():
     
     def _compute_subject_overlap(self, condition=None) -> pd.DataFrame:
       hidden_states = HiddenStates(self.df, self.tensor_path)
-      return hidden_states.subject_overlap(balanced = condition, label="dataset")
+      return hidden_states.label_overlap(balanced = condition, label="dataset")
     
     def _compute_intrinsic_dim(self) -> pd.DataFrame:
       hidden_states = HiddenStates(self.df, self.tensor_path)

@@ -68,11 +68,11 @@ def main():
                                  output='inference')
     elif job_type == 'metrics':
         sbatch_args = SbatchArgs(job_type='metrics',
-                                 partition='THIN',
+                                 partition='GPU',
                                  nodes=1,
                                  ntasks_per_node=1,
                                  cpus_per_task=1,
-                                 mem='530G',
+                                 mem='230G',
                                  time='1-20:00:00',
                                  job_name='metrics',
                                  output='metrics')    

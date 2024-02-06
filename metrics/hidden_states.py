@@ -185,7 +185,7 @@ class HiddenStates():
                           label, 
                           k=None, 
                           class_fraction = None):
-    #logits = softmax(logits)
+    logits = softmax(logits)
     #assert hidden_states_df[label].value_counts().nunique() == 1, "There must be the same number of instances for each label - Class imbalance not supported"
     labels_literals = hidden_states_df[label].unique()
     labels_literals.sort()
@@ -214,13 +214,13 @@ class HiddenStates():
     if balanced:
       iter_list=[10,20,50]
     else:
-      iter_list=[0.003,0.01,0.05,0.10]
+      iter_list=[0.05,0.10,0.20,0.50]
     rows = []
     
     for class_fraction in tqdm.tqdm(iter_list, desc = "Computing overlap"):
       for model in self.df["model_name"].unique().tolist():
         for method in ["last"]: #self.df["method"].unique().tolist():
-          for train_instances in ["5"]:#self.df["train_instances"].unique().tolist():
+          for train_instances in ["0","2","5"]:#self.df["train_instances"].unique().tolist():
             if balanced:
               query = DataFrameQuery({"method":method,
                                       "model_name":model,
