@@ -72,6 +72,7 @@ class HiddenPrints:
     def __exit__(self, exc_type, exc_val, exc_tb):
         sys.stdout.close()
         sys.stdout = self._original_stdout
+        
 def load_tensors_for_row(row,tensor_storage: TensorStorage):
     """
     Load tensors for a given row.
@@ -84,6 +85,35 @@ def load_tensors_for_row(row,tensor_storage: TensorStorage):
 
     return hidden_states, logits
           
+def hidden_states_collapse(df_hiddenstates: pd.DataFrame(), query: DataFrameQuery, tensor_storage: TensorStorage)-> np.ndarray:
+    """
+    Collect hidden states of all instances and collapse them in one tensor
+    using the provided method
+
+    Parameters
+    ----------
+    df_hiddenstates: pd.DataFrame(hiddens_states, match, layer, answered letter, gold letter)
+                     dataframe containing the hidden states of all instances
+    query: Dict[condition, value] --> what instances to select
+    Output
+    ----------
+    (num_instances, num_layers, model_dim)
+    """ 
+
+    df_hiddenstates = query.apply_query(df_hiddenstates)
+    hidden_states = []
+    logits = []
+    load_tensors_for_row_t = partial(load_tensors_for_row, tensor_storage=tensor_storage)
+    start_time = time.time()
+    #rows = [row for _, row in df_hiddenstates.iterrows()]
+    #hidden_state_path =[[f'{row["model_name"].replace("/","-")}/{row["dataset"]}/{row["train_instances"]}/hidden_states', row["id_instance"]] for row in rows]
+    #hidden_state_path = pd.DataFrame(hidden_state_path, columns = ["path", "id_instance"])
+    with Pool(processes=_NUM_PROC) as pool:
+        results = pool.map(load_tensors_for_row_t, [row for _, row in df_hiddenstates.iterrows()])
+    end_time = time.time()
+    print(f"Tensor retrieval took: {end_time-start_time}")
+    hidden_states, logits = zip(*results)
+    return np.squeeze(np.stack(hidden_states),1),np.squeeze(np.stack(logits),1), df_hiddenstates
 # def hidden_states_collapse(df_hiddenstates: pd.DataFrame(), query: DataFrameQuery, tensor_storage: TensorStorage)-> np.ndarray:
 #     """
 #     Collect hidden states of all instances and collapse them in one tensor
@@ -104,41 +134,45 @@ def load_tensors_for_row(row,tensor_storage: TensorStorage):
 #     logits = []
 #     load_tensors_for_row_t = partial(load_tensors_for_row, tensor_storage=tensor_storage)
 #     start_time = time.time()
-#     with Pool(processes=_NUM_PROC) as pool:
-#         results = pool.map(load_tensors_for_row_t, [row for _, row in df_hiddenstates.iterrows()])
+#     rows = [row for _, row in df_hiddenstates.iterrows()]
+#     hidden_state_path =[[f'{row["model_name"].replace("/","-")}/{row["dataset"]}/{row["train_instances"]}/hidden_states', row["id_instance"]] for row in rows]
+#     hidden_state_path = pd.DataFrame(hidden_state_path, columns = ["path", "id_instance"])
+#     for path in hidden_state_path["path"].unique():
+#       hidden_states.append(tensor_storage.load_tensors(path, hidden_state_path[hidden_state_path["path"] == path]["id_instance"].tolist()))
+#     # with Pool(processes=_NUM_PROC) as pool:
+#     #     results = pool.map(load_tensors_for_row_t, [row for _, row in df_hiddenstates.iterrows()])
+#     # end_time = time.time()
+#     # print(f"Tensor retrieval took: {end_time-start_time}")
+#     # hidden_states, logits = zip(*results)
+#     return np.squeeze(np.stack(hidden_states),1),None, df_hiddenstates
+# def hidden_states_collapse(df_hiddenstates: pd.DataFrame(), query: DataFrameQuery, tensor_storage: TensorStorage)-> np.ndarray:
+#     """
+#     Collect hidden states of all instances and collapse them in one tensor
+#     using the provided method
+
+#     Parameters
+#     ----------
+#     df_hiddenstates: pd.DataFrame(hiddens_states, match, layer, answered letter, gold letter)
+#                      dataframe containing the hidden states of all instances
+#     query: Dict[condition, value] --> what instances to select
+#     Output
+#     ----------
+#     (num_instances, num_layers, model_dim)
+#     """ 
+
+#     df_hiddenstates = query.apply_query(df_hiddenstates)
+#     hidden_states = []
+#     logits = []
+#     start_time = time.time()
+#     keys = [row["id_instance"] for _, row in df_hiddenstates.iterrows()]
+#     hidden_states = []
+#     with safe_open("/home/alexserra98/helm-suite/MCQA_Benchmark/model.safetensors", framework="pt", device=0) as f:
+#       for k in keys:
+#           hidden_states.append(f.get_tensor(f'tensor_{k}').cpu())
 #     end_time = time.time()
 #     print(f"Tensor retrieval took: {end_time-start_time}")
-#     hidden_states, logits = zip(*results)
-#     return np.squeeze(np.stack(hidden_states),1),np.squeeze(np.stack(logits),1), df_hiddenstates
-
-def hidden_states_collapse(df_hiddenstates: pd.DataFrame(), query: DataFrameQuery, tensor_storage: TensorStorage)-> np.ndarray:
-    """
-    Collect hidden states of all instances and collapse them in one tensor
-    using the provided method
-
-    Parameters
-    ----------
-    df_hiddenstates: pd.DataFrame(hiddens_states, match, layer, answered letter, gold letter)
-                     dataframe containing the hidden states of all instances
-    query: Dict[condition, value] --> what instances to select
-    Output
-    ----------
-    (num_instances, num_layers, model_dim)
-    """ 
-
-    df_hiddenstates = query.apply_query(df_hiddenstates)
-    hidden_states = []
-    logits = []
-    start_time = time.time()
-    keys = [row["id_instance"] for _, row in df_hiddenstates.iterrows()]
-    hidden_states = []
-    with safe_open("/home/alexserra98/helm-suite/MCQA_Benchmark/model.safetensors", framework="pt", device=0) as f:
-      for k in keys:
-          hidden_states.append(f.get_tensor(f'tensor_{k}').cpu())
-    end_time = time.time()
-    print(f"Tensor retrieval took: {end_time-start_time}")
     
-    return np.stack(hidden_states),None, df_hiddenstates
+#     return np.stack(hidden_states),None, df_hiddenstates
 
 
 class HiddenStates():
@@ -439,8 +473,8 @@ class HiddenStates():
     #iter_list=[0.05,0.10,0.20,0.50]
     iter_list=[0.003,0.01,0.05,0.10]
     rows = []
-    #label = "only_ref_pred"
-    label = "std_pred"
+    label = "only_ref_pred"
+    #label = "std_pred"
     for class_fraction in tqdm.tqdm(iter_list, desc = "Computing overlap"):
       for model in self.df["model_name"].unique().tolist():
         for dataset in self.df["dataset"].unique().tolist():
@@ -543,7 +577,7 @@ class HiddenStates():
         #import pdb; pdb.set_trace()
         for method in ["last"]:#self.df["method"].unique().tolist():
           for train_instances_i in ["0","5"]:#self.hidden_states["train_instances"].unique().tolist():
-            for train_instances_j in ["5"]:#self.hidden_states["train_instances"].unique():
+            for train_instances_j in ["0","5"]:#self.hidden_states["train_instances"].unique():
                 query_i = DataFrameQuery({"method":method,
                         "model_name":couples[0], 
                         "train_instances": train_instances_i,})
