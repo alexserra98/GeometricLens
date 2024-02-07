@@ -153,6 +153,8 @@ def hidden_states_collapse(df_hiddenstates: pd.DataFrame(), query: DataFrameQuer
     """ 
 
     df_hiddenstates = query.apply_query(df_hiddenstates)
+    # I have no clue on why this is necessary, for some reason some instances are duplicated
+    df_hiddenstates.drop_duplicates(inplace=True, ignore_index=True)
     hidden_states = []
     logits = []
     load_tensors_for_row_t = partial(load_tensors_for_row, tensor_storage=tensor_storage)
