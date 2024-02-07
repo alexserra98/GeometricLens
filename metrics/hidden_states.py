@@ -16,11 +16,10 @@ from sklearn.metrics import mutual_info_score
 import warnings
 import os, sys
 from functools import partial
-import multiprocessing as mp
-#from multiprocessing import Pool
+from multiprocessing import Pool
 import time
 from safetensors import safe_open
-mp.set_start_method('spawn',force = True)
+from joblib import Parallel, delayed
 _DEBUG = False
 _NUM_PROC = 32 
 
@@ -163,12 +162,13 @@ def hidden_states_collapse(df_hiddenstates: pd.DataFrame(), query: DataFrameQuer
     hidden_state_path = pd.DataFrame(hidden_state_path, columns = ["path", "id_instance"])
     id_instances_check = []
     hidden_states = []
+
     for path in hidden_state_path["path"].unique():
       id_instances_check.extend( hidden_state_path[hidden_state_path["path"] == path]["id_instance"])
       hidden_states.extend(tensor_storage.load_tensors(path, hidden_state_path[hidden_state_path["path"] == path]["id_instance"].tolist()))
     end_time = time.time()
     assert id_instances == id_instances_check, "The order of the instances is not the same"
-    print(f"Tensor retrieval took: {end_time-start_time}")
+    print(f" Tensor retrieval took: {end_time-start_time}\n")
     return np.stack(hidden_states),None, df_hiddenstates
 # def hidden_states_collapse(df_hiddenstates: pd.DataFrame(), query: DataFrameQuery, tensor_storage: TensorStorage)-> np.ndarray:
 #     """
@@ -204,7 +204,7 @@ class HiddenStates():
   def __init__(self,hidden_states: pd.DataFrame(), hidden_states_path: Path):
     self.df = hidden_states
     self.tensor_storage = TensorStorage(hidden_states_path)
-    
+  
   def _compute_id(self, hidden_states: np.ndarray ,  algorithm = "gride") -> np.ndarray:
     """
     Collect hidden states of all instances and compute ID
@@ -229,7 +229,7 @@ class HiddenStates():
             #id_per_layer.append(layer.compute_id_2NN()[0])
             raise NotImplementedError
         elif algorithm == "gride":
-            id_per_layer.append(data.return_id_scaling_gride(range_max = 500)[0])
+            id_per_layer.append(data.return_id_scaling_gride(range_max = 1000)[0])
     return  np.stack(id_per_layer[1:])
     
   def intrinsic_dim(self) -> pd.DataFrame:
@@ -323,12 +323,11 @@ class HiddenStates():
 
       # Prepare the arguments for each process
       layer_args = [(layer, input_i, input_j, k, comparison_metrics) for layer in range(1, number_of_layers)]
-
+      process_layer_point_cluster_iter = partial(process_layer_point_cluster, input_i=input_i, input_j=input_j, k=k, comparison_metrics=comparison_metrics)
       # Create a pool of worker processes
-      with mp.Pool(processes=_NUM_PROC) as pool:
+      with Parallel(n_jobs=_NUM_PROC) as parallel:
         # Map the process_layer function to each layer
-        results = pool.starmap(process_layer_point_cluster, layer_args)
-
+        results = parallel(delayed(process_layer_point_cluster_iter)(layer) for layer in range(1, number_of_layers))
       # Organize the results
       comparison_output = {key: [] for key in comparison_metrics}
       for layer_result in results:
@@ -345,12 +344,10 @@ class HiddenStates():
 
       # Prepare the arguments for each process
       layer_args = [(layer, input_i, label, k, comparison_metrics) for layer in range(1, number_of_layers)]
-
+      process_layer_label_cluster_iter = partial(process_layer_label_cluster, input_i=input_i, label=label, k=k, comparison_metrics=comparison_metrics)
       # Create a pool of worker processes
-      with mp.Pool(processes=_NUM_PROC) as pool:
-        # Map the process_layer function to each layer
-        results = pool.starmap(process_layer_label_cluster, layer_args)
-
+      with Parallel(n_jobs=_NUM_PROC) as parallel:
+        results = parallel(delayed(process_layer_label_cluster_iter)(layer) for layer in range(1, number_of_layers))
       # Organize the results
       comparison_output = {key: [] for key in comparison_metrics}
       for layer_result in results:
@@ -457,7 +454,7 @@ class HiddenStates():
     
     start_time = time.time()
     
-    with mp.Pool(processes=_NUM_PROC) as pool:
+    with Pool(processes=_NUM_PROC) as pool:
         results = pool.starmap(process_layer_label_overlap, [(num_layer, hidden_states, labels, class_fraction, k) for num_layer in range(hidden_states.shape[1])])
     end_time = time.time()
     print(f"Label overlap over batch of data took: {end_time-start_time}")
@@ -562,7 +559,7 @@ class HiddenStates():
     assert data_i.shape[1] == data_j.shape[1], "The two runs must have the same number of layers"
     number_of_layers = data_i.shape[1]
     overlap_per_layer = []
-    with mp.Pool(processes=_NUM_PROC) as pool:
+    with Pool(processes=_NUM_PROC) as pool:
         results = pool.starmap(process_layer_point_overlap, [(layer, data_i, data_j, k) for layer in range(number_of_layers)])
 
     overlaps = list(results)
@@ -662,7 +659,7 @@ class HiddenStates():
       layer_args = [(layer, input_i, input_j, k, comparison_metrics) for layer in range(1, number_of_layers)]
 
       # Create a pool of worker processes
-      with mp.Pool(processes=_NUM_PROC) as pool:
+      with Pool(processes=_NUM_PROC) as pool:
         # Map the process_layer function to each layer
         results = pool.starmap(process_layer_point_cluster, layer_args)
 
