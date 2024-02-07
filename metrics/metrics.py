@@ -68,17 +68,14 @@ class Metrics():
     def _compute_metric(self, metric) -> pd.DataFrame:
       if metric == "shot_metric":
         return self.shot_metrics()
-      elif "letter_overlap" in metric:
-        #import pdb; pdb.set_trace()
-        if len(condition:=metric.split(":"))>1:
-          return self._compute_letter_overlap(True)
+      elif metric == "letter_overlap":
         return self._compute_letter_overlap()
-      elif metric == "letter_overlap_temporary":
-        return self._compute_letter_overlap_temporary()
-      elif "subject_overlap" in metric:
-        if len(condition:=metric.split(":"))>1:
-          return self._compute_subject_overlap(condition[1])
+      elif metric == "subject_overlap":
         return self._compute_subject_overlap()
+      elif metric == "letter_overlap_cluster":
+        return self._compute_letter_overlap_cluster() 
+      elif metric == "subject_overlap_cluster":
+        return self._compute_letter_overlap_cluster()  
       elif metric == "base_finetune_overlap":
         return self._compute_base_finetune_overlap()
       elif metric == "intrinsic_dim":
@@ -88,6 +85,13 @@ class Metrics():
       else:
         raise NotImplementedError
     
+    def _compute_letter_overlap_cluster(self) -> pd.DataFrame:
+      hidden_states = HiddenStates(self.df, self.tensor_path)
+      return hidden_states.clustering_label(label = "only_ref_pred")
+    
+    def _compute_subject_overlap_cluster(self) -> pd.DataFrame:
+      hidden_states = HiddenStates(self.df, self.tensor_path)
+      return hidden_states.clustering_label(label = "dataset")
     
     def _compute_layer_id_diff(self):
       shot_metric_path = Path(self.path_result, 'shot_metric.pkl')

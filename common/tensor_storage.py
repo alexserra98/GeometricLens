@@ -35,5 +35,5 @@ class TensorStorage:
         file_path = os.path.join(self.storage_dir, file_name + '.h5')
         tensors = []
         with h5py.File(file_path, 'r') as h5f:
-            tensors = [torch.from_numpy(np.array(h5f[key][:])) for key in key_user]
+            tensors = [torch.from_numpy(np.array(h5f[f'tensor_{key}'][:])) for key in key_user]
         return tensors

@@ -21,7 +21,7 @@ import time
 from safetensors import safe_open
 
 _DEBUG = False
-_NUM_PROC = 32 
+_NUM_PROC = 1 
 
 def process_layer_label_overlap(num_layer, hidden_states, labels, class_fraction, k):
     """
@@ -64,6 +64,25 @@ def process_layer_point_cluster(layer, input_i, input_j, k, comparison_metrics):
         layer_results[key] = func(clusters_i, clusters_j)
 
     return layer_results
+  
+def process_layer_label_cluster(layer, input_i, label, k, comparison_metrics):
+    """
+    Process a single layer.
+    """
+    data_i = Data(input_i[:, layer, :])
+
+    with HiddenPrints():
+        data_i.remove_identical_points()
+
+    data_i.compute_distances(maxk=k)
+
+    clusters_i = data_i.compute_clustering_ADP(Z=1.68)
+
+    layer_results = {}
+    for key, func in comparison_metrics.items():
+        layer_results[key] = func(clusters_i, label)
+
+    return layer_results
 class HiddenPrints:
     def __enter__(self):
         self._original_stdout = sys.stdout
@@ -85,35 +104,6 @@ def load_tensors_for_row(row,tensor_storage: TensorStorage):
 
     return hidden_states, logits
           
-def hidden_states_collapse(df_hiddenstates: pd.DataFrame(), query: DataFrameQuery, tensor_storage: TensorStorage)-> np.ndarray:
-    """
-    Collect hidden states of all instances and collapse them in one tensor
-    using the provided method
-
-    Parameters
-    ----------
-    df_hiddenstates: pd.DataFrame(hiddens_states, match, layer, answered letter, gold letter)
-                     dataframe containing the hidden states of all instances
-    query: Dict[condition, value] --> what instances to select
-    Output
-    ----------
-    (num_instances, num_layers, model_dim)
-    """ 
-
-    df_hiddenstates = query.apply_query(df_hiddenstates)
-    hidden_states = []
-    logits = []
-    load_tensors_for_row_t = partial(load_tensors_for_row, tensor_storage=tensor_storage)
-    start_time = time.time()
-    #rows = [row for _, row in df_hiddenstates.iterrows()]
-    #hidden_state_path =[[f'{row["model_name"].replace("/","-")}/{row["dataset"]}/{row["train_instances"]}/hidden_states', row["id_instance"]] for row in rows]
-    #hidden_state_path = pd.DataFrame(hidden_state_path, columns = ["path", "id_instance"])
-    with Pool(processes=_NUM_PROC) as pool:
-        results = pool.map(load_tensors_for_row_t, [row for _, row in df_hiddenstates.iterrows()])
-    end_time = time.time()
-    print(f"Tensor retrieval took: {end_time-start_time}")
-    hidden_states, logits = zip(*results)
-    return np.squeeze(np.stack(hidden_states),1),np.squeeze(np.stack(logits),1), df_hiddenstates
 # def hidden_states_collapse(df_hiddenstates: pd.DataFrame(), query: DataFrameQuery, tensor_storage: TensorStorage)-> np.ndarray:
 #     """
 #     Collect hidden states of all instances and collapse them in one tensor
@@ -134,17 +124,57 @@ def hidden_states_collapse(df_hiddenstates: pd.DataFrame(), query: DataFrameQuer
 #     logits = []
 #     load_tensors_for_row_t = partial(load_tensors_for_row, tensor_storage=tensor_storage)
 #     start_time = time.time()
-#     rows = [row for _, row in df_hiddenstates.iterrows()]
-#     hidden_state_path =[[f'{row["model_name"].replace("/","-")}/{row["dataset"]}/{row["train_instances"]}/hidden_states', row["id_instance"]] for row in rows]
-#     hidden_state_path = pd.DataFrame(hidden_state_path, columns = ["path", "id_instance"])
-#     for path in hidden_state_path["path"].unique():
-#       hidden_states.append(tensor_storage.load_tensors(path, hidden_state_path[hidden_state_path["path"] == path]["id_instance"].tolist()))
-#     # with Pool(processes=_NUM_PROC) as pool:
-#     #     results = pool.map(load_tensors_for_row_t, [row for _, row in df_hiddenstates.iterrows()])
-#     # end_time = time.time()
-#     # print(f"Tensor retrieval took: {end_time-start_time}")
-#     # hidden_states, logits = zip(*results)
-#     return np.squeeze(np.stack(hidden_states),1),None, df_hiddenstates
+#     #rows = [row for _, row in df_hiddenstates.iterrows()]
+#     #hidden_state_path =[[f'{row["model_name"].replace("/","-")}/{row["dataset"]}/{row["train_instances"]}/hidden_states', row["id_instance"]] for row in rows]
+#     #hidden_state_path = pd.DataFrame(hidden_state_path, columns = ["path", "id_instance"])
+#     with Pool(processes=_NUM_PROC) as pool:
+#         results = pool.map(load_tensors_for_row_t, [row for _, row in df_hiddenstates.iterrows()])
+#     end_time = time.time()
+#     print(f"Tensor retrieval took: {end_time-start_time}")
+#     hidden_states, logits = zip(*results)
+#     return np.squeeze(np.stack(hidden_states),1),np.squeeze(np.stack(logits),1), df_hiddenstates
+def parallel_function(path, hidden_state_path,tensor_storage):
+      return tensor_storage.load_tensors(path, hidden_state_path[hidden_state_path["path"] == path]["id_instance"].tolist()), hidden_state_path[hidden_state_path["path"] == path]["id_instance"].tolist()
+
+def hidden_states_collapse(df_hiddenstates: pd.DataFrame(), query: DataFrameQuery, tensor_storage: TensorStorage)-> np.ndarray:
+    """
+    Collect hidden states of all instances and collapse them in one tensor
+    using the provided method
+
+    Parameters
+    ----------
+    df_hiddenstates: pd.DataFrame(hiddens_states, match, layer, answered letter, gold letter)
+                     dataframe containing the hidden states of all instances
+    query: Dict[condition, value] --> what instances to select
+    Output
+    ----------
+    (num_instances, num_layers, model_dim)
+    """ 
+
+    df_hiddenstates = query.apply_query(df_hiddenstates)
+    hidden_states = []
+    logits = []
+    load_tensors_for_row_t = partial(load_tensors_for_row, tensor_storage=tensor_storage)
+    start_time = time.time()
+    rows = [row for _, row in df_hiddenstates.iterrows()]
+    id_instances =  [row["id_instance"] for _, row in df_hiddenstates.iterrows()]
+    hidden_state_path =[[f'{row["model_name"].replace("/","-")}/{row["dataset"]}/{row["train_instances"]}/hidden_states', row["id_instance"]] for row in rows]
+    hidden_state_path = pd.DataFrame(hidden_state_path, columns = ["path", "id_instance"])
+    # id_instances_check = []
+    # hidden_states = []
+    # for path in hidden_state_path["path"].unique():
+    #   id_instances_check.extend( hidden_state_path[hidden_state_path["path"] == path]["id_instance"])
+    #   hidden_states.extend(tensor_storage.load_tensors(path, hidden_state_path[hidden_state_path["path"] == path]["id_instance"].tolist()))
+    parallel_function_iter = partial(parallel_function, hidden_state_path=hidden_state_path, tensor_storage=tensor_storage)
+    with Pool(processes=_NUM_PROC) as pool:
+         results = pool.map(parallel_function_iter, [path for path in hidden_state_path["path"].unique()])
+    end_time = time.time()
+    hidden_states, id_instances_check = zip(*results)
+    id_instances_check = [item for sublist in id_instances_check for item in sublist]
+    assert id_instances == id_instances_check, "The order of the instances is not the same"
+    print(f"Tensor retrieval took: {end_time-start_time}")
+    # hidden_states, logits = zip(*results)
+    return np.squeeze(np.stack(hidden_states),1),None, df_hiddenstates
 # def hidden_states_collapse(df_hiddenstates: pd.DataFrame(), query: DataFrameQuery, tensor_storage: TensorStorage)-> np.ndarray:
 #     """
 #     Collect hidden states of all instances and collapse them in one tensor
@@ -274,13 +304,74 @@ class HiddenStates():
                                         ])
     return df
   
+  def _clustering_label_overlap_bincount(self, hidden_states, labels, k) -> np.ndarray:
+    bincounts = []
+    for num_layer in range(1,hidden_states.shape[1]):
+      data = Data(hidden_states[:,num_layer,:])
+      data.compute_distances(maxk=k)
+      data.remove_identical_points()
+      clusters_assignement = data.compute_clustering_ADP()
+      unique_clusters, cluster_counts = np.unique(clusters_assignement, return_counts=True)
+      bincount = np.zeros((len(unique_clusters), len(np.unique(labels))))
+      for unique_cluster in unique_clusters:
+        bincount[unique_cluster] = np.bincount(labels[clusters_assignement == unique_cluster], minlength=len(np.unique(labels)))
+      bincounts.append(bincount)
+    return tuple(bincounts)
+  
+  def _clustering_overlap(self, input_i: np.ndarray, input_j: np.ndarray, k: int, comparison_metrics: dict) -> np.ndarray:
+      assert input_i.shape[1] == input_j.shape[1], "The two runs must have the same number of layers"
+      number_of_layers = input_i.shape[1]
+      k = 100 if not _DEBUG else 50
+      comparison_output = {key:[] for key in comparison_metrics.keys()}
+      # Number of processes; adjust based on your CPU
+
+      # Prepare the arguments for each process
+      layer_args = [(layer, input_i, input_j, k, comparison_metrics) for layer in range(1, number_of_layers)]
+
+      # Create a pool of worker processes
+      with Pool(processes=_NUM_PROC) as pool:
+        # Map the process_layer function to each layer
+        results = pool.starmap(process_layer_point_cluster, layer_args)
+
+      # Organize the results
+      comparison_output = {key: [] for key in comparison_metrics}
+      for layer_result in results:
+          for key in comparison_output:
+              comparison_output[key].append(layer_result[key])
+      return comparison_output
+    
+  def _clustering_label_overlap(self, input_i: np.ndarray, label: np.ndarray, k: int, comparison_metrics: dict) -> np.ndarray:
+      assert input_i.shape[0] == label.shape[0], "Label lenght don't mactch the number of instances"
+      number_of_layers = input_i.shape[1]
+      k = 100 if not _DEBUG else 50
+      comparison_output = {key:[] for key in comparison_metrics.keys()}
+      # Number of processes; adjust based on your CPU
+
+      # Prepare the arguments for each process
+      layer_args = [(layer, input_i, label, k, comparison_metrics) for layer in range(1, number_of_layers)]
+
+      # Create a pool of worker processes
+      with Pool(processes=_NUM_PROC) as pool:
+        # Map the process_layer function to each layer
+        results = pool.starmap(process_layer_label_cluster, layer_args)
+
+      # Organize the results
+      comparison_output = {key: [] for key in comparison_metrics}
+      for layer_result in results:
+          for key in comparison_output:
+              comparison_output[key].append(layer_result[key])
+      return comparison_output    
+
   def _label_clustering_core(self,hidden_states,
                           logits, 
                           hidden_states_df,
                           label, 
                           k=None, 
                           class_fraction = None):
-    logits = softmax(logits)
+    comparison_metrics = {"adjusted_rand_score":adjusted_rand_score, 
+                          "adjusted_mutual_info_score":adjusted_mutual_info_score, 
+                          "mutual_info_score":mutual_info_score}
+    #logits = softmax(logits)
     #assert hidden_states_df[label].value_counts().nunique() == 1, "There must be the same number of instances for each label - Class imbalance not supported"
     labels_literals = hidden_states_df[label].unique()
     labels_literals.sort()
@@ -290,10 +381,10 @@ class HiddenStates():
     label_per_row = np.array(label_per_row)
     #import pdb; pdb.set_trace() 
     label_per_row = label_per_row[:hidden_states.shape[0]]
-    clustering_bincount = self._clustering_label_overlap(hidden_states, label_per_row, 100)
-    clustering_bincount_logits = self._clustering_label_overlap(logits, label_per_row, 100)
-    clustering_bincount = np.concatenate([clustering_bincount, clustering_bincount_logits])
-    return clustering_bincount
+    clustering_bincount = self._clustering_label_overlap_bincount(hidden_states, label_per_row, 100)
+    clustering_dict = self._clustering_label_overlap(hidden_states,label_per_row,k,comparison_metrics)   #clustering_bincount_logits = self._clustering_label_overlap(logits, label_per_row, 100)
+    #clustering_bincount = np.concatenate([clustering_bincount, clustering_bincount_logits])
+    return clustering_bincount, clustering_dict
 
   def clustering_label(self, label, balanced=None) -> Dict[str, List[np.ndarray]]:
     """
@@ -335,14 +426,21 @@ class HiddenStates():
                       "label":label,
                       "class_fraction":class_fraction}
             row = [model, method, train_instances, class_fraction]
-            row.append(self._label_clustering_core(**args))
+            clustering_bincount, clustering_dict = self._label_clustering_core(**args)
+            row.extend([clustering_bincount, 
+                        clustering_dict["adjusted_rand_score"], 
+                        clustering_dict["adjusted_mutual_info_score"], 
+                        clustering_dict["mutual_info_score"]])
             rows.append(row)
                       
     df = pd.DataFrame(rows, columns = ["model",
                                        "method",
                                        "train_instances",
                                        "class_fraction",
-                                        "clustering_bincount"])
+                                       "clustering_bincount",
+                                       "adjusted_rand_score",
+                                       "adjusted_mutual_info_score",
+                                       "mutual_info_score", ])
     return df
   
   def process_layer_label_overlap(num_layer, hidden_states, labels, class_fraction, k):
@@ -371,19 +469,7 @@ class HiddenStates():
 
     return np.stack(overlaps)
   
-  def _clustering_label_overlap(self, hidden_states, labels, k) -> np.ndarray:
-    bincounts = []
-    for num_layer in range(1,hidden_states.shape[1]):
-      data = Data(hidden_states[:,num_layer,:])
-      data.compute_distances(maxk=k)
-      data.remove_identical_points()
-      clusters_assignement = data.compute_clustering_ADP()
-      unique_clusters, cluster_counts = np.unique(clusters_assignement, return_counts=True)
-      bincount = np.zeros((len(unique_clusters), len(np.unique(labels))))
-      for unique_cluster in unique_clusters:
-        bincount[unique_cluster] = np.bincount(labels[clusters_assignement == unique_cluster], minlength=len(np.unique(labels)))
-      bincounts.append(bincount)
-    return tuple(bincounts)
+
   
   def _label_overlap_core(self,hidden_states,
                           logits, 
