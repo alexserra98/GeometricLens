@@ -20,6 +20,7 @@ from multiprocessing import Pool
 import time
 from safetensors import safe_open
 from joblib import Parallel, delayed
+
 _DEBUG = False
 _NUM_PROC = 32 
 
@@ -204,6 +205,17 @@ class HiddenStates():
   def __init__(self,hidden_states: pd.DataFrame(), hidden_states_path: Path):
     self.df = hidden_states
     self.tensor_storage = TensorStorage(hidden_states_path)
+    
+  def process_layer(i, hidden_states, algorithm):
+    # Function to replace the loop body
+    data = Data(hidden_states[:, i, :])
+    with HiddenPrints():
+        data.remove_identical_points()
+
+    if algorithm == "2nn":
+        raise NotImplementedError
+    elif algorithm == "gride":
+        return data.return_id_scaling_gride(range_max=1000)[0] 
   
   def _compute_id(self, hidden_states: np.ndarray ,  algorithm = "gride") -> np.ndarray:
     """
@@ -221,17 +233,11 @@ class HiddenStates():
     assert algorithm == "gride", "gride is the only algorithm supported"
     id_per_layer = []
     num_layers = hidden_states.shape[1]
-    for i in range(1,num_layers):
-        data = Data(hidden_states[:,i,:])
-        with HiddenPrints():
-          data.remove_identical_points()
-        if algorithm == "2nn":
-            #id_per_layer.append(layer.compute_id_2NN()[0])
-            raise NotImplementedError
-        elif algorithm == "gride":
-            id_per_layer.append(data.return_id_scaling_gride(range_max = 1000)[0])
-    return  np.stack(id_per_layer[1:])
-    
+    with Parallel(n_jobs=_NUM_PROC) as parallel:
+        id_per_layer = parallel(delayed(process_layer)(i, hidden_states, algorithm) for i in range(1, num_layers))
+    return np.stack(id_per_layer[1:])
+  
+ 
   def intrinsic_dim(self) -> pd.DataFrame:
     rows = []
     for model in tqdm.tqdm(self.df["model_name"].unique().tolist()):
@@ -657,12 +663,10 @@ class HiddenStates():
 
       # Prepare the arguments for each process
       layer_args = [(layer, input_i, input_j, k, comparison_metrics) for layer in range(1, number_of_layers)]
-
-      # Create a pool of worker processes
-      with Pool(processes=_NUM_PROC) as pool:
-        # Map the process_layer function to each layer
-        results = pool.starmap(process_layer_point_cluster, layer_args)
-
+      process_layer_point_cluster_iter = partial(process_layer_point_cluster, input_i=input_i, input_j=input_j, k=k, comparison_metrics=comparison_metrics)
+      with Parallel(n_jobs=_NUM_PROC) as parallel:
+        results = parallel(delayed(process_layer_point_cluster_iter)(layer) for layer in range(1, number_of_layers))
+      
       # Organize the results
       comparison_output = {key: [] for key in comparison_metrics}
       for layer_result in results:
