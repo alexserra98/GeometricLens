@@ -49,6 +49,8 @@ class Metrics():
       """
       df = pd.read_sql("SELECT * FROM metadata", self.db.conn)
       df["train_instances"] = df["train_instances"].astype(str)
+      df.drop(columns=["id"],inplace = True)
+      df.drop_duplicates(inplace = True, ignore_index = True) # why there are duplicates???
       return df
         
     def evaluate(self) -> List[pd.DataFrame]:
@@ -63,6 +65,7 @@ class Metrics():
         logging.info(f'Computing {metric}...')
         out = self._compute_metric(metric)
         out.to_pickle(Path(self.path_result,f'{metric.replace(":","_")}.pkl'))
+        
       return df_out
     
     def _compute_metric(self, metric) -> pd.DataFrame:
