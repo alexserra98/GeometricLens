@@ -50,7 +50,7 @@ class Metrics():
       df = pd.read_sql("SELECT * FROM metadata", self.db.conn)
       df["train_instances"] = df["train_instances"].astype(str)
       df.drop(columns=["id"],inplace = True)
-      df.drop_duplicates(inplace = True, ignore_index = True) # why there are duplicates???
+      df.drop_duplicates(subset = ["id_instance"],inplace = True, ignore_index = True) # why there are duplicates???
       return df
         
     def evaluate(self) -> List[pd.DataFrame]:
@@ -78,7 +78,7 @@ class Metrics():
       elif metric == "letter_overlap_cluster":
         return self._compute_letter_overlap_cluster() 
       elif metric == "subject_overlap_cluster":
-        return self._compute_letter_overlap_cluster()  
+        return self._compute_subject_overlap_cluster()  
       elif metric == "base_finetune_overlap":
         return self._compute_base_finetune_overlap()
       elif metric == "intrinsic_dim":

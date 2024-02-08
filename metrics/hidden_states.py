@@ -154,7 +154,6 @@ def hidden_states_collapse(df_hiddenstates: pd.DataFrame(), query: DataFrameQuer
 
     df_hiddenstates = query.apply_query(df_hiddenstates)
     # I have no clue on why this is necessary, for some reason some instances are duplicated
-    df_hiddenstates.drop_duplicates(inplace=True, ignore_index=True)
     hidden_states = []
     logits = []
     load_tensors_for_row_t = partial(load_tensors_for_row, tensor_storage=tensor_storage)
@@ -380,7 +379,6 @@ class HiddenStates():
     label_per_row = hidden_states_df[label].reset_index(drop=True)
     label_per_row = [map_labels[class_name] for class_name in label_per_row]
     label_per_row = np.array(label_per_row)
-    #import pdb; pdb.set_trace() 
     label_per_row = label_per_row[:hidden_states.shape[0]]
     clustering_bincount = self._clustering_label_overlap_bincount(hidden_states, label_per_row, 100)
     clustering_dict = self._clustering_label_overlap(hidden_states,label_per_row,k,comparison_metrics)   #clustering_bincount_logits = self._clustering_label_overlap(logits, label_per_row, 100)
