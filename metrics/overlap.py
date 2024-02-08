@@ -15,10 +15,7 @@ import warnings
 import time
 
 class PointOverlap(HiddenStatesMetrics):
-    def __init__(self, df: pd.DataFrame, tensor_storage, label: str):
-      super().__init__(df, tensor_storage)
-      self.label = label
-    
+       
     def main(self) -> pd.DataFrame:
         """
         Compute the overlap between same dataset, same train instances, different models (pretrained and finetuned)
@@ -40,7 +37,7 @@ class PointOverlap(HiddenStatesMetrics):
             for couples in self.pair_names(self.df["model_name"].unique().tolist()):
                 for method in ["last"]:#self.df["method"].unique().tolist():
                     if couples[0]==couples[1]:
-                        iterlist = [("0","5")]
+                        iterlist = [("0","0"),("0","5")]
                     else:
                         iterlist = [("0","0"),("0","5"),("5","5"),("5","0")]
                     for shot in iterlist:
@@ -59,7 +56,7 @@ class PointOverlap(HiddenStatesMetrics):
                                     method,
                                     train_instances_i,
                                     train_instances_j, 
-                                    self._point_overlap(hidden_states_i, hidden_states_j, k)])
+                                    self.parallel_compute(hidden_states_i, hidden_states_j, k)])
         df = pd.DataFrame(rows, columns = ["k",
                                            "couple",
                                            "method",
@@ -68,7 +65,31 @@ class PointOverlap(HiddenStatesMetrics):
                                            "point_overlap"])
         return df
     
-    def parallel_compute(self, data_i: np.ndarray, data_j:np.ndarray) -> np.ndarray:
+    def pair_names(self,names_list):
+        """
+        Pairs base names with their corresponding 'chat' versions.
+
+        Args:
+        names_list (list): A list of strings containing names.
+
+        Returns:
+        list: A list of tuples, each containing a base name and its 'chat' version.
+        """
+        # Separating base names and 'chat' names
+        difference = 'openai'#'chat'
+        base_names = [name for name in names_list if difference not in name]
+        chat_names = [name for name in names_list if difference in name]
+        base_names.sort()
+        chat_names.sort()
+        # Pairing base names with their corresponding 'chat' versions
+        pairs = []
+        for base_name, chat_name in zip(base_names, chat_names):
+            pairs.append((base_name, base_name))
+            pairs.append((chat_name, chat_name))
+            pairs.append((base_name, chat_name))
+        return pairs
+        
+    def parallel_compute(self, data_i: np.ndarray, data_j:np.ndarray, k: int) -> np.ndarray:
         """
         Compute the overlap between two runs
         

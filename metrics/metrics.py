@@ -1,25 +1,16 @@
 import numpy as np
 from pandas.core.api import DataFrame as DataFrame
 import torch
-
-from dataclasses import dataclass
 from typing import List, Type
-from .utils import  Match
-
 import tqdm
-
 import pandas as pd
-from collections import namedtuple
-
 from common.metadata_db import MetadataDB
-from dataclasses import asdict
 
 from .hidden_states import HiddenStates
 from enum import Enum
 from .query import DataFrameQuery
 from pathlib import Path
 import logging
-from abc import ABC, abstractmethod
 
 
 
@@ -93,7 +84,12 @@ class Metrics():
         return hidden_states.label_clustering(label = "dataset")
         
       elif metric == "base_finetune_overlap":
-        return self._compute_base_finetune_overlap()
+        hidden_states = HiddenStates(self.df, self.tensor_path)
+        return hidden_states.point_overlap()
+      
+      elif metric == "base_finetune_cluster":
+        hidden_states = HiddenStates(self.df, self.tensor_path)
+        return hidden_states.point_cluster()
       
       elif metric == "intrinsic_dim":
         hidden_states = HiddenStates(self.df, self.tensor_path)

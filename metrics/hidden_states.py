@@ -42,7 +42,7 @@ class HiddenStates():
                        hidden_states_df.apply(lambda r: exact_match(r["std_pred"], r["letter_gold"]), axis=1).mean(), 
                        hidden_states_df.apply(lambda r: quasi_exact_match(r["std_pred"], r["letter_gold"]), axis=1).mean(), 
                        hidden_states_df.apply(lambda r: exact_match(r["only_ref_pred"], r["letter_gold"]), axis=1).mean()])
-            # ADD INTRINISC DIMENSION!      
+     
     df = pd.DataFrame(rows, columns = ["dataset",
                                         "model",
                                         "train_instances",

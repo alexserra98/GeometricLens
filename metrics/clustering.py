@@ -96,8 +96,9 @@ class LabelClustering(HiddenStatesMetrics):
       #Parallelize the computation of the metrics
       with Parallel(n_jobs=_NUM_PROC) as parallel:
         results = parallel(delayed(process_layer)(layer) for layer in range(1, number_of_layers))
-        
-      output = {key: [] for key in _COMPARISON_METRICS.keys().append("clustering_bincount")}
+      
+      keys = list(_COMPARISON_METRICS.keys()); keys.append("bincount")
+      output = {key: [] for key in keys}
       
       #Merge the results
       for layer_result in results:
@@ -121,41 +122,19 @@ class LabelClustering(HiddenStatesMetrics):
         bincount = np.zeros((len(unique_clusters), len(np.unique(label))))
         for unique_cluster in unique_clusters:
           bincount[unique_cluster] = np.bincount(label[clusters_assignement == unique_cluster], minlength=len(np.unique(label)))
-        layer_results["clustering_bincount"] = bincount
+        layer_results["bincount"] = bincount
         
         #Comparison metrics
         for key, func in _COMPARISON_METRICS.items():
             layer_results[key] = func(clusters_assignement, label)
         
-        return 1
+        return layer_results
       
       
 
   
 class PointClustering(HiddenStatesMetrics):
-  def pair_names(self,names_list):
-    """
-    Pairs base names with their corresponding 'chat' versions.
 
-    Args:
-    names_list (list): A list of strings containing names.
-
-    Returns:
-    list: A list of tuples, each containing a base name and its 'chat' version.
-    """
-    # Separating base names and 'chat' names
-    difference = 'chat'
-    base_names = [name for name in names_list if difference not in name]
-    chat_names = [name for name in names_list if difference in name]
-    base_names.sort()
-    chat_names.sort()
-    # Pairing base names with their corresponding 'chat' versions
-    pairs = []
-    for base_name, chat_name in zip(base_names, chat_names):
-      pairs.append((base_name, base_name))
-      pairs.append((chat_name, chat_name))
-      pairs.append((base_name, chat_name))
-    return pairs
   
   def main(self) -> pd.DataFrame:
     """
@@ -210,13 +189,36 @@ class PointClustering(HiddenStatesMetrics):
                                        "mutual_info_score"])
     return df
   
+  def pair_names(self,names_list):
+    """
+    Pairs base names with their corresponding 'chat' versions.
+
+    Args:
+    names_list (list): A list of strings containing names.
+
+    Returns:
+    list: A list of tuples, each containing a base name and its 'chat' version.
+    """
+    # Separating base names and 'chat' names
+    difference = 'chat'
+    base_names = [name for name in names_list if difference not in name]
+    chat_names = [name for name in names_list if difference in name]
+    base_names.sort()
+    chat_names.sort()
+    # Pairing base names with their corresponding 'chat' versions
+    pairs = []
+    for base_name, chat_name in zip(base_names, chat_names):
+      pairs.append((base_name, base_name))
+      pairs.append((chat_name, chat_name))
+      pairs.append((base_name, chat_name))
+    return pairs
   def parallel_compute(self, input_i: np.ndarray, input_j: np.ndarray, z: int) -> np.ndarray:
       assert input_i.shape[1] == input_j.shape[1], "The two runs must have the same number of layers"
       number_of_layers = input_i.shape[1]
 
       comparison_output = {key:[] for key in _COMPARISON_METRICS.keys()}
       
-      process_layer = partial(self.process_layer, input_i=input_i, input_j=input_j, k=k, _COMPARISON_METRICS=_COMPARISON_METRICS)
+      process_layer = partial(self.process_layer, input_i=input_i, input_j=input_j, z=z, _COMPARISON_METRICS=_COMPARISON_METRICS)
       with Parallel(n_jobs=_NUM_PROC) as parallel:
         results = parallel(delayed(process_layer)(layer) for layer in range(1, number_of_layers))
       
@@ -227,7 +229,7 @@ class PointClustering(HiddenStatesMetrics):
               comparison_output[key].append(layer_result[key])
       return comparison_output
     
-  def process_layer(self, layer, input_i, input_j, k):
+  def process_layer(self, layer, input_i, input_j, z):
     """
     Process a single layer.
     """
@@ -238,11 +240,11 @@ class PointClustering(HiddenStatesMetrics):
         data_i.remove_identical_points()
         data_j.remove_identical_points()
 
-    data_i.compute_distances(maxk=k)
-    data_j.compute_distances(maxk=k)
+    data_i.compute_distances(maxk=100)
+    data_j.compute_distances(maxk=100)
 
-    clusters_i = data_i.compute_clustering_ADP(Z=1.68)
-    clusters_j = data_j.compute_clustering_ADP()
+    clusters_i = data_i.compute_clustering_ADP(Z=z)
+    clusters_j = data_j.compute_clustering_ADP(Z=z)
 
     layer_results = {}
     for key, func in _COMPARISON_METRICS.items():
