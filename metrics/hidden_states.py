@@ -20,10 +20,10 @@ from multiprocessing import Pool
 import time
 from safetensors import safe_open
 from joblib import Parallel, delayed
-import skdim
+#import skdim
 
 _DEBUG = False
-_NUM_PROC = 1
+_NUM_PROC = 32
 
 def process_layer_label_overlap(num_layer, hidden_states, labels, class_fraction, k):
     """
@@ -203,12 +203,13 @@ class HiddenStates():
             query = DataFrameQuery({"method":method,
                                     "model_name":model,
                                     "train_instances": train_instances})
-            if match != "correct":
-              df = self.df[self.df.apply(lambda r: exact_match(r["std_pred"], r["letter_gold"]), axis=1)]
-            elif match != "incorrect":
-              df = self.df[self.df.apply(lambda r: not exact_match(r["std_pred"], r["letter_gold"]), axis=1)]
+            if match == "correct":
+              df = self.df[self.df.apply(lambda r: exact_match(r["only_ref_pred"], r["letter_gold"]), axis=1)]
+            elif match == "incorrect":
+              df = self.df[self.df.apply(lambda r: not exact_match(r["only_ref_pred"], r["letter_gold"]), axis=1)]
             else:
               df = self.df
+            #import pdb;pdb.set_trace()
             hidden_states,_, _= hidden_states_collapse(df,query, self.tensor_storage)
             id_per_layer_gride, id_per_layer_lpca, id_per_layer_danco = self._compute_id(hidden_states)
             rows.append([model, 
