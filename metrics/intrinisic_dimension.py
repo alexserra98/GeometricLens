@@ -1,14 +1,15 @@
-import numpy as np
+from metrics.hidden_states_metrics import HiddenStatesMetrics
 from .utils import  hidden_states_collapse
-import tqdm
-import pandas as pd
-from .utils import  exact_match, hidden_states_collapse, HiddenPrints
-from dadapy.data import Data
+from .utils import hidden_states_collapse, HiddenPrints
 from metrics.query import DataFrameQuery
 from common.globals_vars import _NUM_PROC
+
+from dadapy.data import Data
+
+import tqdm
+import pandas as pd
+import numpy as np
 from joblib import Parallel, delayed
-from metrics.hidden_states_metrics import HiddenStatesMetrics
-import skdim
 from functools import partial
 
 class IntrinsicDimension(HiddenStatesMetrics):
@@ -38,13 +39,14 @@ class IntrinsicDimension(HiddenStatesMetrics):
                                         id_per_layer_gride,
                                         id_per_layer_lpca,
                                         id_per_layer_danco])
-            return pd.DataFrame(rows, columns = ["model",
-                                          "method",
-                                          "match",  
-                                          "train_instances",
-                                          "id_per_layer_gride",
-                                          "id_per_layer_lpca",
-                                          "id_per_layer_danco"]) 
+        
+        return pd.DataFrame(rows, columns = ["model",
+                                             "method",
+                                             "match",  
+                                             "train_instances",
+                                             "id_per_layer_gride",
+                                             "id_per_layer_lpca",
+                                             "id_per_layer_danco"]) 
     
     def parallel_compute(self, hidden_states: np.ndarray) -> np.ndarray:
         """

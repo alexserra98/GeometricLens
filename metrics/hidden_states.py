@@ -1,100 +1,21 @@
 
-from .utils import  Match,  exact_match, quasi_exact_match, hidden_states_collapse, HiddenPrints
+from .utils import  exact_match, quasi_exact_match, hidden_states_collapse
 from metrics.query import DataFrameQuery
 from metrics.intrinisic_dimension import IntrinsicDimension
-from metrics.clustering import LabelClustering
+from metrics.clustering import LabelClustering, PointClustering
+from metrics.overlap import PointOverlap, LabelOverlap
 from common.tensor_storage import TensorStorage
-from common.globals_vars import _NUM_PROC
-
 #from sklearn.feature_selection import mutual_info_regression MISSIN?
-from sklearn.metrics.cluster import adjusted_rand_score, adjusted_mutual_info_score
 from dadapy.data import Data
-from sklearn.metrics import mutual_info_score
-
-from joblib import Parallel, delayed
-from multiprocessing import Pool
-
 
 import warnings
-from functools import partial
-import time
 from typing import Dict, List
 from pathlib  import Path
 import tqdm
 
-
 import numpy as np
 import pandas as pd
-#import skdim
-
-_DEBUG = False
-
-
-def process_layer_label_overlap(num_layer, hidden_states, labels, class_fraction, k):
-    """
-    Process a single layer.
-    """
-    data = Data(hidden_states[:, num_layer, :])
-    warnings.filterwarnings("ignore")
-    overlap = data.return_label_overlap(labels, class_fraction=class_fraction, k=k)
-    return overlap
-
-def process_layer_point_overlap(layer, data_i, data_j, k):
-    """
-    Process a single layer.
-    """
-    data = Data(data_i[:,layer,:])
-    warnings.filterwarnings("ignore")
-    data.compute_distances(maxk=k)
-    overlap = data.return_data_overlap(data_j[:,layer,:])
-    return overlap
   
-def process_layer_point_cluster(layer, input_i, input_j, k, comparison_metrics):
-    """
-    Process a single layer.
-    """
-    data_i = Data(input_i[:, layer, :])
-    data_j = Data(input_j[:, layer, :])
-
-    with HiddenPrints():
-        data_i.remove_identical_points()
-        data_j.remove_identical_points()
-
-    data_i.compute_distances(maxk=k)
-    data_j.compute_distances(maxk=k)
-
-    clusters_i = data_i.compute_clustering_ADP(Z=1.68)
-    clusters_j = data_j.compute_clustering_ADP()
-
-    layer_results = {}
-    for key, func in comparison_metrics.items():
-        layer_results[key] = func(clusters_i, clusters_j)
-
-    return layer_results
-  
-def process_layer_label_cluster(layer, input_i, label, z, comparison_metrics):
-    """
-    Process a single layer.
-    """
-    data_i = Data(input_i[:, layer, :])
-
-    with HiddenPrints():
-        data_i.remove_identical_points()
-
-    data_i.compute_distances(maxk=100)
-
-    clusters_i = data_i.compute_clustering_ADP(Z=z)
-
-    layer_results = {}
-    for key, func in comparison_metrics.items():
-        layer_results[key] = func(clusters_i, label)
-
-    return layer_results
-
-
-          
-
-
 class HiddenStates():
   def __init__(self,hidden_states: pd.DataFrame(), hidden_states_path: Path):
     self.df = hidden_states
@@ -137,271 +58,61 @@ class HiddenStates():
     label_clustering = LabelClustering(df = self.df, tensor_storage = self.tensor_storage, label=label)
     return label_clustering.main()
   
-
-  def process_layer_label_overlap(num_layer, hidden_states, labels, class_fraction, k):
-    """
-    Process a single layer.
-    """
-    data = Data(hidden_states[:, num_layer, :])
-
-    warnings.filterwarnings("ignore")
-    overlap = data.return_label_overlap(labels, class_fraction=class_fraction, k=k)
-    return overlap
-
+  def point_overlap(self) -> pd.DataFrame:
+    point_overlap = PointOverlap(df = self.df, tensor_storage = self.tensor_storage)
+    return point_overlap.main()
   
-  def _label_overlap(self, hidden_states, labels, k=None, class_fraction = None) -> Dict[str, List[np.ndarray]]:
-    overlaps = []
-    if k is None and class_fraction is None:
-      raise ValueError("You must provide either k or class_fraction")
-    
-    start_time = time.time()
-    
-    with Pool(processes=_NUM_PROC) as pool:
-        results = pool.starmap(process_layer_label_overlap, [(num_layer, hidden_states, labels, class_fraction, k) for num_layer in range(hidden_states.shape[1])])
-    end_time = time.time()
-    print(f"Label overlap over batch of data took: {end_time-start_time}")
-    overlaps = list(results)
-
-    return np.stack(overlaps)
+  def point_cluster(self) -> pd.DataFrame:
+    point_cluster = PointClustering(df = self.df, tensor_storage = self.tensor_storage)
+    return point_cluster.main()
   
-
+  def label_overlap(self, label:str) -> pd.DataFrame:
+    label_overlap = LabelOverlap(df = self.df, tensor_storage = self.tensor_storage, label=label)
+    return label_overlap.main()
+ 
   
-  def _label_overlap_core(self,hidden_states,
-                          logits, 
-                          hidden_states_df,
-                          label, 
-                          k=None, 
-                          class_fraction = None):
-    #logits = softmax(logits)
-    #assert hidden_states_df[label].value_counts().nunique() == 1, "There must be the same number of instances for each label - Class imbalance not supported"
-    labels_literals = hidden_states_df[label].unique()
-    labels_literals.sort()
-    map_labels = {class_name: n for n,class_name in enumerate(labels_literals)}
-    label_per_row = hidden_states_df[label].reset_index(drop=True)
-    label_per_row = [map_labels[class_name] for class_name in label_per_row]
-    label_per_row = np.array(label_per_row)
-    #import pdb; pdb.set_trace() 
-    label_per_row = label_per_row[:hidden_states.shape[0]]
-    overlap = self._label_overlap(hidden_states, label_per_row,k=k, class_fraction=class_fraction) 
-    #overlap_logits = self._label_overlap(logits, label_per_row, k=k, class_fraction=class_fraction)
-    #overlap = np.concatenate([overlap, overlap_logits])
-    #clustering_bincount = self._clustering_label_overlap(hidden_states, label_per_row, 100)
-    return overlap
-                #clustering_bincount]
-      
-  def label_overlap(self, label, balanced=None) -> Dict[str, List[np.ndarray]]:
-    """
-    Compute the overlap between the layers of instances in which the model answered with the same letter
-    Output
-    ----------
-    Dict[layer: List[Array(num_layers, num_layers)]]
-    """
-    #The last token is always the same, thus its first layer activation (embedding) is always the same
-    #iter_list=[0.05,0.10,0.20,0.50]
-    if balanced:
-      iter_list=[10,20,50]
-    else:
-      iter_list=[0.05,0.10,0.20,0.50]
-    rows = []
-    
-    for class_fraction in tqdm.tqdm(iter_list, desc = "Computing overlap"):
-      for model in self.df["model_name"].unique().tolist():
-        for method in ["last"]: #self.df["method"].unique().tolist():
-          for train_instances in ["0","2","5"]:#self.df["train_instances"].unique().tolist():
-            if balanced:
-              query = DataFrameQuery({"method":method,
-                                      "model_name":model,
-                                      "train_instances": train_instances},
-                                      {"balanced":label})
-            else:
-              query = DataFrameQuery({"method":method,
-                                      "model_name":model,
-                                      "train_instances": train_instances}) 
-                                    
-            hidden_states, logits, hidden_states_df= hidden_states_collapse(self.df,query, self.tensor_storage)
-            if balanced:
-              args = {"hidden_states":hidden_states,
-                      "logits":logits,
-                      "hidden_states_df":hidden_states_df,
-                      "label":label,
-                      "k":class_fraction}
-            else:
-              args = {"hidden_states":hidden_states,
-                      "logits":logits,
-                      "hidden_states_df":hidden_states_df,
-                      "label":label,
-                      "class_fraction":class_fraction}
-            row = [model, method, train_instances, class_fraction]
-            row.append(self._label_overlap_core(**args))
-            rows.append(row)
-                      
-    df = pd.DataFrame(rows, columns = ["model",
-                                       "method",
-                                       "train_instances",
-                                       "class_fraction",
-                                       "overlap"]) 
-                                        #"clustering_bincount"])
-    return df
+  
+ 
     
  
-  def _point_overlap(self, data_i: np.ndarray, data_j: np.ndarray, k: int) -> np.ndarray:
-    """
-    Compute the overlap between two runs
-    
-    Parameters
-    ----------
-    data_i: np.ndarray(num_instances, num_layers, model_dim)
-    data_j: np.ndarray(num_instances, num_layers, model_dim)
-    k: int
-    
-    Output
-    ----------
-    Array(num_layers)
-    """
-    assert data_i.shape[1] == data_j.shape[1], "The two runs must have the same number of layers"
-    number_of_layers = data_i.shape[1]
-    overlap_per_layer = []
-    with Pool(processes=_NUM_PROC) as pool:
-        results = pool.starmap(process_layer_point_overlap, [(layer, data_i, data_j, k) for layer in range(number_of_layers)])
-
-    overlaps = list(results)
-    
-    return np.stack(overlaps)
+ 
+ 
+ 
+ 
+ 
+ 
+  # def _clustering(hidden_states, k):
+  #   cluster_assignemnts = []
+  #   for num_layer in range(hidden_states.shape[1]):
+  #     data = Data(hidden_states[:,num_layer,:])
+  #     data.compute_distances(maxk=k)
+  #     cluster_assignemnts.append(data.compute_clustering_ADP())
+  #   return np.stack(cluster_assignemnts)  
   
-  def pair_names(self,names_list):
-    """
-    Pairs base names with their corresponding 'chat' versions.
-
-    Args:
-    names_list (list): A list of strings containing names.
-
-    Returns:
-    list: A list of tuples, each containing a base name and its 'chat' version.
-    """
-    # Separating base names and 'chat' names
-    difference = 'chat'
-    base_names = [name for name in names_list if difference not in name]
-    chat_names = [name for name in names_list if difference in name]
-    base_names.sort()
-    chat_names.sort()
-    # Pairing base names with their corresponding 'chat' versions
-    pairs = []
-    for base_name, chat_name in zip(base_names, chat_names):
-      pairs.append((base_name, base_name))
-      pairs.append((chat_name, chat_name))
-      pairs.append((base_name, chat_name))
-    return pairs
-  
-  def point_overlap(self) -> Dict[str, Dict[str, np.ndarray]]:
-    """
-    Compute the overlap between same dataset, same train instances, different models (pretrained and finetuned)
-    
-    Parameters
-    ----------
-    data: Dict[model, Dict[dataset, Dict[train_instances, Dict[method, Dict[match, Dict[layer, np.ndarray]]]]]]
-    Output
-    df: pd.DataFrame (k,dataset,method,train_instances_i,train_instances_j,overlap)
-    """
-    #warn("Computing overlap using k with  2 -25- 500")
-    comparison_metrics = {"adjusted_rand_score":adjusted_rand_score, 
-                          "adjusted_mutual_info_score":adjusted_mutual_info_score, 
-                          "mutual_info_score":mutual_info_score}
-    iter_list = [5,10,30,100]
-    if _DEBUG:
-      iter_list = [2]
-    rows = []
-    for k in tqdm.tqdm(iter_list, desc = "Computing overlaps k"):
-      for couples in self.pair_names(self.df["model_name"].unique().tolist()):
-        #import pdb; pdb.set_trace()
-        for method in ["last"]:#self.df["method"].unique().tolist():
-          if couples[0]==couples[1]:
-            iterlist = [("0","5")]
-          else:
-            iterlist = [("0","0"),("0","5"),("5","5"),("5","0")]
-          for shot in iterlist:
-            train_instances_i, train_instances_j = shot
-            query_i = DataFrameQuery({"method":method,
-                    "model_name":couples[0], 
-                    "train_instances": train_instances_i,})
-            query_j = DataFrameQuery({"method":method,
-                    "model_name":couples[1], 
-                    "train_instances": train_instances_j,})
-            hidden_states_i, _,_ = hidden_states_collapse(self.df,query_i, self.tensor_storage)
-            hidden_states_j, _,_ = hidden_states_collapse(self.df,query_j, self.tensor_storage)
-            clustering_out = self._clustering_overlap(hidden_states_i, hidden_states_j, k, comparison_metrics)
-
-            rows.append([k,
-                         couples,
-                         method,
-                         train_instances_i,
-                         train_instances_j, 
-                         clustering_out["adjusted_rand_score"],
-                         clustering_out["adjusted_mutual_info_score"],
-                         clustering_out["mutual_info_score"],
-                         self._point_overlap(hidden_states_i, hidden_states_j, k)])
-    df = pd.DataFrame(rows, columns = ["k",
-                                       "couple",
-                                       "method",
-                                       "train_instances_i",
-                                       "train_instances_j",
-                                       "adjusted_rand_score",
-                                       "adjusted_mutual_info_score",
-                                       "mutual_info_score",
-                                       "point_overlap"])
-    return df
-  
-  def _clustering_overlap(self, input_i: np.ndarray, input_j: np.ndarray, k: int, comparison_metrics: dict) -> np.ndarray:
-      assert input_i.shape[1] == input_j.shape[1], "The two runs must have the same number of layers"
-      number_of_layers = input_i.shape[1]
-      k = 100 if not _DEBUG else 50
-      comparison_output = {key:[] for key in comparison_metrics.keys()}
-      # Number of processes; adjust based on your CPU
-
-      # Prepare the arguments for each process
-      layer_args = [(layer, input_i, input_j, k, comparison_metrics) for layer in range(1, number_of_layers)]
-      process_layer_point_cluster_iter = partial(process_layer_point_cluster, input_i=input_i, input_j=input_j, k=k, comparison_metrics=comparison_metrics)
-      with Parallel(n_jobs=_NUM_PROC) as parallel:
-        results = parallel(delayed(process_layer_point_cluster_iter)(layer) for layer in range(1, number_of_layers))
-      
-      # Organize the results
-      comparison_output = {key: [] for key in comparison_metrics}
-      for layer_result in results:
-          for key in comparison_output:
-              comparison_output[key].append(layer_result[key])
-      return comparison_output
-    
-  def _clustering(hidden_states, k):
-    cluster_assignemnts = []
-    for num_layer in range(hidden_states.shape[1]):
-      data = Data(hidden_states[:,num_layer,:])
-      data.compute_distances(maxk=k)
-      cluster_assignemnts.append(data.compute_clustering_ADP())
-    return np.stack(cluster_assignemnts)  
-  
-  def clustering(self,label):
-    """
-    Compute the clustering between the layers of instances in which the model answered with the same letter
-    Output
-    ----------
-    Dict[layer: List[Array(num_layers, num_layers)]]
-    """
-    #The last token is always the same, thus its first layer activation (embedding) is always the same
-    iter_list=[5,10,20,50]
-    rows = []
-    for k in tqdm.tqdm(iter_list, desc = "Computing overlap"):
-      for model in self.df["model_name"].unique().tolist():
-          for method in self.df["method"].unique().tolist():
-            for train_instances in self.df["train_instances"].unique().tolist():
-              query = DataFrameQuery({"match":Match.ALL.value, 
-                                      "method":method,
-                                      "model_name":model,
-                                      "train_instances": train_instances})
-              hidden_states,_, hidden_states_df= hidden_states_collapse(self.df,query, self.tensor_storage)
-              label_per_row = hidden_states_df[label].reset_index(drop=True)
-              clustering = self._clustering(hidden_states, label_per_row, k) 
-              rows.append([k, model, method, train_instances,clustering, ])
+  # def clustering(self,label):
+  #   """
+  #   Compute the clustering between the layers of instances in which the model answered with the same letter
+  #   Output
+  #   ----------
+  #   Dict[layer: List[Array(num_layers, num_layers)]]
+  #   """
+  #   #The last token is always the same, thus its first layer activation (embedding) is always the same
+  #   iter_list=[5,10,20,50]
+  #   rows = []
+  #   for k in tqdm.tqdm(iter_list, desc = "Computing overlap"):
+  #     for model in self.df["model_name"].unique().tolist():
+  #         for method in self.df["method"].unique().tolist():
+  #           for train_instances in self.df["train_instances"].unique().tolist():
+  #             query = DataFrameQuery({"match":Match.ALL.value, 
+  #                                     "method":method,
+  #                                     "model_name":model,
+  #                                     "train_instances": train_instances})
+  #             hidden_states,_, hidden_states_df= hidden_states_collapse(self.df,query, self.tensor_storage)
+  #             label_per_row = hidden_states_df[label].reset_index(drop=True)
+  #             clustering = self._clustering(hidden_states, label_per_row, k) 
+  #             rows.append([k, model, method, train_instances,clustering, ])
                   
-    df = pd.DataFrame(rows, columns = ["k","model","method","train_instances","clustering"])
-    return df
+  #   df = pd.DataFrame(rows, columns = ["k","model","method","train_instances","clustering"])
+  #   return df
   
   
