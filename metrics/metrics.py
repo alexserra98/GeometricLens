@@ -74,30 +74,36 @@ class Metrics():
     def _compute_metric(self, metric) -> pd.DataFrame:
       if metric == "shot_metric":
         return self.shot_metrics()
+      
       elif metric == "letter_overlap":
-        return self._compute_letter_overlap()
+        hidden_states = HiddenStates(self.df, self.tensor_path)
+        return hidden_states.label_overlap(label = "only_ref_pred")
+      
       elif metric == "subject_overlap":
-        return self._compute_subject_overlap()
+        hidden_states = HiddenStates(self.df, self.tensor_path)
+        return hidden_states.label_overlap(label = "dataset")
+      
       elif metric == "letter_overlap_cluster":
-        return self._compute_letter_overlap_cluster() 
+        hidden_states = HiddenStates(self.df, self.tensor_path)
+        return hidden_states.label_clustering(label = "only_ref_pred")
+      
       elif metric == "subject_overlap_cluster":
-        return self._compute_subject_overlap_cluster()  
+        hidden_states = HiddenStates(self.df, self.tensor_path)
+        return hidden_states.label_clustering(label = "dataset")
+        
       elif metric == "base_finetune_overlap":
         return self._compute_base_finetune_overlap()
+      
       elif metric == "intrinsic_dim":
-        return self._compute_intrinsic_dim()
+        hidden_states = HiddenStates(self.df, self.tensor_path)
+        return hidden_states.intrinsic_dim()
+      
       elif metric == "last_layer_id_diff":
         return self._compute_layer_id_diff()
       else:
         raise NotImplementedError
     
-    def _compute_letter_overlap_cluster(self) -> pd.DataFrame:
-      hidden_states = HiddenStates(self.df, self.tensor_path)
-      return hidden_states.clustering_label(label = "only_ref_pred")
-    
-    def _compute_subject_overlap_cluster(self) -> pd.DataFrame:
-      hidden_states = HiddenStates(self.df, self.tensor_path)
-      return hidden_states.clustering_label(label = "dataset")
+
     
     def _compute_layer_id_diff(self):
       shot_metric_path = Path(self.path_result, 'shot_metric.pkl')
@@ -108,22 +114,8 @@ class Metrics():
       except FileNotFoundError:
         print("You need to computer intrinisic dimension and shot metrics first")
       return self.get_last_layer_id_diff(id_df, shot_metrics_df)
+
     
-    def _compute_letter_overlap(self, condition=None) -> pd.DataFrame:
-      hidden_states = HiddenStates(self.df, self.tensor_path)
-      return hidden_states.label_overlap(balanced = condition,label = "only_ref_pred")
-    
-    def _compute_letter_overlap_temporary(self) -> pd.DataFrame:
-      hidden_states = HiddenStates(self.df, self.tensor_path)
-      return hidden_states.letter_overlap()
-    
-    def _compute_subject_overlap(self, condition=None) -> pd.DataFrame:
-      hidden_states = HiddenStates(self.df, self.tensor_path)
-      return hidden_states.label_overlap(balanced = condition, label="dataset")
-    
-    def _compute_intrinsic_dim(self) -> pd.DataFrame:
-      hidden_states = HiddenStates(self.df, self.tensor_path)
-      return hidden_states.intrinsic_dim()
 
     def shot_metrics(self):
       """

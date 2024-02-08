@@ -2,6 +2,7 @@
 from .utils import  Match,  exact_match, quasi_exact_match, hidden_states_collapse, HiddenPrints
 from metrics.query import DataFrameQuery
 from metrics.intrinisic_dimension import IntrinsicDimension
+from metrics.clustering import LabelClustering
 from common.tensor_storage import TensorStorage
 from common.globals_vars import _NUM_PROC
 
@@ -90,22 +91,9 @@ def process_layer_label_cluster(layer, input_i, label, z, comparison_metrics):
 
     return layer_results
 
-        
-def load_tensors_for_row(row,tensor_storage: TensorStorage):
-    """
-    Load tensors for a given row.
-    """
-    hidden_state_path = f'{row["model_name"].replace("/","-")}/{row["dataset"]}/{row["train_instances"]}/hidden_states'
-    logits_path = f'{row["model_name"].replace("/","-")}/{row["dataset"]}/{row["train_instances"]}/logits'
 
-    hidden_states = tensor_storage.load_tensor(hidden_state_path, row["id_instance"])
-    logits = tensor_storage.load_tensor(logits_path, row["id_instance"])
-
-    return hidden_states, logits
           
 
-def parallel_function(path, hidden_state_path,tensor_storage):
-      return tensor_storage.load_tensors(path, hidden_state_path[hidden_state_path["path"] == path]["id_instance"].tolist()), hidden_state_path[hidden_state_path["path"] == path]["id_instance"].tolist()
 
 class HiddenStates():
   def __init__(self,hidden_states: pd.DataFrame(), hidden_states_path: Path):
@@ -143,140 +131,13 @@ class HiddenStates():
                                         "only_ref_exact_match", 
                                         ])
     return df
-  def _clustering_label_overlap_bincount_layer(self, num_layer,hidden_states, labels,z) -> np.ndarray: 
-    data = Data(hidden_states[:,num_layer,:])
-    data.compute_distances(maxk=100)
-    data.distances = data.remove_zero_dists(data.distances)
-    data.remove_identical_points()
-    clusters_assignement = data.compute_clustering_ADP(Z=z)
-    unique_clusters, cluster_counts = np.unique(clusters_assignement, return_counts=True)
-    bincount = np.zeros((len(unique_clusters), len(np.unique(labels))))
-    for unique_cluster in unique_clusters:
-      bincount[unique_cluster] = np.bincount(labels[clusters_assignement == unique_cluster], minlength=len(np.unique(labels)))
-    return bincount
   
-  def _clustering_label_overlap_bincount(self, hidden_states, labels, z) -> np.ndarray:
-    bincounts = []
-    _clustering_label_overlap_bincount_layer = partial(self._clustering_label_overlap_bincount_layer, hidden_states=hidden_states, labels=labels, z=z)
-    with Parallel(n_jobs=_NUM_PROC) as parallel:
-      bincounts = parallel(delayed(_clustering_label_overlap_bincount_layer)(num_layer) for num_layer in range(1,hidden_states.shape[1]))
-    return tuple(bincounts)
-
   
-  def _clustering_overlap(self, input_i: np.ndarray, input_j: np.ndarray, k: int, comparison_metrics: dict) -> np.ndarray:
-      assert input_i.shape[1] == input_j.shape[1], "The two runs must have the same number of layers"
-      number_of_layers = input_i.shape[1]
-      k = 100 if not _DEBUG else 50
-      comparison_output = {key:[] for key in comparison_metrics.keys()}
-      # Number of processes; adjust based on your CPU
-
-      # Prepare the arguments for each process
-      layer_args = [(layer, input_i, input_j, k, comparison_metrics) for layer in range(1, number_of_layers)]
-      process_layer_point_cluster_iter = partial(process_layer_point_cluster, input_i=input_i, input_j=input_j, k=k, comparison_metrics=comparison_metrics)
-      # Create a pool of worker processes
-      with Parallel(n_jobs=_NUM_PROC) as parallel:
-        # Map the process_layer function to each layer
-        results = parallel(delayed(process_layer_point_cluster_iter)(layer) for layer in range(1, number_of_layers))
-      # Organize the results
-      comparison_output = {key: [] for key in comparison_metrics}
-      for layer_result in results:
-          for key in comparison_output:
-              comparison_output[key].append(layer_result[key])
-      return comparison_output
-    
-  def _clustering_label_overlap(self, input_i: np.ndarray, label: np.ndarray, z: int, comparison_metrics: dict) -> np.ndarray:
-      assert input_i.shape[0] == label.shape[0], "Label lenght don't mactch the number of instances"
-      number_of_layers = input_i.shape[1]
-      k = 100 if not _DEBUG else 50
-      comparison_output = {key:[] for key in comparison_metrics.keys()}
-      # Number of processes; adjust based on your CPU
-
-      # Prepare the arguments for each process
-      layer_args = [(layer, input_i, label, k, comparison_metrics) for layer in range(1, number_of_layers)]
-      process_layer_label_cluster_iter = partial(process_layer_label_cluster, input_i=input_i, label=label, z=z, comparison_metrics=comparison_metrics)
-      # Create a pool of worker processes
-      with Parallel(n_jobs=_NUM_PROC) as parallel:
-        results = parallel(delayed(process_layer_label_cluster_iter)(layer) for layer in range(1, number_of_layers))
-      # Organize the results
-      comparison_output = {key: [] for key in comparison_metrics}
-      for layer_result in results:
-          for key in comparison_output:
-              comparison_output[key].append(layer_result[key])
-      return comparison_output    
-
-  def _label_clustering_core(self,hidden_states,
-                          logits, 
-                          hidden_states_df,
-                          label, 
-                          k=None, 
-                          z = None):
-    comparison_metrics = {"adjusted_rand_score":adjusted_rand_score, 
-                          "adjusted_mutual_info_score":adjusted_mutual_info_score, 
-                          "mutual_info_score":mutual_info_score}
-    #logits = softmax(logits)
-    #assert hidden_states_df[label].value_counts().nunique() == 1, "There must be the same number of instances for each label - Class imbalance not supported"
-    labels_literals = hidden_states_df[label].unique()
-    labels_literals.sort()
-    map_labels = {class_name: n for n,class_name in enumerate(labels_literals)}
-    label_per_row = hidden_states_df[label].reset_index(drop=True)
-    label_per_row = [map_labels[class_name] for class_name in label_per_row]
-    label_per_row = np.array(label_per_row)
-    label_per_row = label_per_row[:hidden_states.shape[0]]
-    clustering_bincount = self._clustering_label_overlap_bincount(hidden_states, label_per_row,z)
-    clustering_dict = self._clustering_label_overlap(hidden_states,label_per_row,z,comparison_metrics)   #clustering_bincount_logits = self._clustering_label_overlap(logits, label_per_row, 100)
-    #clustering_bincount = np.concatenate([clustering_bincount, clustering_bincount_logits])
-    return clustering_bincount, clustering_dict
-
-  def clustering_label(self, label, balanced=None) -> Dict[str, List[np.ndarray]]:
-    """
-    Compute the overlap between the layers of instances in which the model answered with the same letter
-    Output
-    ----------
-    Dict[layer: List[Array(num_layers, num_layers)]]
-    """
-    #The last token is always the same, thus its first layer activation (embedding) is always the same
-    #iter_list=[0.05,0.10,0.20,0.50]
-    iter_list=[0.9,1.68,2]
-    rows = []
-    
-    for z in tqdm.tqdm(iter_list, desc = "Computing overlap"):
-      for model in self.df["model_name"].unique().tolist():
-        for method in ["last"]: #self.df["method"].unique().tolist():
-          for train_instances in ["0","2","5"]:#self.df["train_instances"].unique().tolist():
-            if balanced:
-              query = DataFrameQuery({"method":method,
-                                      "model_name":model,
-                                      "train_instances": train_instances},
-                                      {"balanced":label})
-            else:
-              query = DataFrameQuery({"method":method,
-                                      "model_name":model,
-                                      "train_instances": train_instances}) 
-                                    
-            hidden_states, logits, hidden_states_df= hidden_states_collapse(self.df,query, self.tensor_storage)
-            args = {"hidden_states":hidden_states,
-                    "logits":logits,
-                    "hidden_states_df":hidden_states_df,
-                    "label":label,
-                    "z":z}
-            row = [model, method, train_instances, z]
-            clustering_bincount, clustering_dict = self._label_clustering_core(**args)
-            row.extend([clustering_bincount, 
-                        clustering_dict["adjusted_rand_score"], 
-                        clustering_dict["adjusted_mutual_info_score"], 
-                        clustering_dict["mutual_info_score"]])
-            rows.append(row)
-                      
-    df = pd.DataFrame(rows, columns = ["model",
-                                       "method",
-                                       "train_instances",
-                                       "class_fraction",
-                                       "clustering_bincount",
-                                       "adjusted_rand_score",
-                                       "adjusted_mutual_info_score",
-                                       "mutual_info_score", ])
-    return df
+  def label_clustering(self, label:str) -> pd.DataFrame:
+    label_clustering = LabelClustering(df = self.df, tensor_storage = self.tensor_storage, label=label)
+    return label_clustering.main()
   
+
   def process_layer_label_overlap(num_layer, hidden_states, labels, class_fraction, k):
     """
     Process a single layer.
