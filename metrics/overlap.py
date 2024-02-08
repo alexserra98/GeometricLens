@@ -103,7 +103,7 @@ class PointOverlap(HiddenStatesMetrics):
         return overlap
     
     
-class LabelClustering():
+class LabelOverlap():
   def __init__(self, df: pd.DataFrame, tensor_storage, label: str):
       super().__init__(df, tensor_storage)
       self.label = label
