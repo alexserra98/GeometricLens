@@ -1,4 +1,19 @@
-from metrics.utils import class_imbalance
+def class_imbalance(hidden_states_df, label):
+    """
+    Eliminate extra instances from the dataframe to make it balanced
+    Parameters
+    ----------
+    hidden_states_df: pd.DataFrame
+        dataframe containing hidden states and labels
+    label: str
+        label to balance
+    """
+    if hidden_states_df[label].value_counts().nunique() == 1:
+        return hidden_states_df
+    class_counts = hidden_states_df[label].value_counts()
+    min_count = class_counts.min()
+    balanced_df = hidden_states_df.groupby(label).apply(lambda x: x.sample(min_count))
+    return balanced_df
 class DataFrameQuery:
     def __init__(self, query: dict, post_process_query=None):
         self.query = query

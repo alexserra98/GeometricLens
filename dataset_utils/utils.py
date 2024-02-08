@@ -166,7 +166,7 @@ class CommonsenseQA_ScenarioBuilder(ScenarioBuilder):
         prompt = f'Question: {row["question"]}\n'
         for letter, choice in zip(row["choices"]["label"],row["choices"]["text"]):
             prompt += f'{letter}. {choice}\n'
-        prompt += f'Answer: {row["choices"]["text"][row["choices"]["label"].index(row["answerKey"])]}\n\n' if shot else  f'Answer:' 
+        prompt += f'Answer: {row["answerKey"]}\n\n' if shot else  f'Answer:' 
         return prompt 
     def construct_request_instance(self) -> List[RequestInstance]:
         """

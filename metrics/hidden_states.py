@@ -1,29 +1,33 @@
-from dadapy.data import Data
-import numpy as np
-from .utils import  hidden_states_collapse, Match
-import tqdm
-import pandas as pd
-from typing import Dict, List
-from .utils import  Match,  exact_match, quasi_exact_match, hidden_states_collapse,softmax
-from dadapy.data import Data
-from dadapy.data import Data
+
+from .utils import  Match,  exact_match, quasi_exact_match, hidden_states_collapse, HiddenPrints
 from metrics.query import DataFrameQuery
-from pathlib  import Path
+from metrics.intrinisic_dimension import IntrinsicDimension
 from common.tensor_storage import TensorStorage
-from sklearn.feature_selection import mutual_info_regression
+from common.globals_vars import _NUM_PROC
+
+#from sklearn.feature_selection import mutual_info_regression MISSIN?
 from sklearn.metrics.cluster import adjusted_rand_score, adjusted_mutual_info_score
+from dadapy.data import Data
 from sklearn.metrics import mutual_info_score
-import warnings
-import os, sys
-from functools import partial
-from multiprocessing import Pool
-import time
-from safetensors import safe_open
+
 from joblib import Parallel, delayed
+from multiprocessing import Pool
+
+
+import warnings
+from functools import partial
+import time
+from typing import Dict, List
+from pathlib  import Path
+import tqdm
+
+
+import numpy as np
+import pandas as pd
 #import skdim
 
 _DEBUG = False
-_NUM_PROC = 32
+
 
 def process_layer_label_overlap(num_layer, hidden_states, labels, class_fraction, k):
     """
@@ -85,14 +89,7 @@ def process_layer_label_cluster(layer, input_i, label, z, comparison_metrics):
         layer_results[key] = func(clusters_i, label)
 
     return layer_results
-class HiddenPrints:
-    def __enter__(self):
-        self._original_stdout = sys.stdout
-        sys.stdout = open(os.devnull, 'w')
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        sys.stdout.close()
-        sys.stdout = self._original_stdout
         
 def load_tensors_for_row(row,tensor_storage: TensorStorage):
     """
@@ -110,134 +107,15 @@ def load_tensors_for_row(row,tensor_storage: TensorStorage):
 def parallel_function(path, hidden_state_path,tensor_storage):
       return tensor_storage.load_tensors(path, hidden_state_path[hidden_state_path["path"] == path]["id_instance"].tolist()), hidden_state_path[hidden_state_path["path"] == path]["id_instance"].tolist()
 
-def hidden_states_collapse(df_hiddenstates: pd.DataFrame(), query: DataFrameQuery, tensor_storage: TensorStorage)-> np.ndarray:
-    """
-    Collect hidden states of all instances and collapse them in one tensor
-    using the provided method
-
-    Parameters
-    ----------
-    df_hiddenstates: pd.DataFrame(hiddens_states, match, layer, answered letter, gold letter)
-                     dataframe containing the hidden states of all instances
-    query: Dict[condition, value] --> what instances to select
-    Output
-    ----------
-    (num_instances, num_layers, model_dim)
-    """ 
-
-    df_hiddenstates = query.apply_query(df_hiddenstates)
-    # I have no clue on why this is necessary, for some reason some instances are duplicated
-    hidden_states = []
-    logits = []
-    load_tensors_for_row_t = partial(load_tensors_for_row, tensor_storage=tensor_storage)
-    start_time = time.time()
-    rows = [row for _, row in df_hiddenstates.iterrows()]
-    id_instances =  [row["id_instance"] for _, row in df_hiddenstates.iterrows()]
-    hidden_state_path =[[f'{row["model_name"].replace("/","-")}/{row["dataset"]}/{row["train_instances"]}/hidden_states', row["id_instance"]] for row in rows]
-    hidden_state_path = pd.DataFrame(hidden_state_path, columns = ["path", "id_instance"])
-    id_instances_check = []
-    hidden_states = []
-
-    for path in hidden_state_path["path"].unique():
-      id_instances_check.extend( hidden_state_path[hidden_state_path["path"] == path]["id_instance"])
-      hidden_states.extend(tensor_storage.load_tensors(path, hidden_state_path[hidden_state_path["path"] == path]["id_instance"].tolist()))
-    end_time = time.time()
-    assert id_instances == id_instances_check, "The order of the instances is not the same"
-    print(f" Tensor retrieval took: {end_time-start_time}\n")
-    return np.stack(hidden_states),None, df_hiddenstates
-
-def process_layer(i, hidden_states, algorithm):
-  # Function to replace the loop body
-  data = Data(hidden_states[:, i, :])
-  with HiddenPrints():
-      data.remove_identical_points()
-
-  if algorithm == "2nn":
-      raise NotImplementedError
-  elif algorithm == "gride":
-      return data.return_id_scaling_gride(range_max=1000)[0] 
-  elif algorithm == "DANco":
-      return skdim.id.DANCo().fit(hidden_states[:, i, :])
-  elif algorithm == "lPCA":
-      return skdim.id.lPCA().fit_pw(hidden_states[:, i, :], n_neighbors = 100, n_jobs = 4)
-
 class HiddenStates():
   def __init__(self,hidden_states: pd.DataFrame(), hidden_states_path: Path):
     self.df = hidden_states
     self.tensor_storage = TensorStorage(hidden_states_path)
-    
-
-
-  
-  def _compute_id(self, hidden_states: np.ndarray ,  algorithm = "gride") -> np.ndarray:
-    """
-    Collect hidden states of all instances and compute ID
-    we employ two different approaches: the one of the last token, the sum of all tokens
-    Parameters
-    ----------
-    hidden_states: np.array(num_instances, num_layers, model_dim)
-    algorithm: 2nn or gride --> what algorithm to use to compute ID
-
-    Output
-    ---------- 
-    Dict np.array(num_layers)
-    """
-    assert algorithm == "gride", "gride is the only algorithm supported"
-    id_per_layer_gride = []
-    id_per_layer_lpca = []
-    id_per_layer_danco = []
-    num_layers = hidden_states.shape[1]
-    with Parallel(n_jobs=_NUM_PROC) as parallel:
-        id_per_layer_gride = parallel(delayed(process_layer)(i, hidden_states, "gride") for i in range(1, num_layers))
-        #id_per_layer_lpca = parallel(delayed(process_layer)(i, hidden_states, "lpca") for i in range(1, num_layers)) 
-        #id_per_layer_danco = parallel(delayed(process_layer)(i, hidden_states, "DANco") for i in range(1, num_layers))
-    return np.stack(id_per_layer_gride[1:]), id_per_layer_lpca, id_per_layer_danco
-  
  
   def intrinsic_dim(self) -> pd.DataFrame:
-    rows = []
-    for model in tqdm.tqdm(self.df["model_name"].unique().tolist()):
-      for method in ["last"]: #self.df["method"].unique().tolist():
-        for train_instances in ["0","2","5"]:#self.df["train_instances"].unique().tolist():
-          for match in ["correct", "incorrect", "all"]:
-            query = DataFrameQuery({"method":method,
-                                    "model_name":model,
-                                    "train_instances": train_instances})
-            if match == "correct":
-              df = self.df[self.df.apply(lambda r: exact_match(r["only_ref_pred"], r["letter_gold"]), axis=1)]
-            elif match == "incorrect":
-              df = self.df[self.df.apply(lambda r: not exact_match(r["only_ref_pred"], r["letter_gold"]), axis=1)]
-            else:
-              df = self.df
-            #import pdb;pdb.set_trace()
-            hidden_states,_, _= hidden_states_collapse(df,query, self.tensor_storage)
-            id_per_layer_gride, id_per_layer_lpca, id_per_layer_danco = self._compute_id(hidden_states)
-            rows.append([model, 
-                        method,
-                        match,
-                        train_instances,
-                        id_per_layer_gride,
-                        id_per_layer_lpca,
-                        id_per_layer_danco])
-              
-        
-    return pd.DataFrame(rows, columns = ["model",
-                                          "method",
-                                          "match",  
-                                          "train_instances",
-                                          "id_per_layer_gride",
-                                          "id_per_layer_lpca",
-                                          "id_per_layer_danco"]) 
+    intrinsic_dim = IntrinsicDimension(df = self.df, tensor_storage = self.tensor_storage)
+    return intrinsic_dim.main()
       
-
-  
-  #TODO use a decorator
-  def preprocess_hiddenstates(self,func, query, *args, **kwargs):
-    hidden_states_collapsed,_,_ = hidden_states_collapse(self.df, query)
-
-    return func(hidden_states_collapsed, *args, **kwargs)
-  
-  
   def shot_metrics(self,metrics_list=None) -> Dict[str, Dict[str, float]]:
     rows = []
     for dataset in tqdm.tqdm(self.df["dataset"].unique().tolist()):

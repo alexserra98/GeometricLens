@@ -19,6 +19,9 @@ from enum import Enum
 from .query import DataFrameQuery
 from pathlib import Path
 import logging
+from abc import ABC, abstractmethod
+
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 #Define a type hint 

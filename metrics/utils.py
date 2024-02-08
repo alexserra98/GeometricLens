@@ -6,7 +6,10 @@ from typing import Dict, List, NamedTuple
 import pandas as pd
 import functools
 from warnings import warn
-
+from functools import partial
+from metrics.query import DataFrameQuery
+from common.tensor_storage import TensorStorage
+import time
 @dataclass
 class RunMeta():
   num_layers: int
@@ -33,60 +36,46 @@ class InstanceHiddenStates():
   hidden_states: Dict[str, np.ndarray]
 
 
-def compute_id(hidden_states: np.ndarray ,query: Dict,  algorithm = "2nn") -> np.ndarray:
-    """
-    Collect hidden states of all instances and compute ID
-    we employ two different approaches: the one of the last token, the sum of all tokens
-    Parameters
-    ----------
-    hidden_states: np.array(num_instances, num_layers, model_dim)
-    algorithm: 2nn or gride --> what algorithm to use to compute ID
-
-    Output
-    ---------- 
-    Dict np.array(num_layers)
-    """
-    assert algorithm == "gride", "gride is the only algorithm supported"
-    hidden_states,_ = hidden_states_collapse(hidden_states,query)
-    # Compute ID
-    id_per_layer = []
-    layers = hidden_states.shape[1]
-    print(f"Computing ID for {layers} layers")
-    for i in range(1,layers): #iterate over layers
-        # (num_instances, model_dim)
-        layer = Data(hidden_states[:,i,:])
-        #print(f"layer {i} with {hidden_states.shape}")
-        layer.remove_identical_points()
-        if algorithm == "2nn":
-            #id_per_layer.append(layer.compute_id_2NN()[0])
-            raise NotImplementedError
-        elif algorithm == "gride":
-            id_per_layer.append(layer.return_id_scaling_gride(range_max = 1000)[0])
-        #print(f"layer {i} with {id_per_layer[-1].shape}")
-    return  np.stack(id_per_layer[1:]) #skip first layer - for some reason it outputs a wrong number of IDs
-
-
-
-def hidden_states_collapse(df_hiddenstates: pd.DataFrame(), query: Dict)-> np.ndarray:
+def hidden_states_collapse(df_hiddenstates: pd.DataFrame(), 
+                           query: DataFrameQuery, 
+                           tensor_storage: TensorStorage)-> np.ndarray:
     """
     Collect hidden states of all instances and collapse them in one tensor
     using the provided method
 
     Parameters
     ----------
-    instances_hiddenstates: List[InstanceHiddenSates]
-    method: last or sum --> what method to use to collapse hidden states
-
+    df_hiddenstates: pd.DataFrame(hiddens_states, match, layer, answered letter, gold letter)
+                     dataframe containing the hidden states of all instances
+    query: DataFrameQuery --> 
     Output
     ----------
     (num_instances, num_layers, model_dim)
     """ 
-    for condition in query.keys():
-        if condition == "match" and query[condition] == Match.ALL.value:
-            continue
-        df_hiddenstates = df_hiddenstates[df_hiddenstates[condition] == query[condition]]
-    hidden_states = df_hiddenstates["hidden_states"].tolist()
-    return np.stack(hidden_states)
+
+    df_hiddenstates = query.apply_query(df_hiddenstates)
+    hidden_states = []
+    start_time = time.time()
+    rows = [row for _, row in df_hiddenstates.iterrows()]
+    id_instances =  [row["id_instance"] for _, row in df_hiddenstates.iterrows()]
+    hidden_state_path_rows =[[f'{row["model_name"].replace("/","-")}/{row["dataset"]}/{row["train_instances"]}/hidden_states', 
+                              row["id_instance"]] 
+                             for row in rows]
+    hidden_state_path = pd.DataFrame(hidden_state_path_rows, columns = ["path", "id_instance"])
+    id_instances_check = []
+    hidden_states = []
+    # for row in df_hiddenstates.iterrows():
+    #     row = row[1]
+    #     path = f'{row["model_name"].replace("/","-")}/{row["dataset"]}/{row["train_instances"]}/hidden_states'
+    #     id_instances_check.append( row["id_instance"])
+    #     hidden_states.append(tensor_storage.load_tensor(path, row["id_instance"] ))
+    for path in hidden_state_path["path"].unique():
+      id_instances_check.extend( hidden_state_path[hidden_state_path["path"] == path]["id_instance"])
+      hidden_states.extend(tensor_storage.load_tensors(path, hidden_state_path[hidden_state_path["path"] == path]["id_instance"].tolist()))
+    end_time = time.time()
+    assert id_instances == id_instances_check, "The order of the instances is not the same"
+    print(f" Tensor retrieval took: {end_time-start_time}\n")
+    return np.stack(hidden_states),None, df_hiddenstates
 
 
 def exact_match(answers, letters_gold):
@@ -138,22 +127,7 @@ def label_neig_overlap(nn_matrix: np.ndarray, labels: NamedTuple, subject_per_ro
     out = nn_matrix.sum()/nn_matrix.shape[0]
     return out
 
-def class_imbalance(hidden_states_df, label):
-    """
-    Eliminate extra instances from the dataframe to make it balanced
-    Parameters
-    ----------
-    hidden_states_df: pd.DataFrame
-        dataframe containing hidden states and labels
-    label: str
-        label to balance
-    """
-    if hidden_states_df[label].value_counts().nunique() == 1:
-        return hidden_states_df
-    class_counts = hidden_states_df[label].value_counts()
-    min_count = class_counts.min()
-    balanced_df = hidden_states_df.groupby(label).apply(lambda x: x.sample(min_count))
-    return balanced_df
+
     
 def layer_overlap(nn1, nn2) -> np.ndarray:
     assert nn1.shape == nn2.shape, "The two nearest neighbour matrix must have the same shape" 
@@ -163,3 +137,11 @@ def layer_overlap(nn1, nn2) -> np.ndarray:
         overlaps[i] = neig_overlap(nn1[i], nn2[i])
     return overlaps
   
+class HiddenPrints:
+    def __enter__(self):
+        self._original_stdout = sys.stdout
+        sys.stdout = open(os.devnull, 'w')
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        sys.stdout.close()
+        sys.stdout = self._original_stdout
