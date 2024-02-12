@@ -12,11 +12,11 @@ class HiddenStatesMetrics(ABC):
     self.df = df
     self.tensor_storage = tensor_storage
     
-  @abstractmethod
+  
   def main(self, hidden_states: np.ndarray ,  algorithm = "gride") -> np.ndarray:
     raise NotImplementedError
   
-  @abstractmethod
+  
   def parallel_compute(self, hidden_states: np.ndarray ,  algorithm = "gride") -> np.ndarray:
     raise NotImplementedError
   

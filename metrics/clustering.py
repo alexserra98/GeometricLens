@@ -23,20 +23,20 @@ _COMPARISON_METRICS = {"adjusted_rand_score":adjusted_rand_score,
 
 
 class LabelClustering(HiddenStatesMetrics):
-    def __init__(self, df: pd.DataFrame, tensor_storage, label: str):
-      super().__init__(df, tensor_storage)
-      self.label = label
     
-    def main(self) -> pd.DataFrame:
+    def main(self, label) -> pd.DataFrame:
       """
       Compute the overlap between the layers of instances in which the model answered with the same letter
       Output
       ----------
       Dict[layer: List[Array(num_layers, num_layers)]]
       """
+      self.label = label
       #The last token is always the same, thus its first layer activation (embedding) is always the same
       #iter_list=[0.05,0.10,0.20,0.50]
-      iter_list=[0.9,1.68,2]
+      
+      iter_list=[0.8,0.9,1.68,2,2.5,3]
+
       rows = []
       
       for z in tqdm.tqdm(iter_list, desc = "Computing overlap"):
@@ -148,15 +148,16 @@ class PointClustering(HiddenStatesMetrics):
     """
     #warn("Computing overlap using k with  2 -25- 500")
 
-    iter_list=[0.9,1.68,2]
+    #iter_list=[2.2,2.5,32.2,2.5,32.2,2.5,3]
 
+    iter_list=[1.68,2,2.5,3,3.5,4]
     rows = []
     for z in tqdm.tqdm(iter_list, desc = "Computing overlaps k"):
       for couples in self.pair_names(self.df["model_name"].unique().tolist()):
         #import pdb; pdb.set_trace()
         for method in ["last"]:#self.df["method"].unique().tolist():
           if couples[0]==couples[1]:
-            iterlist = [("0","5")]
+            iterlist = [("0","0"),("0","5")]
           else:
             iterlist = [("0","0"),("0","5"),("5","5"),("5","0")]
           for shot in iterlist:
@@ -167,8 +168,17 @@ class PointClustering(HiddenStatesMetrics):
             query_j = DataFrameQuery({"method":method,
                     "model_name":couples[1], 
                     "train_instances": train_instances_j,})
-            hidden_states_i, _,_ = hidden_states_collapse(self.df,query_i, self.tensor_storage)
-            hidden_states_j, _,_ = hidden_states_collapse(self.df,query_j, self.tensor_storage)
+            hidden_states_i, _,df_i = hidden_states_collapse(self.df,query_i, self.tensor_storage)
+            hidden_states_j, _,df_j = hidden_states_collapse(self.df,query_j, self.tensor_storage)
+            #df_i.reset_index(inplace=True)
+            #df_j.reset_index(inplace=True)
+            #df_i = df_i.where(df_j.only_ref_pred == df_i.only_ref_pred)
+            #df_j = df_j.where(df_j.only_ref_pred == df_i.only_ref_pred)
+            #df_i.dropna(inplace=True)
+            #df_j.dropna(inplace=True)
+            #hidden_states_i, _,df_i = hidden_states_collapse(df_i,query_i, self.tensor_storage)
+            #hidden_states_j, _, df_j = hidden_states_collapse(df_j,query_j, self.tensor_storage)
+
             clustering_out = self.parallel_compute(hidden_states_i, hidden_states_j, z)
 
             rows.append([z,
@@ -218,7 +228,7 @@ class PointClustering(HiddenStatesMetrics):
 
       comparison_output = {key:[] for key in _COMPARISON_METRICS.keys()}
       
-      process_layer = partial(self.process_layer, input_i=input_i, input_j=input_j, z=z, _COMPARISON_METRICS=_COMPARISON_METRICS)
+      process_layer = partial(self.process_layer, input_i=input_i, input_j=input_j, z=z)
       with Parallel(n_jobs=_NUM_PROC) as parallel:
         results = parallel(delayed(process_layer)(layer) for layer in range(1, number_of_layers))
       

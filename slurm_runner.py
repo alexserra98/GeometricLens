@@ -66,14 +66,25 @@ def main():
                                  time='18:00:00',
                                  job_name='inference',
                                  output='inference')
+    elif job_type == 'inference_big':
+        sbatch_args = SbatchArgs(job_type='inference',
+                                 partition='DGX',
+                                 nodes=1,
+                                 ntasks_per_node=1,
+                                 cpus_per_task=1,
+                                 mem='300G',
+                                 time='18:00:00',
+                                 job_name='inference',
+                                 output='inference')
+
     elif job_type == 'metrics':
         sbatch_args = SbatchArgs(job_type='metrics',
                                  partition='THIN',
                                  nodes=1,
                                  ntasks_per_node=1,
                                  cpus_per_task=1,
-                                 mem='580G',
-                                 time='1-20:00:00',
+                                 mem='680G',
+                                 time='2-20:00:00',
                                  job_name='metrics',
                                  output='metrics')    
     

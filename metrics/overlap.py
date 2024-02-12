@@ -31,7 +31,9 @@ class PointOverlap(HiddenStatesMetrics):
                               "adjusted_mutual_info_score":adjusted_mutual_info_score, 
                               "mutual_info_score":mutual_info_score}
         
-        iter_list = [5,10,30,100]
+        iter_list = [5,10,30,100,500,1000]
+        #iter_list = [30]
+        #iter_list = [100,250,500,1000]
         rows = []
         for k in tqdm.tqdm(iter_list, desc = "Computing overlaps k"):
             for couples in self.pair_names(self.df["model_name"].unique().tolist()):
@@ -48,9 +50,19 @@ class PointOverlap(HiddenStatesMetrics):
                         query_j = DataFrameQuery({"method":method,
                                 "model_name":couples[1], 
                                 "train_instances": train_instances_j,})
-                        hidden_states_i, _,_ = hidden_states_collapse(self.df,query_i, self.tensor_storage)
-                        hidden_states_j, _,_ = hidden_states_collapse(self.df,query_j, self.tensor_storage)
                         
+                        hidden_states_i, _, df_i = hidden_states_collapse(self.df,query_i, self.tensor_storage)
+                        hidden_states_j, _, df_j = hidden_states_collapse(self.df,query_j, self.tensor_storage)
+                        #df_i.reset_index(inplace=True)
+                        #df_j.reset_index(inplace=True)
+                        #df_i = df_i.where(df_j.only_ref_pred == df_i.only_ref_pred)
+                        #df_j = df_j.where(df_j.only_ref_pred == df_i.only_ref_pred) 
+                        #df_i.dropna(inplace=True)
+                        #df_j.dropna(inplace=True)
+                        #hidden_states_i, _, df_i = hidden_states_collapse(df_i,query_i, self.tensor_storage)
+                        #hidden_states_j, _, df_j = hidden_states_collapse(df_j,query_j, self.tensor_storage)
+
+                        #import pdb;pdb.set_trace() 
                         rows.append([k,
                                     couples,
                                     method,
@@ -76,7 +88,7 @@ class PointOverlap(HiddenStatesMetrics):
         list: A list of tuples, each containing a base name and its 'chat' version.
         """
         # Separating base names and 'chat' names
-        difference = 'openai'#'chat'
+        difference = 'chat'
         base_names = [name for name in names_list if difference not in name]
         chat_names = [name for name in names_list if difference in name]
         base_names.sort()
@@ -120,22 +132,20 @@ class PointOverlap(HiddenStatesMetrics):
         data = Data(data_i[:,layer,:])
         warnings.filterwarnings("ignore")
         data.compute_distances(maxk=k)
-        overlap = data.return_data_overlap(data_j[:,layer,:])
+        overlap = data.return_data_overlap(data_j[:,layer,:],k)
         return overlap
     
     
-class LabelOverlap():
-  def __init__(self, df: pd.DataFrame, tensor_storage, label: str):
-      super().__init__(df, tensor_storage)
-      self.label = label
+class LabelOverlap(HiddenStatesMetrics):
       
-  def main(self) -> pd.DataFrame:
+  def main(self,label) -> pd.DataFrame:
     """
     Compute the overlap between the layers of instances in which the model answered with the same letter
     Output
     ----------
     Dict[layer: List[Array(num_layers, num_layers)]]
     """
+    self.label = label
     #The last token is always the same, thus its first layer activation (embedding) is always the same
     iter_list=[0.05,0.10,0.20,0.50]
     rows = []
@@ -164,36 +174,36 @@ class LabelOverlap():
 
     return df
 
-def constructing_labels(self, hidden_states_df: pd.DataFrame, hidden_states: np.ndarray) -> np.ndarray:
-    labels_literals = hidden_states_df[self.label].unique()
-    labels_literals.sort()
-    
-    map_labels = {class_name: n for n,class_name in enumerate(labels_literals)}
-    
-    label_per_row = hidden_states_df[self.label].reset_index(drop=True)
-    label_per_row = np.array([map_labels[class_name] for class_name in label_per_row])[:hidden_states.shape[0]]
-    
-    return label_per_row
+  def constructing_labels(self, hidden_states_df: pd.DataFrame, hidden_states: np.ndarray) -> np.ndarray:
+      labels_literals = hidden_states_df[self.label].unique()
+      labels_literals.sort()
+      
+      map_labels = {class_name: n for n,class_name in enumerate(labels_literals)}
+      
+      label_per_row = hidden_states_df[self.label].reset_index(drop=True)
+      label_per_row = np.array([map_labels[class_name] for class_name in label_per_row])[:hidden_states.shape[0]]
+      
+      return label_per_row
 
-def parallel_compute(self, hidden_states, labels,  class_fraction ) -> np.ndarray:
-    overlaps = []
-    if class_fraction is None:
-      raise ValueError("You must provide either k or class_fraction")
-    start_time = time.time()
-    with Pool(processes=_NUM_PROC) as pool:
-        results = pool.starmap(self.process_layer, [(num_layer, hidden_states, labels, class_fraction) for num_layer in range(hidden_states.shape[1])])
-    end_time = time.time()
-    print(f"Label overlap over batch of data took: {end_time-start_time}")
-    overlaps = list(results)
+  def parallel_compute(self, hidden_states: np.ndarray, labels: np.array,  class_fraction: float ) -> np.ndarray:
+      overlaps = []
+      if class_fraction is None:
+        raise ValueError("You must provide either k or class_fraction")
+      start_time = time.time()
+      with Pool(processes=_NUM_PROC) as pool:
+          results = pool.starmap(self.process_layer, [(num_layer, hidden_states, labels, class_fraction) for num_layer in range(hidden_states.shape[1])])
+      end_time = time.time()
+      print(f"Label overlap over batch of data took: {end_time-start_time}")
+      overlaps = list(results)
 
-    return np.stack(overlaps)
+      return np.stack(overlaps)
 
-def process_layer(self, num_layer, hidden_states, labels, class_fraction):
-    """
-    Process a single layer.
-    """
-    data = Data(hidden_states[:, num_layer, :])
+  def process_layer(self, num_layer, hidden_states, labels, class_fraction):
+      """
+      Process a single layer.
+      """
+      data = Data(hidden_states[:, num_layer, :])
 
-    warnings.filterwarnings("ignore")
-    overlap = data.return_label_overlap(labels, class_fraction=class_fraction, k=k)
-    return overlap
+      warnings.filterwarnings("ignore")
+      overlap = data.return_label_overlap(labels, class_fraction=class_fraction)
+      return overlap

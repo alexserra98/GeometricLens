@@ -1,6 +1,5 @@
 from metrics.hidden_states_metrics import HiddenStatesMetrics
-from .utils import  hidden_states_collapse
-from .utils import hidden_states_collapse, HiddenPrints
+from .utils import hidden_states_collapse, HiddenPrints, exact_match, quasi_exact_match
 from metrics.query import DataFrameQuery
 from common.globals_vars import _NUM_PROC
 

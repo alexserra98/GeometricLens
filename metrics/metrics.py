@@ -45,6 +45,7 @@ class Metrics():
       df = pd.read_sql("SELECT * FROM metadata", self.db.conn)
       df["train_instances"] = df["train_instances"].astype(str)
       df.drop(columns=["id"],inplace = True)
+      #import pdb; pdb.set_trace()
       df.drop_duplicates(subset = ["id_instance"],inplace = True, ignore_index = True) # why there are duplicates???
       return df
         

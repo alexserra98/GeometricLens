@@ -66,15 +66,26 @@ def hidden_states_collapse(df_hiddenstates: pd.DataFrame(),
     hidden_state_path = pd.DataFrame(hidden_state_path_rows, columns = ["path", "id_instance"])
     id_instances_check = []
     hidden_states = []
-    # for row in df_hiddenstates.iterrows():
-    #     row = row[1]
-    #     path = f'{row["model_name"].replace("/","-")}/{row["dataset"]}/{row["train_instances"]}/hidden_states'
-    #     id_instances_check.append( row["id_instance"])
-    #     hidden_states.append(tensor_storage.load_tensor(path, row["id_instance"] ))
+        #import pdb; pdb.set_trace()
     for path in hidden_state_path["path"].unique():
       id_instances_check.extend( hidden_state_path[hidden_state_path["path"] == path]["id_instance"])
       hidden_states.extend(tensor_storage.load_tensors(path, hidden_state_path[hidden_state_path["path"] == path]["id_instance"].tolist()))
     end_time = time.time()
+    if id_instances != id_instances_check:
+      indices = [id_instances_check.index(i) for i in id_instances]
+      hidden_states = [hidden_states[i] for i in indices]
+      id_instances_check = [id_instances_check [i] for i in indices]
+
+      #print("The order of the instances is not the same, switch to long method" )
+      #hidden_states = []
+      #id_instances_check = []
+      #for row in df_hiddenstates.iterrows():
+      #  row = row[1]
+      #  path = f'{row["model_name"].replace("/","-")}/{row["dataset"]}/{row["train_instances"]}/hidden_states'
+      #  id_instances_check.append( row["id_instance"])
+      #  hidden_states.append(tensor_storage.load_tensor(path, row["id_instance"] ))
+
+
     assert id_instances == id_instances_check, "The order of the instances is not the same"
     print(f" Tensor retrieval took: {end_time-start_time}\n")
     return np.stack(hidden_states),None, df_hiddenstates
