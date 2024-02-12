@@ -51,8 +51,12 @@ class PointOverlap(HiddenStatesMetrics):
                                 "model_name":couples[1], 
                                 "train_instances": train_instances_j,})
                         
+                        
                         hidden_states_i, _, df_i = hidden_states_collapse(self.df,query_i, self.tensor_storage)
                         hidden_states_j, _, df_j = hidden_states_collapse(self.df,query_j, self.tensor_storage)
+                        random_integers = np.random.randint(1, 14001, size=2000)
+                        hidden_states_i = hidden_states_i[random_integers]
+                        hidden_states_j = hidden_states_j[random_integers]
                         #df_i.reset_index(inplace=True)
                         #df_j.reset_index(inplace=True)
                         #df_i = df_i.where(df_j.only_ref_pred == df_i.only_ref_pred)
