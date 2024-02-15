@@ -30,6 +30,8 @@ class IntrinsicDimension(HiddenStatesMetrics):
                             df = self.df
                             #import pdb;pdb.set_trace()
                             hidden_states,_, _= hidden_states_collapse(df,query, self.tensor_storage)
+                            #random_integers = np.random.randint(1, 14001, size=2500)
+                            #hidden_states = hidden_states[random_integers]
                             id_per_layer_gride, id_per_layer_lpca, id_per_layer_danco = self.parallel_compute(hidden_states)
                             rows.append([model, 
                                         method,

@@ -54,9 +54,7 @@ class PointOverlap(HiddenStatesMetrics):
                         
                         hidden_states_i, _, df_i = hidden_states_collapse(self.df,query_i, self.tensor_storage)
                         hidden_states_j, _, df_j = hidden_states_collapse(self.df,query_j, self.tensor_storage)
-                        random_integers = np.random.randint(1, 14001, size=2000)
-                        hidden_states_i = hidden_states_i[random_integers]
-                        hidden_states_j = hidden_states_j[random_integers]
+
                         #df_i.reset_index(inplace=True)
                         #df_j.reset_index(inplace=True)
                         #df_i = df_i.where(df_j.only_ref_pred == df_i.only_ref_pred)
@@ -121,9 +119,9 @@ class PointOverlap(HiddenStatesMetrics):
         """
         assert data_i.shape[1] == data_j.shape[1], "The two runs must have the same number of layers"
         number_of_layers = data_i.shape[1]
-     
-        with Pool(processes=_NUM_PROC) as pool:
-            results = pool.starmap(self.process_layer, [(layer, data_i, data_j, k) for layer in range(number_of_layers)])
+        process_layer = partial(self.process_layer, data_i = data_i, data_j = data_j, k=k) 
+        with Parallel(n_jobs=_NUM_PROC) as parallel:
+            results = parallel(delayed(process_layer)(layer) for layer in range(number_of_layers))
 
         overlaps = list(results)
         
@@ -134,8 +132,9 @@ class PointOverlap(HiddenStatesMetrics):
         Process a single layer.
         """
         data = Data(data_i[:,layer,:])
-        warnings.filterwarnings("ignore")
+        #warnings.filterwarnings("ignore")
         data.compute_distances(maxk=k)
+        #print(f'{k} -- {data_j[:,layer,:]}')
         overlap = data.return_data_overlap(data_j[:,layer,:],k)
         return overlap
     
@@ -194,8 +193,9 @@ class LabelOverlap(HiddenStatesMetrics):
       if class_fraction is None:
         raise ValueError("You must provide either k or class_fraction")
       start_time = time.time()
-      with Pool(processes=_NUM_PROC) as pool:
-          results = pool.starmap(self.process_layer, [(num_layer, hidden_states, labels, class_fraction) for num_layer in range(hidden_states.shape[1])])
+      process_layer = partial(self.process_layer, hidden_states = hidden_states,labels = labels, class_fraction = class_fraction)
+      with Parallel(n_jobs=_NUM_PROC) as parallel:
+          results = parallel(delayed(process_layer)(num_layer) for num_layer in range(hidden_states.shape[1]))
       end_time = time.time()
       print(f"Label overlap over batch of data took: {end_time-start_time}")
       overlaps = list(results)
@@ -208,6 +208,6 @@ class LabelOverlap(HiddenStatesMetrics):
       """
       data = Data(hidden_states[:, num_layer, :])
 
-      warnings.filterwarnings("ignore")
+      #warnings.filterwarnings("ignore")
       overlap = data.return_label_overlap(labels, class_fraction=class_fraction)
       return overlap
