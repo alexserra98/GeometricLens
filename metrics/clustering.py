@@ -35,7 +35,7 @@ class LabelClustering(HiddenStatesMetrics):
       #The last token is always the same, thus its first layer activation (embedding) is always the same
       #iter_list=[0.05,0.10,0.20,0.50]
       
-      iter_list=[0.8,0.9,1.68,2,2.5,3]
+      iter_list=[0.6,0.7,0.8,0.9,1.68,2]
 
       rows = []
       
@@ -150,7 +150,7 @@ class PointClustering(HiddenStatesMetrics):
 
     #iter_list=[2.2,2.5,32.2,2.5,32.2,2.5,3]
 
-    iter_list=[1.68,2,2.5,3,3.5,4]
+    iter_list=[0.9,1.68,2,2.5,3]
     rows = []
     for z in tqdm.tqdm(iter_list, desc = "Computing overlaps k"):
       for couples in self.pair_names(self.df["model_name"].unique().tolist()):
@@ -170,6 +170,7 @@ class PointClustering(HiddenStatesMetrics):
                     "train_instances": train_instances_j,})
             hidden_states_i, _,df_i = hidden_states_collapse(self.df,query_i, self.tensor_storage)
             hidden_states_j, _,df_j = hidden_states_collapse(self.df,query_j, self.tensor_storage)
+            df_i["instance_id"]
             #df_i.reset_index(inplace=True)
             #df_j.reset_index(inplace=True)
             #df_i = df_i.where(df_j.only_ref_pred == df_i.only_ref_pred)

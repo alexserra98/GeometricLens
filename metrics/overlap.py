@@ -10,9 +10,10 @@ from sklearn.metrics.cluster import adjusted_rand_score, adjusted_mutual_info_sc
 import tqdm
 import pandas as pd
 import numpy as np
-from multiprocessing import Pool
 import warnings
 import time
+from functools import partial
+from joblib import Parallel, delayed
 
 class PointOverlap(HiddenStatesMetrics):
        
@@ -54,7 +55,14 @@ class PointOverlap(HiddenStatesMetrics):
                         
                         hidden_states_i, _, df_i = hidden_states_collapse(self.df,query_i, self.tensor_storage)
                         hidden_states_j, _, df_j = hidden_states_collapse(self.df,query_j, self.tensor_storage)
-
+                        id_instance_i = list(map(lambda k: k[:64],df_i["id_instance"].tolist()))
+                        id_instance_j = list(map(lambda k: k[:64],df_j["id_instance"].tolist()))
+                        
+                        if id_instance_i != id_instance_j:
+                            id_instance_i = sorted(id_instance_i)
+                            id_instance_j = sorted(id_instance_j)    
+                            assert id_instance_i == id_instance_j, "The two runs must have the same instances"
+                        
                         #df_i.reset_index(inplace=True)
                         #df_j.reset_index(inplace=True)
                         #df_i = df_i.where(df_j.only_ref_pred == df_i.only_ref_pred)

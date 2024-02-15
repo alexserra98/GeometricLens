@@ -7,6 +7,8 @@ from tqdm import tqdm
 import string
 from abc import ABC, abstractmethod
 
+_TMP = True
+
 _KNOWN_DATASET_ALIASES: Dict[str, str] = {
     "mmlu": "Stevross/mmlu",
     "commonsenseqa": "tau/commonsense_qa"
@@ -77,6 +79,10 @@ class MMLU_ScenarioBuilder(ScenarioBuilder):
         dataset = self.retrieve_dataset()
         output_mapping = [letter 
                           for letter in string.ascii_uppercase[:len(dataset["test"][0]["choices"])]]
+        if _TMP:
+            dataset_dev = load_dataset('cais/mmlu','all',trust_remote_code=True)
+        else:
+            dataset_dev = dataset
         
         ri = []
         def construct_question(row,shot=False):
@@ -89,8 +95,9 @@ class MMLU_ScenarioBuilder(ScenarioBuilder):
                                   if self.number_of_instances != -1 else dataset["test"]
         for row in tqdm(dataset_test, desc="Constructing Prompts"):
             prompt = f'The following are multiple choice questions (with answers) about {subject_retriever(self.dataset)}.\n\n'
+
             for i in range(self.train_instances):
-                random_row = dataset["dev"][i]
+                random_row = dataset_dev["dev"][i]
                 prompt += construct_question(random_row,shot=True)
             prompt += construct_question(row)
             ri.append(RequestInstance(prompt, output_mapping[row["answer"]]))
@@ -100,6 +107,7 @@ class MMLU_ScenarioBuilder(ScenarioBuilder):
         Build the scenario
         """
         self.requests_instances, output_mapping = self.construct_request_instance()
+        print(f'Example of prompt: {self.request_instances[0].prompt}')
   
         return Scenario(self.dataset, 
                         self.train_instances, 
