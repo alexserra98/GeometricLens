@@ -92,7 +92,7 @@ class Metrics():
         hidden_states = HiddenStates(self.df, self.tensor_path)
         return hidden_states.point_cluster()
       
-      elif metric == "intrinsic_dim":
+      elif metric == ls:
         hidden_states = HiddenStates(self.df, self.tensor_path)
         return hidden_states.intrinsic_dim()
       

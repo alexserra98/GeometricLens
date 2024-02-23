@@ -130,7 +130,9 @@ class PointOverlap(HiddenStatesMetrics):
         process_layer = partial(self.process_layer, data_i = data_i, data_j = data_j, k=k) 
         with Parallel(n_jobs=_NUM_PROC) as parallel:
             results = parallel(delayed(process_layer)(layer) for layer in range(number_of_layers))
-
+        results = [ ]
+        for layer in range(number_of_layers):
+            results.append(process_layer(layer))
         overlaps = list(results)
         
         return np.stack(overlaps)

@@ -107,7 +107,7 @@ class MMLU_ScenarioBuilder(ScenarioBuilder):
         Build the scenario
         """
         self.requests_instances, output_mapping = self.construct_request_instance()
-        print(f'Example of prompt: {self.request_instances[0].prompt}')
+        print(f'Example of prompt: {self.requests_instances[0].prompt}')
   
         return Scenario(self.dataset, 
                         self.train_instances, 
