@@ -52,7 +52,10 @@ def hidden_states_collapse(df_hiddenstates: pd.DataFrame(),
     query: DataFrameQuery --> 
     Output
     ----------
-    (num_instances, num_layers, model_dim)
+    hidden_states: (num_instances, num_layers, model_dim),
+    none - it is a placeholder for future use
+    df_hiddenstates: pd.DataFrame(hiddens_states, match, layer, answered letter, gold letter)
+                     dataframe containing the hidden states of all instances
     """ 
 
     df_hiddenstates = query.apply_query(df_hiddenstates)
