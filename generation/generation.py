@@ -84,8 +84,8 @@ class Huggingface_client():
             self.device
             )
            
-            id_instance ={"last": _generate_hash(request_instance.prompt)+"last"+scenario.model_name.replace("/","-")+scenario.dataset.replace("_","")+str(scenario.train_instances),
-                          "sum": _generate_hash(request_instance.prompt)+"sum"+scenario.model_name.replace("/","-")+scenario.dataset.replace("_","")+str(scenario.train_instances)}
+            id_instance ={"last": _generate_hash(request_instance.question)+"last"+scenario.model_name.replace("/","-")+scenario.dataset.replace("_","")+str(scenario.train_instances),
+                          "sum": _generate_hash(request_instance.question)+"sum"+scenario.model_name.replace("/","-")+scenario.dataset.replace("_","")+str(scenario.train_instances)}
             if metadata_db.query_metadata(f'id_instance = "{id_instance["last"]}"'):
                 continue
  

@@ -6,6 +6,7 @@ import random
 from tqdm import tqdm
 import string
 from abc import ABC, abstractmethod
+import random
 
 _TMP = True
 
@@ -25,6 +26,7 @@ def subject_retriever(dataset):
 
 @dataclass
 class RequestInstance():
+    question: str
     prompt: str
     letter_gold: str
     token_gold: int = None
@@ -97,17 +99,23 @@ class MMLU_ScenarioBuilder(ScenarioBuilder):
             prompt = f'The following are multiple choice questions (with answers) about {subject_retriever(self.dataset)}.\n\n'
 
             for i in range(self.train_instances):
-                random_row = dataset_dev["dev"][i]
+                if _TMP:
+                  # otherwise all the shot would belong to the same subject
+                  index = i+i*10
+                  random_row = dataset_dev["dev"][index]
+                else:
+                  random_row = dataset_dev["dev"][i]
                 prompt += construct_question(random_row,shot=True)
-            prompt += construct_question(row)
-            ri.append(RequestInstance(prompt, output_mapping[row["answer"]]))
+            question = construct_question(row) 
+            prompt += question
+            ri.append(RequestInstance(question, prompt, output_mapping[row["answer"]]))
         return ri, output_mapping
     def build(self) -> Scenario:
         """
         Build the scenario
         """
         self.requests_instances, output_mapping = self.construct_request_instance()
-        print(f'Example of prompt: {self.request_instances[0].prompt}')
+        print(f'Example of prompt: {self.requests_instances[0].prompt}')
   
         return Scenario(self.dataset, 
                         self.train_instances, 
@@ -148,15 +156,17 @@ class OpenbookQA_ScenarioBuilder(ScenarioBuilder):
             for i in range(self.train_instances):
                 random_row = dataset["validation"][i]
                 prompt += self.construct_question(random_row,shot=True)
-            prompt += self.construct_question(row)
-            ri.append(RequestInstance(prompt, row["answerKey"]))
+            question = self.construct_question(row)
+            prompt += question
+            ri.append(RequestInstance(question, prompt, row["answerKey"]))
         return ri, dataset["test"][0]["choices"]["label"]
     def build(self) -> Scenario:
         """
         Build the scenario
         """
         self.requests_instances, output_mapping = self.construct_request_instance()
-  
+        print(f'Example of prompt: {self.requests_instances[0].prompt}')
+
         return Scenario("openbookqa", 
                         self.train_instances, 
                         self.model_name, 
@@ -184,7 +194,6 @@ class CommonsenseQA_ScenarioBuilder(ScenarioBuilder):
         Construct the request instances for the scenario
         """
         dataset = self.retrieve_dataset()
-
         
         ri = []
 
@@ -195,8 +204,9 @@ class CommonsenseQA_ScenarioBuilder(ScenarioBuilder):
             for i in range(self.train_instances):
                 random_row = dataset["train"][i]
                 prompt += self.construct_question(random_row,shot=True)
-            prompt += self.construct_question(row)
-            ri.append(RequestInstance(prompt, row["answerKey"]))
+            question = self.construct_question(row)
+            prompt += question
+            ri.append(RequestInstance(question, prompt, row["answerKey"]))
         return ri, dataset["validation"][0]["choices"]["label"]
     def build(self) -> Scenario:
         """
@@ -204,7 +214,7 @@ class CommonsenseQA_ScenarioBuilder(ScenarioBuilder):
         """
         self.requests_instances, output_mapping = self.construct_request_instance()
         
-        print(f'Example of prompt: {self.request_instances[0].prompt}')
+        print(f'Example of prompt: {self.requests_instances[0].prompt}')
         return Scenario("commonsenseqa", 
                         self.train_instances, 
                         self.model_name, 

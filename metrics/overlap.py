@@ -38,11 +38,14 @@ class PointOverlap(HiddenStatesMetrics):
         rows = []
         for k in tqdm.tqdm(iter_list, desc = "Computing overlaps k"):
             for couples in self.pair_names(self.df["model_name"].unique().tolist()):
+                if '13' in couples[0]:
+                    continue
                 for method in ["last"]:#self.df["method"].unique().tolist():
                     if couples[0]==couples[1]:
                         iterlist = [("0","0"),("0","5")]
                     else:
                         iterlist = [("0","0"),("0","5"),("5","5"),("5","0")]
+                    
                     for shot in iterlist:
                         train_instances_i, train_instances_j = shot
                         query_i = DataFrameQuery({"method":method,
@@ -55,16 +58,24 @@ class PointOverlap(HiddenStatesMetrics):
                         
                         hidden_states_i, _, df_i = hidden_states_collapse(self.df,query_i, self.tensor_storage)
                         hidden_states_j, _, df_j = hidden_states_collapse(self.df,query_j, self.tensor_storage)
+                        #id_instance_i = list(map(lambda k: k[:64],df_i["id_instance"].tolist()))
+                        #id_instance_j = list(map(lambda k: k[:64],df_j["id_instance"].tolist()))
+                        #
+                        #if id_instance_i != id_instance_j:
+                        #    id_instance_i = sorted(id_instance_i)
+                        #    id_instance_j = sorted(id_instance_j)    
+                        #    print(f'{couples}--{shot}--{k}')
+                        #    assert id_instance_i == id_instance_j, "The two runs must have the same instances"
+                        
                         id_instance_i = list(map(lambda k: k[:64],df_i["id_instance"].tolist()))
                         id_instance_j = list(map(lambda k: k[:64],df_j["id_instance"].tolist()))
-                        
-                        if id_instance_i != id_instance_j:
-                            id_instance_i = sorted(id_instance_i)
-                            id_instance_j = sorted(id_instance_j)    
-                            assert id_instance_i == id_instance_j, "The two runs must have the same instances"
-                        
+                        #import pdb; pdb.set_trace()
+                        if id_instance_i!=id_instance_j:
+                           indices = [id_instance_j.index(id_instance_i[k]) for k in range(len(id_instance_i))] 
+                           hidden_states_i=hidden_states_i[np.array(indices)]
                         #df_i.reset_index(inplace=True)
-                        #df_j.reset_index(inplace=True)
+                        #df_j.reset_indiex(inplace=True):q
+
                         #df_i = df_i.where(df_j.only_ref_pred == df_i.only_ref_pred)
                         #df_j = df_j.where(df_j.only_ref_pred == df_i.only_ref_pred) 
                         #df_i.dropna(inplace=True)
@@ -72,7 +83,6 @@ class PointOverlap(HiddenStatesMetrics):
                         #hidden_states_i, _, df_i = hidden_states_collapse(df_i,query_i, self.tensor_storage)
                         #hidden_states_j, _, df_j = hidden_states_collapse(df_j,query_j, self.tensor_storage)
 
-                        #import pdb;pdb.set_trace() 
                         rows.append([k,
                                     couples,
                                     method,
@@ -130,7 +140,9 @@ class PointOverlap(HiddenStatesMetrics):
         process_layer = partial(self.process_layer, data_i = data_i, data_j = data_j, k=k) 
         with Parallel(n_jobs=_NUM_PROC) as parallel:
             results = parallel(delayed(process_layer)(layer) for layer in range(number_of_layers))
-
+        #results = []
+        #for layer in range(number_of_layers):
+        #    results.append(process_layer(layer))
         overlaps = list(results)
         
         return np.stack(overlaps)
@@ -143,7 +155,7 @@ class PointOverlap(HiddenStatesMetrics):
         #warnings.filterwarnings("ignore")
         data.compute_distances(maxk=k)
         #print(f'{k} -- {data_j[:,layer,:]}')
-        overlap = data.return_data_overlap(data_j[:,layer,:],k)
+        overlap = data.return_data_overlap(data_j[:,layer,:],k=k)
         return overlap
     
     
