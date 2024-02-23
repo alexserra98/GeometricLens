@@ -20,8 +20,10 @@ class IntrinsicDimension(HiddenStatesMetrics):
                 for train_instances in ["0","2","5"]:#self.df["train_instances"].unique().tolist():
                     for match in ["correct", "incorrect", "all"]:
                         query = DataFrameQuery({"method":method,
-                                                "model_name":model,
+                                                "model_name":model, 
+                                                "dataset": "mmlu:professional_law",
                                                 "train_instances": train_instances})
+
                         if match == "correct":
                             df = self.df[self.df.apply(lambda r: exact_match(r["only_ref_pred"], r["letter_gold"]), axis=1)]
                         elif match == "incorrect":

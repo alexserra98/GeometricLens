@@ -7,6 +7,7 @@ from common.globals_vars import _NUM_PROC
 from dadapy.data import Data
 from sklearn.metrics import mutual_info_score
 from sklearn.metrics.cluster import adjusted_rand_score, adjusted_mutual_info_score
+from sklearn.metrics import f1_score
 
 import tqdm
 import pandas as pd
@@ -16,10 +17,12 @@ from functools import partial
 
 
 
-
+f1_score_micro = partial(f1_score, average="micro")
 _COMPARISON_METRICS = {"adjusted_rand_score":adjusted_rand_score, 
-                      "adjusted_mutual_info_score":adjusted_mutual_info_score, 
-                      "mutual_info_score":mutual_info_score}
+                       "adjusted_mutual_info_score":adjusted_mutual_info_score, 
+                       "mutual_info_score":mutual_info_score,
+                       "f1_score": f1_score_micro}
+    
 
 
 class LabelClustering(HiddenStatesMetrics):
@@ -35,8 +38,8 @@ class LabelClustering(HiddenStatesMetrics):
       #The last token is always the same, thus its first layer activation (embedding) is always the same
       #iter_list=[0.05,0.10,0.20,0.50]
       
-      iter_list=[0.6,0.7,0.8,0.9,1.68,2]
-
+      iter_list=[0.5,0.4,0.6,0.9,1.68]
+      #iter_list=[2]
       rows = []
       
       for z in tqdm.tqdm(iter_list, desc = "Computing overlap"):
@@ -110,8 +113,7 @@ class LabelClustering(HiddenStatesMetrics):
     def process_layer(self, layer, hidden_states, label, z) -> dict:
         #DADApy
         data = Data(hidden_states[:, layer, :])
-        with HiddenPrints():
-            data.remove_identical_points()
+        data.remove_identical_points()
         data.compute_distances(maxk=100)
         clusters_assignement = data.compute_clustering_ADP(Z=z)
         
@@ -150,7 +152,8 @@ class PointClustering(HiddenStatesMetrics):
 
     #iter_list=[2.2,2.5,32.2,2.5,32.2,2.5,3]
 
-    iter_list=[0.9,1.68,2,2.5,3]
+    iter_list=[0.3,0.4,0.5,0.8,1.68]
+
     rows = []
     for z in tqdm.tqdm(iter_list, desc = "Computing overlaps k"):
       for couples in self.pair_names(self.df["model_name"].unique().tolist()):
@@ -170,7 +173,7 @@ class PointClustering(HiddenStatesMetrics):
                     "train_instances": train_instances_j,})
             hidden_states_i, _,df_i = hidden_states_collapse(self.df,query_i, self.tensor_storage)
             hidden_states_j, _,df_j = hidden_states_collapse(self.df,query_j, self.tensor_storage)
-            df_i["instance_id"]
+            #df_i["instance_id"]
             #df_i.reset_index(inplace=True)
             #df_j.reset_index(inplace=True)
             #df_i = df_i.where(df_j.only_ref_pred == df_i.only_ref_pred)
@@ -189,7 +192,8 @@ class PointClustering(HiddenStatesMetrics):
                          train_instances_j, 
                          clustering_out["adjusted_rand_score"],
                          clustering_out["adjusted_mutual_info_score"],
-                         clustering_out["mutual_info_score"]])
+                         clustering_out["mutual_info_score"],
+                         clustering_out["f1_score"]])
     df = pd.DataFrame(rows, columns = ["z",
                                        "couple",
                                        "method",
@@ -197,7 +201,8 @@ class PointClustering(HiddenStatesMetrics):
                                        "train_instances_j",
                                        "adjusted_rand_score",
                                        "adjusted_mutual_info_score",
-                                       "mutual_info_score"])
+                                       "mutual_info_score",
+                                       "f1_score"])
     return df
   
   def pair_names(self,names_list):
