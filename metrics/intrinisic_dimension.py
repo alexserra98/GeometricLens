@@ -15,13 +15,38 @@ class IntrinsicDimension(HiddenStatesMetrics):
     
     def main(self) -> pd.DataFrame:
         rows = []
+        datasets = ['mmlu:clinical_knowledge',
+                    'mmlu:astronomy',
+                    'mmlu:computer_security',
+                    'mmlu:econometrics',
+                    'mmlu:electrical_engineering',
+                    'mmlu:elementary_mathematics',
+                    'mmlu:formal_logic',
+                    'mmlu:global_facts',
+                    'mmlu:high_school_biology,high_school_chemistry',
+                    'mmlu:high_school_computer_science',
+                    'mmlu:high_school_geography',
+                    'mmlu:high_school_government_and_politics',
+                    'mmlu:high_school_psychology',
+                    'mmlu:high_school_us_history',
+                    'mmlu:international_law',
+                    'mmlu:jurisprudence',
+                    'mmlu:management',
+                    'mmlu:marketing',
+                    'mmlu:medical_genetics',
+                    'mmlu:miscellaneous',
+                    'mmlu:nutrition',
+                    'mmlu:prehistory',
+                    'mmlu:public_relations']
+        datasets = ['mmlu:clinical_knowledge',
+                    'mmlu:astronomy']
         for model in tqdm.tqdm(self.df["model_name"].unique().tolist()):
             for method in ["last"]: #self.df["method"].unique().tolist():
                 for train_instances in ["0","2","5"]:#self.df["train_instances"].unique().tolist():
                     for match in ["correct", "incorrect", "all"]:
                         query = DataFrameQuery({"method":method,
                                                 "model_name":model, 
-                                                "dataset": "mmlu:professional_law",
+                                                "dataset": 'mmlu:miscellaneous',
                                                 "train_instances": train_instances})
 
                         if match == "correct":
@@ -70,17 +95,22 @@ class IntrinsicDimension(HiddenStatesMetrics):
         id_per_layer_danco = []
         num_layers = hidden_states.shape[1]
         process_layer = partial(self.process_layer, hidden_states=hidden_states, algorithm="gride")
+    
         with Parallel(n_jobs=_NUM_PROC) as parallel:
-            id_per_layer_gride = parallel(delayed(process_layer)(i) for i in range(1, num_layers))
+            
+            id_per_layer_gride = parallel(delayed(process_layer)(i) for i in range(1,num_layers))
             #id_per_layer_lpca = parallel(delayed(process_layer)(i, hidden_states, "lpca") for i in range(1, num_layers)) 
             #id_per_layer_danco = parallel(delayed(process_layer)(i, hidden_states, "DANco") for i in range(1, num_layers))
-        return np.stack(id_per_layer_gride[1:]), id_per_layer_lpca, id_per_layer_danco
+        id_per_layer_gride.insert(0,np.ones(id_per_layer_gride[-1].shape[0]))
+        return np.stack(id_per_layer_gride), id_per_layer_lpca, id_per_layer_danco
     
     def process_layer(self,i, hidden_states: np.array, algorithm: str):
         # Function to replace the loop body
+        
         data = Data(hidden_states[:, i, :])
-        with HiddenPrints():
-            data.remove_identical_points()
+        
+        #with HiddenPrints():
+        data.remove_identical_points()
 
         if algorithm == "2nn":
             raise NotImplementedError
