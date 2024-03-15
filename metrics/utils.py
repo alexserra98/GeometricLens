@@ -66,17 +66,25 @@ def hidden_states_collapse(df_hiddenstates: pd.DataFrame(),
     hidden_state_path_rows =[[f'{row["model_name"].replace("/","-")}/{row["dataset"]}/{row["train_instances"]}/hidden_states', 
                               row["id_instance"]] 
                              for row in rows]
+    logits_path_rows =[[f'{row["model_name"].replace("/","-")}/{row["dataset"]}/{row["train_instances"]}/logits', 
+                              row["id_instance"]] 
+                             for row in rows]
     hidden_state_path = pd.DataFrame(hidden_state_path_rows, columns = ["path", "id_instance"])
+    logits_path = pd.DataFrame(logits_path_rows, columns = ["path", "id_instance"])
     id_instances_check = []
     hidden_states = []
+    logits = []
         #import pdb; pdb.set_trace()
-    for path in hidden_state_path["path"].unique():
+    for path,path_logits in zip(hidden_state_path["path"].unique(),logits_path["path"].unique()):
       id_instances_check.extend( hidden_state_path[hidden_state_path["path"] == path]["id_instance"])
       hidden_states.extend(tensor_storage.load_tensors(path, hidden_state_path[hidden_state_path["path"] == path]["id_instance"].tolist()))
+
+      logits.extend(tensor_storage.load_tensors(path_logits, logits_path[logits_path["path"] == path_logits]["id_instance"].tolist()))
     end_time = time.time()
     if id_instances != id_instances_check:
       indices = [id_instances_check.index(i) for i in id_instances]
       hidden_states = [hidden_states[i] for i in indices]
+      logits = [logits[i] for i in indices]
       id_instances_check = [id_instances_check [i] for i in indices]
 
       #print("The order of the instances is not the same, switch to long method" )
@@ -91,7 +99,7 @@ def hidden_states_collapse(df_hiddenstates: pd.DataFrame(),
 
     assert id_instances == id_instances_check, "The order of the instances is not the same"
     print(f" Tensor retrieval took: {end_time-start_time}\n")
-    return np.stack(hidden_states),None, df_hiddenstates
+    return np.stack(hidden_states), np.stack(logits), df_hiddenstates
 
 
 def exact_match(answers, letters_gold):
