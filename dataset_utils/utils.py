@@ -123,7 +123,68 @@ class MMLU_ScenarioBuilder(ScenarioBuilder):
                         self.requests_instances,
                         output_mapping 
                         )
+
+class MMLU_Gib_ScenarioBuilder(ScenarioBuilder):
+    def __init__(self, subject, train_instances, model_name, number_of_instances = -1, gib="gib"):
+        super().__init__(train_instances, model_name, number_of_instances)
+        self.dataset = f'mmlu:{subject}'
+        self.subject = subject
+        self.gib = gib
+    def retrieve_dataset(self):
+        try:
+            dataset = load_dataset("cais/mmlu", self.subject, trust_remote_code=True)
+        except Exception as e:
+            error : str = f'Huggingface error {e}, peraphs you didnt specify the subdataset?'
+            raise ValueError(error)
+        return dataset
+    
+    def construct_request_instance(self) -> List[RequestInstance]:
+        """
+        Construct the request instances for the scenario
+        """
+        dataset = self.retrieve_dataset()
+        output_mapping = [letter 
+                          for letter in string.ascii_uppercase[:len(dataset["test"][0]["choices"])]]
+        if _TMP:
+            dataset_dev = load_dataset('cais/mmlu','all',trust_remote_code=True)
+        else:
+            dataset_dev = dataset
         
+        ri = []
+        def construct_question(row,shot=False):
+            prompt = f'Question: {row["question"]}\n'
+            for n, choice in enumerate(row["choices"]):
+                prompt += f'{output_mapping[n]}. {choice}\n'
+            prompt += f'Answer: {output_mapping[row["answer"]]}\n\n' if shot else  f'Answer:' 
+            return prompt 
+        dataset_test = dataset["test"].select(range(self.number_of_instances)) \
+                                  if self.number_of_instances != -1 else dataset["test"]
+        for row in tqdm(dataset_test, desc="Constructing Prompts"):
+            prompt = f'The following are multiple choice questions (with answers) about {subject_retriever(self.dataset)}.\n\n'
+            file_name = 'dataset_utils/gibberish.txt' if self.gib=="gib" else 'dataset_utils/dummy.txt'
+            with open(file_name) as f:
+                random_row = ''
+                lines = f.readlines()      
+                for i in range(self.train_instances):
+                    prompt += lines[i][:-1].replace('\\n','\n')
+            question = construct_question(row) 
+            prompt += question
+            ri.append(RequestInstance(question, prompt, output_mapping[row["answer"]]))
+        return ri, output_mapping
+    def build(self) -> Scenario:
+        """
+        Build the scenario
+        """
+        self.requests_instances, output_mapping = self.construct_request_instance()
+        print(f'Example of prompt: {self.requests_instances[0].prompt}')
+  
+        return Scenario(self.dataset, 
+                        self.train_instances, 
+                        self.model_name, 
+                        self.requests_instances,
+                        output_mapping 
+                        )
+
 class OpenbookQA_ScenarioBuilder(ScenarioBuilder):
     def retrieve_dataset(self):
         try:
@@ -230,7 +291,11 @@ class ScenarioAdapter:
     def build(self):
         if self.dataset.split(":")[0] == "mmlu":
             subject = self.dataset.split(":")[1]
-            return MMLU_ScenarioBuilder(subject, self.train_instances, self.model_name, self.number_of_instances).build()
+            #return MMLU_ScenarioBuilder(subject, self.train_instances, self.model_name, self.number_of_instances).build()
+            #print("PROMPT CONFIGURATION: GIBBERISH")
+            #return MMLU_Gib_ScenarioBuilder(subject, self.train_instances, self.model_name, self.number_of_instances,"gib").build()
+            print("PROMPT CONFIGURATION: DUMMY")
+            return MMLU_Gib_ScenarioBuilder(subject, self.train_instances, self.model_name, self.number_of_instances,"dummy").build()
         elif self.dataset.split(":")[0] == "openbookqa":
             return OpenbookQA_ScenarioBuilder( self.train_instances, self.model_name, self.number_of_instances).build()
         elif self.dataset.split(":")[0] == "commonsenseqa":
