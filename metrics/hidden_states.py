@@ -27,8 +27,11 @@ class HiddenStates():
       
   def shot_metrics(self,metrics_list=None) -> Dict[str, Dict[str, float]]:
     rows = []
+    #import pdb; pdb.set_trace()
     for dataset in tqdm.tqdm(self.df["dataset"].unique().tolist()):
       for model in self.df["model_name"].unique().tolist():
+        if "13" in model:
+          continue
         for train_instances in self.df["train_instances"].unique().tolist():
           query = DataFrameQuery({"dataset":dataset, 
                                   "method":"last",

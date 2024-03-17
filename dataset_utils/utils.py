@@ -236,6 +236,9 @@ class OpenbookQA_ScenarioBuilder(ScenarioBuilder):
                         )
 
 class CommonsenseQA_ScenarioBuilder(ScenarioBuilder):
+    def __init__(self, train_instances, model_name, number_of_instances = -1, answer= "letter"):
+        super().__init__(train_instances, model_name, number_of_instances)
+        self.answer = answer
     def retrieve_dataset(self):
         try:
             dataset = load_dataset("tau/commonsense_qa")
@@ -247,8 +250,11 @@ class CommonsenseQA_ScenarioBuilder(ScenarioBuilder):
         prompt = f'Question: {row["question"]}\n'
         for letter, choice in zip(row["choices"]["label"],row["choices"]["text"]):
             prompt += f'{letter}. {choice}\n'
-        #prompt += f'Answer: {row["choices"]["text"][row["choices"]["label"].index(row["answerKey"])]}\n\n' if shot else  f'Answer:' 
-        prompt += f'Answer: {row["answerKey"]}\n\n' if shot else  f'Answer:' 
+        if self.answer == "letter":
+          prompt += f'Answer: {row["answerKey"]}\n\n' if shot else  f'Answer:' 
+        elif self.answer == "ref":
+          prompt += f'Answer: {row["choices"]["text"][row["choices"]["label"].index(row["answerKey"])]}\n\n' if shot else  f'Answer:' 
+        
         return prompt 
     def construct_request_instance(self) -> List[RequestInstance]:
         """
@@ -283,7 +289,8 @@ class CommonsenseQA_ScenarioBuilder(ScenarioBuilder):
                         output_mapping 
                         )
 class ScenarioAdapter:
-    def __init__(self, dataset, train_instances, model_name, number_of_instances = -1):
+    def __init__(self, dataset_folder, dataset, train_instances, model_name, number_of_instances = -1):
+        self.dataset_folder = dataset_folder
         self.dataset = dataset
         self.train_instances = train_instances
         self.model_name = model_name
@@ -291,15 +298,22 @@ class ScenarioAdapter:
     def build(self):
         if self.dataset.split(":")[0] == "mmlu":
             subject = self.dataset.split(":")[1]
-            #return MMLU_ScenarioBuilder(subject, self.train_instances, self.model_name, self.number_of_instances).build()
-            #print("PROMPT CONFIGURATION: GIBBERISH")
-            #return MMLU_Gib_ScenarioBuilder(subject, self.train_instances, self.model_name, self.number_of_instances,"gib").build()
-            print("PROMPT CONFIGURATION: DUMMY")
-            return MMLU_Gib_ScenarioBuilder(subject, self.train_instances, self.model_name, self.number_of_instances,"dummy").build()
+            if self.dataset_folder == "mmlu_gibberish":
+              print("PROMPT CONFIGURATION: GIBBERISH")
+              return MMLU_Gib_ScenarioBuilder(subject, self.train_instances, self.model_name, self.number_of_instances,"gib").build()
+            elif self.dataset_folder == "mmlu_dummy":
+              print("PROMPT CONFIGURATION: DUMMY")
+              return MMLU_Gib_ScenarioBuilder(subject, self.train_instances, self.model_name, self.number_of_instances,"dummy").build()
+            else:
+              return MMLU_ScenarioBuilder(subject, self.train_instances, self.model_name, self.number_of_instances).build()
         elif self.dataset.split(":")[0] == "openbookqa":
             return OpenbookQA_ScenarioBuilder( self.train_instances, self.model_name, self.number_of_instances).build()
         elif self.dataset.split(":")[0] == "commonsenseqa":
-            return CommonsenseQA_ScenarioBuilder(self.train_instances, self.model_name, self.number_of_instances).build()
+            if self.dataset_folder == "commonsenseqa_ref": 
+              return CommonsenseQA_ScenarioBuilder(self.train_instances, self.model_name, self.number_of_instances,"ref").build()
+            elif self.dataset_folder == "commonsenseqa_letter": 
+              return CommonsenseQA_ScenarioBuilder(self.train_instances, self.model_name, self.number_of_instances, "letter").build()
+
         else:
             raise ValueError("Unknown dataset")
     

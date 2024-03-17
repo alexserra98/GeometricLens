@@ -12,6 +12,7 @@ def create_bash_script(script_name, arguments, config_path):
         script_file.write(f'#SBATCH --nodes={arguments.nodes}\n')
         script_file.write(f'#SBATCH --exclusive\n')
         #script_file.write(f'#SBATCH --begin=now+4hour\n')
+        #script_file.write(f'#SBATCH --nodelist=dgx002\n')
         script_file.write(f'#SBATCH --ntasks-per-node={arguments.ntasks_per_node}\n')
         script_file.write(f'#SBATCH --cpus-per-task={arguments.cpus_per_task}\n')
         script_file.write(f'#SBATCH --mem={arguments.mem}\n')
