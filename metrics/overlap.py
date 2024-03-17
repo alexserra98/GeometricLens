@@ -175,8 +175,8 @@ class LabelOverlap(HiddenStatesMetrics):
     
     for class_fraction in tqdm.tqdm(iter_list, desc = "Computing overlap"):
       for model in self.df["model_name"].unique().tolist():
-          if "13" in model:
-            continue 
+        if "13" in model:
+          continue 
         for method in ["last"]: #self.df["method"].unique().tolist():
           for train_instances in ["0","2","5"]:#self.df["train_instances"].unique().tolist():
             query = DataFrameQuery({"method":method,

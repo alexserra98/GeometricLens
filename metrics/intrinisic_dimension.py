@@ -41,36 +41,36 @@ class IntrinsicDimension(HiddenStatesMetrics):
         datasets = ['mmlu:clinical_knowledge',
                     'mmlu:astronomy']
         for model in tqdm.tqdm(self.df["model_name"].unique().tolist()):
-          if "13" in model:
-            continue
-        for method in ["last"]: #self.df["method"].unique().tolist():
-            for train_instances in self.df["train_instances"].unique().tolist():#["0","2","5"]:
-                for match in ["correct", "incorrect", "all"]:
-                    query = DataFrameQuery({"method":method,
-                                            "model_name":model, 
-                                            #"dataset": 'mmlu:miscellaneous',
-                                            "train_instances": train_instances})
+            if "13" in model:
+                continue
+            for method in ["last"]: #self.df["method"].unique().tolist():
+                for train_instances in self.df["train_instances"].unique().tolist():#["0","2","5"]:
+                    for match in ["correct", "incorrect", "all"]:
+                        query = DataFrameQuery({"method":method,
+                                                "model_name":model, 
+                                                #"dataset": 'mmlu:miscellaneous',
+                                                "train_instances": train_instances})
 
-                    if match == "correct":
-                        df = self.df[self.df.apply(lambda r: exact_match(r["only_ref_pred"], r["letter_gold"]), axis=1)]
-                        hidden_states,_, _= hidden_states_collapse(df,query, self.tensor_storage)
-                    elif match == "incorrect":
-                        df = self.df[self.df.apply(lambda r: not exact_match(r["only_ref_pred"], r["letter_gold"]), axis=1)]
-                          hidden_states,_, _= hidden_states_collapse(df,query, self.tensor_storage)
-                    else:
-                        df = self.df
-                        #import pdb;pdb.set_trace()
-                        hidden_states,_, _= hidden_states_collapse(df,query, self.tensor_storage)
-                        #random_integers = np.random.randint(1, 14001, size=2500)
-                        #hidden_states = hidden_states[random_integers]
-                    id_per_layer_gride, id_per_layer_lpca, id_per_layer_danco = self.parallel_compute(hidden_states)
-                    rows.append([model, 
-                                method,
-                                match,
-                                train_instances,
-                                id_per_layer_gride,
-                                id_per_layer_lpca,
-                                id_per_layer_danco])
+                        if match == "correct":
+                            df = self.df[self.df.apply(lambda r: exact_match(r["only_ref_pred"], r["letter_gold"]), axis=1)]
+                            hidden_states,_, _= hidden_states_collapse(df,query, self.tensor_storage)
+                        elif match == "incorrect":
+                            df = self.df[self.df.apply(lambda r: not exact_match(r["only_ref_pred"], r["letter_gold"]), axis=1)]
+                            hidden_states,_, _= hidden_states_collapse(df,query, self.tensor_storage)
+                        else:
+                            df = self.df
+                            #import pdb;pdb.set_trace()
+                            hidden_states,_, _= hidden_states_collapse(df,query, self.tensor_storage)
+                            #random_integers = np.random.randint(1, 14001, size=2500)
+                            #hidden_states = hidden_states[random_integers]
+                        id_per_layer_gride, id_per_layer_lpca, id_per_layer_danco = self.parallel_compute(hidden_states)
+                        rows.append([model, 
+                                    method,
+                                    match,
+                                    train_instances,
+                                    id_per_layer_gride,
+                                    id_per_layer_lpca,
+                                    id_per_layer_danco])
         
         return pd.DataFrame(rows, columns = ["model",
                                              "method",
