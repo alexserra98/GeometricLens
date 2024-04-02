@@ -48,7 +48,7 @@ class IntrinsicDimension(HiddenStatesMetrics):
                     for match in ["correct", "incorrect", "all"]:
                         query = DataFrameQuery({"method":method,
                                                 "model_name":model, 
-                                                #"dataset": 'mmlu:miscellaneous',
+                                                "dataset": 'mmlu:miscellaneous',
                                                 "train_instances": train_instances})
 
                         if match == "correct":

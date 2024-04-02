@@ -41,19 +41,22 @@ class PointOverlap(HiddenStatesMetrics):
                 if '13' in couples[0]:
                     continue
                 for method in ["last"]:#self.df["method"].unique().tolist():
-                    if couples[0]==couples[1]:
-                        iterlist = [("0","0"),("0","5")]
+                    if couples[0]==couples[1] and "chat" in couples[0]:
+                        
+                        iterlist = [("4","5"),("0","5")]
                     else:
-                        iterlist = [("0","0"),("0","5"),("5","5"),("5","0")]
-                    
+                        iterlist = [("5","0"),("0","5"),("5","5"),("5","0")]
+                        continue
                     for shot in iterlist:
                         train_instances_i, train_instances_j = shot
                         query_i = DataFrameQuery({"method":method,
                                 "model_name":couples[0], 
-                                "train_instances": train_instances_i,})
+                                "train_instances": train_instances_i,
+                                "dataset": "mmlu:miscellaneous"})
                         query_j = DataFrameQuery({"method":method,
                                 "model_name":couples[1], 
-                                "train_instances": train_instances_j,})
+                                "train_instances": train_instances_j,
+                                "dataset": "mmlu:miscellaneous"})
                         
                         
                         hidden_states_i, _, df_i = hidden_states_collapse(self.df,query_i, self.tensor_storage)
@@ -138,6 +141,8 @@ class PointOverlap(HiddenStatesMetrics):
         assert data_i.shape[1] == data_j.shape[1], "The two runs must have the same number of layers"
         number_of_layers = data_i.shape[1]
         process_layer = partial(self.process_layer, data_i = data_i, data_j = data_j, k=k) 
+
+        import pdb;pdb.set_trace()
         with Parallel(n_jobs=_NUM_PROC) as parallel:
             results = parallel(delayed(process_layer)(layer) for layer in range(number_of_layers))
         #results = []
@@ -151,6 +156,7 @@ class PointOverlap(HiddenStatesMetrics):
         """
         Process a single layer.
         """
+
         data = Data(data_i[:,layer,:])
         #warnings.filterwarnings("ignore")
         data.compute_distances(maxk=k)

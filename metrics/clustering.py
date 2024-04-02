@@ -152,12 +152,14 @@ class PointClustering(HiddenStatesMetrics):
 
     #iter_list=[2.2,2.5,32.2,2.5,32.2,2.5,3]
 
-    iter_list=[0.3,0.4,0.5,0.8,1.68]
+    iter_list=[0.2,0.3,0.5,0.8,1.68,2]
 
     rows = []
     for z in tqdm.tqdm(iter_list, desc = "Computing overlaps k"):
       for couples in self.pair_names(self.df["model_name"].unique().tolist()):
         #import pdb; pdb.set_trace()
+        if "13" in couples[0] or "13" in couples[1]:
+          continue
         for method in ["last"]:#self.df["method"].unique().tolist():
           if couples[0]==couples[1]:
             iterlist = [("0","0"),("0","5")]
@@ -167,10 +169,13 @@ class PointClustering(HiddenStatesMetrics):
             train_instances_i, train_instances_j = shot
             query_i = DataFrameQuery({"method":method,
                     "model_name":couples[0], 
-                    "train_instances": train_instances_i,})
+                    "train_instances": train_instances_i,
+                    "dataset": "mmlu:miscellaneous"})
             query_j = DataFrameQuery({"method":method,
                     "model_name":couples[1], 
-                    "train_instances": train_instances_j,})
+                    "train_instances": train_instances_j,
+                    "dataset": "mmlu:miscellaneous"})
+
             hidden_states_i, _,df_i = hidden_states_collapse(self.df,query_i, self.tensor_storage)
             hidden_states_j, _,df_j = hidden_states_collapse(self.df,query_j, self.tensor_storage)
             #df_i["instance_id"]
