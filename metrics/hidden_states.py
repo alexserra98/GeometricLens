@@ -17,12 +17,13 @@ import numpy as np
 import pandas as pd
   
 class HiddenStates():
-  def __init__(self,hidden_states: pd.DataFrame, hidden_states_path: Path):
+  def __init__(self,hidden_states: pd.DataFrame, hidden_states_path: Path, variations:dict):
     self.df = hidden_states
     self.tensor_storage = TensorStorage(hidden_states_path)
+    self.variations = variations
  
   def intrinsic_dim(self) -> pd.DataFrame:
-    intrinsic_dim = IntrinsicDimension(df = self.df, tensor_storage = self.tensor_storage)
+    intrinsic_dim = IntrinsicDimension(df = self.df, tensor_storage = self.tensor_storage, variations=self.variations)
     return intrinsic_dim.main()
       
   def shot_metrics(self,metrics_list=None) -> Dict[str, Dict[str, float]]:
@@ -57,8 +58,13 @@ class HiddenStates():
     return df
   
   
-  def label_clustering(self, label:str) -> pd.DataFrame:
-    label_clustering = LabelClustering(df = self.df, tensor_storage = self.tensor_storage)
+  def label_clustering(self, label:str, **kwargs) -> pd.DataFrame:
+    if "variation" in kwargs:
+      variation = kwargs["variation"]
+    if variation:
+      label_clustering = LabelClustering(df = self.df, tensor_storage = self.tensor_storage, variation = variation)
+    else:
+      label_clustering = LabelClustering(df = self.df, tensor_storage = self.tensor_storage)
     return label_clustering.main(label=label)
   
   def point_overlap(self) -> pd.DataFrame:
@@ -70,7 +76,7 @@ class HiddenStates():
     return point_cluster.main()
   
   def label_overlap(self, label:str) -> pd.DataFrame:
-    label_overlap = LabelOverlap(df = self.df, tensor_storage = self.tensor_storage)
+    label_overlap = LabelOverlap(df = self.df, tensor_storage = self.tensor_storage, variations = self.variations)
     return label_overlap.main(label=label)
  
   

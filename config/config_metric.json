@@ -1,0 +1,6 @@
+{
+    "metrics": ["subject_overlap"], 
+    "dataset_folder": "mmlu_result"
+}
+
+

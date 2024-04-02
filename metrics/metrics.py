@@ -57,43 +57,40 @@ class Metrics():
       pandas DataFrame
       """
       df_out = {}
+      
+      variations = {"intrinsic_dimension":"misc","overlap":"norm"}
+      hidden_states = HiddenStates(self.df, self.tensor_path, variations)
+      
       for metric in tqdm.tqdm(self.metrics_list, desc = "Computing metrics"):
         logging.info(f'Computing {metric}...')
-        out = self._compute_metric(metric)
-        out.to_pickle(Path(self.path_result,f'{metric.replace(":","_")}.pkl'))
+        out = self._compute_metric(metric, hidden_states)
+        
+        variation = next((variations[key] for key in variations if key in metric), None)
+        name = "_".join([metric.replace(":","_"),variation])
+        
+        out.to_pickle(Path(self.path_result,f'{name}.pkl'))
         
       return df_out
     
-    def _compute_metric(self, metric) -> pd.DataFrame:
+    def _compute_metric(self, metric, hidden_states) -> pd.DataFrame:
+      
       if metric == "shot_metric":
         return self.shot_metrics()
       
       elif metric == "letter_overlap":
-        hidden_states = HiddenStates(self.df, self.tensor_path)
         return hidden_states.label_overlap(label = "only_ref_pred")
       
       elif metric == "subject_overlap":
-        hidden_states = HiddenStates(self.df, self.tensor_path)
         return hidden_states.label_overlap(label = "dataset")
       
-      elif metric == "letter_overlap_cluster":
-        hidden_states = HiddenStates(self.df, self.tensor_path)
-        return hidden_states.label_clustering(label = "only_ref_pred")
-      
-      elif metric == "subject_overlap_cluster":
-        hidden_states = HiddenStates(self.df, self.tensor_path)
-        return hidden_states.label_clustering(label = "dataset")
-        
+  
       elif metric == "base_finetune_overlap":
-        hidden_states = HiddenStates(self.df, self.tensor_path)
         return hidden_states.point_overlap()
       
       elif metric == "base_finetune_cluster":
-        hidden_states = HiddenStates(self.df, self.tensor_path)
         return hidden_states.point_cluster()
       
       elif metric == "intrinsic_dim":
-        hidden_states = HiddenStates(self.df, self.tensor_path)
         return hidden_states.intrinsic_dim()
       
       elif metric == "last_layer_id_diff":

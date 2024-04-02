@@ -251,9 +251,13 @@ class CommonsenseQA_ScenarioBuilder(ScenarioBuilder):
         for letter, choice in zip(row["choices"]["label"],row["choices"]["text"]):
             prompt += f'{letter}. {choice}\n'
         if self.answer == "letter":
-          prompt += f'Answer: {row["answerKey"]}\n\n' if shot else  f'Answer:' 
+            prompt += f'Answer: {row["answerKey"]}\n\n' if shot else  f'Answer:' 
         elif self.answer == "ref":
-          prompt += f'Answer: {row["choices"]["text"][row["choices"]["label"].index(row["answerKey"])]}\n\n' if shot else  f'Answer:' 
+            prompt += f'Answer: {row["choices"]["text"][row["choices"]["label"].index(row["answerKey"])]}\n\n' if shot else  f'Answer:' 
+        elif self.answer == "wrong":
+            valid_answers = {"A","B","C","D"}-set(row["answerKey"])
+            wrong_answer = random.choice(list(valid_answers))
+            prompt += f'Answer: {wrong_answer}\n\n' if shot else  f'Answer:'
         
         return prompt 
     def construct_request_instance(self) -> List[RequestInstance]:
@@ -313,6 +317,8 @@ class ScenarioAdapter:
               return CommonsenseQA_ScenarioBuilder(self.train_instances, self.model_name, self.number_of_instances,"ref").build()
             elif self.dataset_folder == "commonsenseqa_letter": 
               return CommonsenseQA_ScenarioBuilder(self.train_instances, self.model_name, self.number_of_instances, "letter").build()
+            elif self.dataset_folder == "commonsenseqa_wrong":
+              return CommonsenseQA_ScenarioBuilder(self.train_instances, self.model_name, self.number_of_instances, "wrong").build()
 
         else:
             raise ValueError("Unknown dataset")

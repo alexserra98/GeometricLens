@@ -40,17 +40,28 @@ class IntrinsicDimension(HiddenStatesMetrics):
                     'mmlu:public_relations']
         datasets = ['mmlu:clinical_knowledge',
                     'mmlu:astronomy']
+        
+
         for model in tqdm.tqdm(self.df["model_name"].unique().tolist()):
             if "13" in model:
                 continue
             for method in ["last"]: #self.df["method"].unique().tolist():
                 for train_instances in self.df["train_instances"].unique().tolist():#["0","2","5"]:
                     for match in ["correct", "incorrect", "all"]:
-                        query = DataFrameQuery({"method":method,
+                        
+                        if not self.variation["intrisic_dimension"]:
+                            query = DataFrameQuery({"method":method,
                                                 "model_name":model, 
                                                 "dataset": 'mmlu:miscellaneous',
                                                 "train_instances": train_instances})
-
+                        elif self.variation["intrinsic_dimension"] == "misc":
+                            query = DataFrameQuery({"method":method,
+                                                "model_name":model, 
+                                                "dataset": 'mmlu:miscellaneous',
+                                                "train_instances": train_instances})
+                        else:
+                            raise ValueError("Unknown variation. It must be either None or 'norm'")
+                                        
                         if match == "correct":
                             df = self.df[self.df.apply(lambda r: exact_match(r["only_ref_pred"], r["letter_gold"]), axis=1)]
                             hidden_states,_, _= hidden_states_collapse(df,query, self.tensor_storage)

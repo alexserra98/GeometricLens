@@ -8,9 +8,10 @@ import sys
 
 class HiddenStatesMetrics(ABC):
 
-  def __init__(self, df: DataFrame(), tensor_storage):
+  def __init__(self, df: DataFrame(), tensor_storage, variations: dict = None):
     self.df = df
     self.tensor_storage = tensor_storage
+    self.variations = variations
     
   
   def main(self, hidden_states: np.ndarray ,  algorithm = "gride") -> np.ndarray:
