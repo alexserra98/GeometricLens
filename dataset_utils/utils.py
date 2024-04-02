@@ -317,7 +317,7 @@ class ScenarioAdapter:
               return CommonsenseQA_ScenarioBuilder(self.train_instances, self.model_name, self.number_of_instances,"ref").build()
             elif self.dataset_folder == "commonsenseqa_letter": 
               return CommonsenseQA_ScenarioBuilder(self.train_instances, self.model_name, self.number_of_instances, "letter").build()
-            elif self.dataset_folder == "commonsenseqa_wrong_prompt":
+            elif self.dataset_folder == "commonsenseqa_wrong":
               return CommonsenseQA_ScenarioBuilder(self.train_instances, self.model_name, self.number_of_instances, "wrong").build()
 
         else:
