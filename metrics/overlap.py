@@ -32,7 +32,7 @@ class PointOverlap(HiddenStatesMetrics):
                               "adjusted_mutual_info_score":adjusted_mutual_info_score, 
                               "mutual_info_score":mutual_info_score}
         
-        iter_list = [5,10,30,100,500,1000]
+        iter_list = [5,10,30,100,500]
         #iter_list = [30]
         #iter_list = [100,250,500,1000]
         rows = []
@@ -41,22 +41,20 @@ class PointOverlap(HiddenStatesMetrics):
                 if '13' in couples[0]:
                     continue
                 for method in ["last"]:#self.df["method"].unique().tolist():
-                    if couples[0]==couples[1] and "chat" in couples[0]:
-                        
-                        iterlist = [("4","5"),("0","5")]
+                    if couples[0]==couples[1]:
+                        iterlist = [("0","5")]
                     else:
                         iterlist = [("5","0"),("0","5"),("5","5"),("5","0")]
-                        continue
                     for shot in iterlist:
                         train_instances_i, train_instances_j = shot
                         query_i = DataFrameQuery({"method":method,
                                 "model_name":couples[0], 
-                                "train_instances": train_instances_i,
-                                "dataset": "mmlu:miscellaneous"})
+                                "train_instances": train_instances_i,})
+                                #"dataset": "mmlu:miscellaneous"})
                         query_j = DataFrameQuery({"method":method,
                                 "model_name":couples[1], 
-                                "train_instances": train_instances_j,
-                                "dataset": "mmlu:miscellaneous"})
+                                "train_instances": train_instances_j,})
+                                #"dataset": "mmlu:miscellaneous"})
                         
                         
                         hidden_states_i, _, df_i = hidden_states_collapse(self.df,query_i, self.tensor_storage)
@@ -142,7 +140,6 @@ class PointOverlap(HiddenStatesMetrics):
         number_of_layers = data_i.shape[1]
         process_layer = partial(self.process_layer, data_i = data_i, data_j = data_j, k=k) 
 
-        import pdb;pdb.set_trace()
         with Parallel(n_jobs=_NUM_PROC) as parallel:
             results = parallel(delayed(process_layer)(layer) for layer in range(number_of_layers))
         #results = []
@@ -189,13 +186,13 @@ class LabelOverlap(HiddenStatesMetrics):
                                                 "model_name":model,
                                                 "train_instances": train_instances}) 
                                     
-                    hidden_states, logits, hidden_states_df= hidden_states_collapse(self.df,query, self.tensor_storage)
-                    row = [model, method, train_instances, class_fraction]
-                    label_per_row = self.constructing_labels(hidden_states_df, hidden_states)
-                
-                    overlap = self.parallel_compute(hidden_states, label_per_row, class_fraction=class_fraction) 
-                    row.append(overlap)
-                    rows.append(row)
+                        hidden_states, logits, hidden_states_df= hidden_states_collapse(self.df,query, self.tensor_storage)
+                        row = [model, method, train_instances, class_fraction]
+                        label_per_row = self.constructing_labels(hidden_states_df, hidden_states)
+                    
+                        overlap = self.parallel_compute(hidden_states, label_per_row, class_fraction=class_fraction) 
+                        row.append(overlap)
+                        rows.append(row)
                         
         df = pd.DataFrame(rows, columns = ["model",
                                         "method",
@@ -222,6 +219,7 @@ class LabelOverlap(HiddenStatesMetrics):
             raise ValueError("You must provide either k or class_fraction")
         start_time = time.time()
         process_layer = partial(self.process_layer, hidden_states = hidden_states,labels = labels, class_fraction = class_fraction)
+        print(f"Variation: {self.variations["overlap"]} active")
         with Parallel(n_jobs=_NUM_PROC) as parallel:
             results = parallel(delayed(process_layer)(num_layer) for num_layer in range(hidden_states.shape[1]))
         end_time = time.time()

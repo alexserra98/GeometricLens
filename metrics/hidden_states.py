@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
   
 class HiddenStates():
-  def __init__(self,hidden_states: pd.DataFrame, hidden_states_path: Path, variations:dict):
+  def __init__(self,hidden_states: pd.DataFrame, hidden_states_path: Path, variations:dict = None):
     self.df = hidden_states
     self.tensor_storage = TensorStorage(hidden_states_path)
     self.variations = variations

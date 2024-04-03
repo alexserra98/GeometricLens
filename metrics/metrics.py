@@ -58,14 +58,15 @@ class Metrics():
       """
       df_out = {}
       
-      variations = {"intrinsic_dimension":"misc","overlap":"norm"}
+      variations = {"intrinsic_dimension": None,"overlap": "norm"}
       hidden_states = HiddenStates(self.df, self.tensor_path, variations)
       
+      #hidden_states = HiddenStates(self.df, self.tensor_path)
       for metric in tqdm.tqdm(self.metrics_list, desc = "Computing metrics"):
         logging.info(f'Computing {metric}...')
         out = self._compute_metric(metric, hidden_states)
         
-        variation = next((variations[key] for key in variations if key in metric), None)
+        variation = next((variations[key] for key in variations if key in metric),"")
         name = "_".join([metric.replace(":","_"),variation])
         
         out.to_pickle(Path(self.path_result,f'{name}.pkl'))

@@ -49,12 +49,11 @@ class IntrinsicDimension(HiddenStatesMetrics):
                 for train_instances in self.df["train_instances"].unique().tolist():#["0","2","5"]:
                     for match in ["correct", "incorrect", "all"]:
                         
-                        if not self.variation["intrisic_dimension"]:
+                        if not self.variations or not self.variations.get("intrisic_dimension"):
                             query = DataFrameQuery({"method":method,
                                                 "model_name":model, 
-                                                "dataset": 'mmlu:miscellaneous',
                                                 "train_instances": train_instances})
-                        elif self.variation["intrinsic_dimension"] == "misc":
+                        elif self.variations["intrinsic_dimension"] == "misc":
                             query = DataFrameQuery({"method":method,
                                                 "model_name":model, 
                                                 "dataset": 'mmlu:miscellaneous',
