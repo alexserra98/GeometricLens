@@ -139,7 +139,7 @@ class PointOverlap(HiddenStatesMetrics):
         assert data_i.shape[1] == data_j.shape[1], "The two runs must have the same number of layers"
         number_of_layers = data_i.shape[1]
         process_layer = partial(self.process_layer, data_i = data_i, data_j = data_j, k=k) 
-
+        print(f"Variation: {self.variations["overlap"]} active")
         with Parallel(n_jobs=_NUM_PROC) as parallel:
             results = parallel(delayed(process_layer)(layer) for layer in range(number_of_layers))
         #results = []
@@ -154,11 +154,13 @@ class PointOverlap(HiddenStatesMetrics):
         Process a single layer.
         """
 
-        data = Data(data_i[:,layer,:])
+        data_i_norm = Data(data_i[:,layer,:]/np.linalg.norm(data_i[:,layer,:],axis=1,keepdims=True))
+        data_j_norm = Data(data_j[:,layer,:]/np.linalg.norm(data_j[:,layer,:],axis=1,keepdims=True))
+        data = Data(data_i_norm)
         #warnings.filterwarnings("ignore")
         data.compute_distances(maxk=k)
         #print(f'{k} -- {data_j[:,layer,:]}')
-        overlap = data.return_data_overlap(data_j[:,layer,:],k=k)
+        overlap = data.return_data_overlap(data_j_norm,k=k)
         return overlap
     
     

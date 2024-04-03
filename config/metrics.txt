@@ -1,4 +1,4 @@
-["shot_metric","subject_overlap", "letter_overlap","base_finetune_overlap", "intrinsic_dim","last_layer_id_diff"]
+["shot_metric","subject_overlap", "letter_overlap",:q, "intrinsic_dim","last_layer_id_diff"]
 
 ['mmlu:clinical_knowledge',
  'mmlu:astronomy',

@@ -84,7 +84,6 @@ class Metrics():
       elif metric == "subject_overlap":
         return hidden_states.label_overlap(label = "dataset")
       
-  
       elif metric == "base_finetune_overlap":
         return hidden_states.point_overlap()
       
