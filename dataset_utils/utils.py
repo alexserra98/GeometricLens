@@ -61,7 +61,11 @@ class ScenarioBuilder(ABC):
         raise NotImplementedError
     
 
+
+
+#prompt builder
 class MMLU_ScenarioBuilder(ScenarioBuilder):
+    #train_instances = # shots
     def __init__(self, subject, train_instances, model_name, number_of_instances = -1):
         super().__init__(train_instances, model_name, number_of_instances)
         self.dataset = f'mmlu:{subject}'
@@ -87,14 +91,19 @@ class MMLU_ScenarioBuilder(ScenarioBuilder):
             dataset_dev = dataset
         
         ri = []
+
         def construct_question(row,shot=False):
             prompt = f'Question: {row["question"]}\n'
             for n, choice in enumerate(row["choices"]):
                 prompt += f'{output_mapping[n]}. {choice}\n'
             prompt += f'Answer: {output_mapping[row["answer"]]}\n\n' if shot else  f'Answer:' 
             return prompt 
+        
+        #init dataset
         dataset_test = dataset["test"].select(range(self.number_of_instances)) \
                                   if self.number_of_instances != -1 else dataset["test"]
+        
+        #prompt contruction
         for row in tqdm(dataset_test, desc="Constructing Prompts"):
             prompt = f'The following are multiple choice questions (with answers) about {subject_retriever(self.dataset)}.\n\n'
 
@@ -110,6 +119,7 @@ class MMLU_ScenarioBuilder(ScenarioBuilder):
             prompt += question
             ri.append(RequestInstance(question, prompt, output_mapping[row["answer"]]))
         return ri, output_mapping
+    
     def build(self) -> Scenario:
         """
         Build the scenario
@@ -123,6 +133,10 @@ class MMLU_ScenarioBuilder(ScenarioBuilder):
                         self.requests_instances,
                         output_mapping 
                         )
+
+
+
+
 
 class MMLU_Gib_ScenarioBuilder(ScenarioBuilder):
     def __init__(self, subject, train_instances, model_name, number_of_instances = -1, gib="gib"):
@@ -184,6 +198,10 @@ class MMLU_Gib_ScenarioBuilder(ScenarioBuilder):
                         self.requests_instances,
                         output_mapping 
                         )
+
+
+
+
 
 class OpenbookQA_ScenarioBuilder(ScenarioBuilder):
     def retrieve_dataset(self):
