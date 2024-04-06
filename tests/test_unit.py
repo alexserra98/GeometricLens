@@ -1,7 +1,7 @@
 import sys
 from pathlib import Path
 import os
-from dataset_utils.scenarion_adapter import ScenarioAdapter
+from dataset_utils.scenario_adapter import ScenarioAdapter
 import pickle
 
 

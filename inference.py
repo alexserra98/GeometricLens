@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 import argparse
 import logging
-from dataset_utils.scenarion_adapter import ScenarioAdapter
+from dataset_utils.scenario_adapter import ScenarioAdapter
 from generation.generation import Huggingface_client
 from common.metadata_db import MetadataDB
 from common.tensor_storage import TensorStorage

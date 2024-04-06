@@ -6,7 +6,7 @@ from common.metadata_db import MetadataDB
 from transformers import AutoModelForCausalLM, AutoTokenizer, LlamaForCausalLM, LlamaTokenizer
 from typing import Any, Dict, List
 from dataclasses import dataclass, field
-from dataset_utils.scenarion_adapter import *
+from dataset_utils.scenario_builder import Scenario, RequestInstance
 from abc import ABC, abstractmethod
 from generation.utils import *
 import pandas as pd
