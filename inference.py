@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 import argparse
 import logging
-from dataset_utils.utils import ScenarioAdapter
+from dataset_utils.scenarion_adapter import ScenarioAdapter
 from generation.generation import Huggingface_client
 from common.metadata_db import MetadataDB
 from common.tensor_storage import TensorStorage
@@ -64,14 +64,20 @@ for model_name in models_names:
         db_rows = []
         dataset_path = Path(model_path,dataset)
         dataset_path.mkdir(exist_ok=True,parents=True)
+        
+        # max_train_instances = # shots
         for train_instances in max_train_instances:
             logging.info("Starting inference on %s with %s train instances...",
                         dataset, train_instances)
             scenario_builder = ScenarioAdapter(dataset_folder,dataset,train_instances,model_name,-1)
+            #dataset construction
             scenario = scenario_builder.build()
+
+            #representation extraction
             hidden_states_rows_i, logits_rows_i, db_rows_i = client.make_request(scenario,metadata_db)
             
             # Skipping if already cached
+
             if not hidden_states_rows_i or not logits_rows_i  or not db_rows_i:
                 logging.info("Skipping inference on %s with %s train instances...",
                         dataset, train_instances)

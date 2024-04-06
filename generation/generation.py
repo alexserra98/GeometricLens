@@ -6,7 +6,7 @@ from common.metadata_db import MetadataDB
 from transformers import AutoModelForCausalLM, AutoTokenizer, LlamaForCausalLM, LlamaTokenizer
 from typing import Any, Dict, List
 from dataclasses import dataclass, field
-from dataset_utils.utils import *
+from dataset_utils.scenarion_adapter import *
 from abc import ABC, abstractmethod
 from generation.utils import *
 import pandas as pd
@@ -31,7 +31,8 @@ class ScenarioResult():
     
 class Huggingface_client():
     """
-    Client for Huggingface models. It instantiate the model and the tokenizer, and provides method to make inference over a dataset
+    Client for Huggingface models. It instantiate the model and the tokenizer, 
+    and provides method to make inference over a dataset
     """
     def __init__(self,model_name) -> None:
         self.device = "cuda" if torch.cuda.is_available() else "cpu"

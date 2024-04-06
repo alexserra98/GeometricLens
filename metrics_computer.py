@@ -28,6 +28,7 @@ dataset_folder = args.dataset_folder
 metrics_list = args.metrics
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.info(f'Configuration:\ndata_folder: {dataset_folder}\nmetrics: {metrics_list}')
 
 
 results_path = os.path.join(g._OUTPUT_DIR, dataset_folder)
