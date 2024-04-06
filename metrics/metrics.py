@@ -58,7 +58,11 @@ class Metrics():
       """
       df_out = {}
       
-      variations = {"intrinsic_dimension": None,"overlap": "norm"}
+      variations = {"intrinsic_dimension": None,
+                    "point_overlap": "norm",
+                    "label_overlap": "cosine"}
+      logging.info(f"Metrics will be computed with the following variations:\n{variations=}")
+      
       hidden_states = HiddenStates(self.df, self.tensor_path, variations)
       
       #hidden_states = HiddenStates(self.df, self.tensor_path)
@@ -66,8 +70,16 @@ class Metrics():
         logging.info(f'Computing {metric}...')
         out = self._compute_metric(metric, hidden_states)
         
-        variation = next((variations[key] for key in variations if key in metric),"")
-        name = "_".join([metric.replace(":","_"),variation])
+        if metric == "letter_overlap" or metric == "subject_overlap":
+          variation_key = "label_overlap"
+        else:
+          variation_key = metric
+    
+        variation = variations.get(variation_key, None)
+        
+        
+        
+        name = "_".join([metric.replace(":","_"),variation]) if variation else metric.replace(":","_")
         
         out.to_pickle(Path(self.path_result,f'{name}.pkl'))
         

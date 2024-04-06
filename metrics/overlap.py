@@ -3,7 +3,7 @@ from .utils import  hidden_states_collapse
 from metrics.query import DataFrameQuery
 from common.globals_vars import _NUM_PROC
 
-from dadapy.data import Data
+from .dadapy_handler import DataAdapter
 from sklearn.metrics import mutual_info_score
 from sklearn.metrics.cluster import adjusted_rand_score, adjusted_mutual_info_score
 
@@ -157,13 +157,13 @@ class PointOverlap(HiddenStatesMetrics):
         data_i = data_i[:,layer,:]
         data_j = data_j[:,layer,:]
         
-        if self.variations["overlap"] == "norm":   
-            data_i = Data(data_i/np.linalg.norm(data_i,axis=1,keepdims=True))
-            data_j = Data(data_j/np.linalg.norm(data_j,axis=1,keepdims=True))
+        if self.variations["point_overlap"] == "norm":   
+            data_i = data_i/np.linalg.norm(data_i,axis=1,keepdims=True)
+            data_j = data_j/np.linalg.norm(data_j,axis=1,keepdims=True)
         
-        data = Data(data_i)
+        data = DataAdapter(data_i, variation=self.variations["point_overlap"], maxk=k)
         #warnings.filterwarnings("ignore")
-        data.compute_distances(maxk=k)
+        #data.compute_distances(maxk=k)
         #print(f'{k} -- {data_j[:,layer,:]}')
         overlap = data.return_data_overlap(data_j,k=k)
         return overlap
@@ -226,7 +226,8 @@ class LabelOverlap(HiddenStatesMetrics):
             raise ValueError("You must provide either k or class_fraction")
         start_time = time.time()
         process_layer = partial(self.process_layer, hidden_states = hidden_states,labels = labels, class_fraction = class_fraction)
-        print(f"Is Variation: {self.variations['overlap']} active? {self.variations['overlap'] == 'norm'}")
+        
+        # print(f"Is Variation: {self.variations['overlap']} active? {self.variations['overlap'] == 'norm'}")
         with Parallel(n_jobs=_NUM_PROC) as parallel:
             results = parallel(delayed(process_layer)(num_layer) for num_layer in range(hidden_states.shape[1]))
         end_time = time.time()
@@ -239,16 +240,16 @@ class LabelOverlap(HiddenStatesMetrics):
         """
         Process a single layer.
         """
-        # Variation can be used to introduce temporary modifications in commonly used methods
-        if not self.variations["overlap"]:
-            data = Data(hidden_states[:, num_layer, :])
-            #warnings.filterwarnings("ignore")
-            overlap = data.return_label_overlap(labels, class_fraction=class_fraction)
-        elif self.variations["overlap"] == "norm":
-            hidden_states_norm = hidden_states[:, num_layer, :] / np.linalg.norm(hidden_states[:, num_layer, :], axis=1, keepdims=True)
-            data = Data(hidden_states_norm)
-            overlap = data.return_label_overlap(labels, class_fraction=class_fraction)
+        
+        if self.variations["label_overlap"] == "norm":
+            hidden_states = hidden_states[:, num_layer, :] / np.linalg.norm(hidden_states[:, num_layer, :], axis=1, keepdims=True)
         else:
-            raise ValueError("Unknown variation. It must be either None or 'norm'")
+            hidden_states = hidden_states[:, num_layer, :]
+            
+        maxk = int(np.bincount(labels).max()*class_fraction)
+        
+        data = DataAdapter(hidden_states, variation=self.variations["label_overlap"],maxk=maxk)
+        
+        overlap = data.return_label_overlap(labels, class_fraction=class_fraction)
         
         return overlap

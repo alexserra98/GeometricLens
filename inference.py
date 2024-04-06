@@ -30,7 +30,7 @@ if args.conf_path:
 parser.add_argument('--dataset-folder', type=str, help='The name of the dataset folder')
 parser.add_argument('--model-name',nargs='+', action='append', type=str, help='The name of the model')
 parser.add_argument('--dataset',  nargs='+', action='append', type=str, help='The name of the dataset')
-parser.add_argument('--max-train-instances', type=int, nargs='+',  action='append',help='The name of the output directory')
+parser.add_argument('--shots-list', type=int, nargs='+',  action='append',help='The name of the output directory')
 
 args = parser.parse_args(remaining_argv)
 # Now you can use args.model_name to get the model name
@@ -65,11 +65,11 @@ for model_name in models_names:
         dataset_path = Path(model_path,dataset)
         dataset_path.mkdir(exist_ok=True,parents=True)
         
-        # shots_list = # shots_list
-        for shots in shots_list:
-            logging.info("Starting inference on %s with %s train instances...",
-                        dataset, shots_list)
-            scenario_builder = ScenarioAdapter(dataset_folder,dataset,shots,model_name,-1)
+        
+        for num_of_shots in shots_list:
+            logging.info("Starting inference on %s with %s number of shots...",
+                        dataset, num_of_shots)
+            scenario_builder = ScenarioAdapter(dataset_folder,dataset,num_of_shots,model_name,-1)
             #dataset construction
             scenario = scenario_builder.build()
 
@@ -84,10 +84,10 @@ for model_name in models_names:
                 continue
             
             # Saving tensors
-            tensor_path = Path(dataset_path,str(shots_list))
+            tensor_path = Path(dataset_path,str(num_of_shots))
             tensor_path.mkdir(exist_ok=True,parents=True)
-            tensor_storage.save_tensors(hidden_states_rows_i.values(),hidden_states_rows_i.keys(), f'{model_name.replace("/","-")}/{dataset}/{shots_list}/hidden_states')
-            tensor_storage.save_tensors(logits_rows_i.values(),logits_rows_i.keys(),f'{model_name.replace("/","-")}/{dataset}/{shots_list}/logits')
+            tensor_storage.save_tensors(hidden_states_rows_i.values(),hidden_states_rows_i.keys(), f'{model_name.replace("/","-")}/{dataset}/{num_of_shots}/hidden_states')
+            tensor_storage.save_tensors(logits_rows_i.values(),logits_rows_i.keys(),f'{model_name.replace("/","-")}/{dataset}/{num_of_shots}/logits')
             
             db_rows.extend(db_rows_i)
             
