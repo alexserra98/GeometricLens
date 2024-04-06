@@ -38,6 +38,17 @@ class Scenario():
 
         
 class ScenarioBuilder(ABC):
+    """
+    Abstract class for building a scenario.
+    
+    :param shots: The number of shots to include in the prompt
+    :param model_name: The name of the model to use
+    :param number_of_instances: The number of instances from the orginal dataset to include in the scenario
+    :method retrieve_dataset: Retrieve the dataset from the Huggingface library
+    :method construct_request_instance: Construct the request instances with prompt and metadata
+    :method build: Build the scenario
+    """
+    
     def __init__(self, shots, model_name, number_of_instances = -1):
         self.shots = shots
         self.model_name = model_name
@@ -45,6 +56,9 @@ class ScenarioBuilder(ABC):
         
     
     def retrieve_dataset(self):
+        """
+        Retrieve the dataset from the Huggingface library
+        """
         dataset_name = self.dataset.split(":", 1) if ":" in self.dataset else (self.dataset,)
         dataset_name[0]=_KNOWN_DATASET_ALIASES.get(dataset_name[0],dataset_name[0])
         try:
@@ -56,12 +70,15 @@ class ScenarioBuilder(ABC):
     
     @abstractmethod
     def construct_request_instance(self) -> List[RequestInstance]:
+        """
+        Construct the request instances object from scenario instances
+        """
         raise NotImplementedError
     
 
     def build(self) -> Scenario:
         """
-        Build the scenario
+        Build the scenario object
         """
         self.requests_instances, output_mapping = self.construct_request_instance()
         print(f'Example of prompt: {self.requests_instances[0].prompt}')

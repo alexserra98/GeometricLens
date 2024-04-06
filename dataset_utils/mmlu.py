@@ -37,13 +37,6 @@ class MMLU_ScenarioBuilder(ScenarioBuilder):
         ri = self.construct_prompt(dataset_test, dataset["dev"])
         return ri, output_mapping
     
-    def construct_question(self,row,shot=False):
-        prompt = f'Question: {row["question"]}\n'
-        for n, choice in enumerate(row["choices"]):
-            prompt += f'{string.ascii_uppercase[n]}. {choice}\n'
-        prompt += f'Answer: {string.ascii_uppercase[row["answer"]]}\n\n' if shot else  f'Answer:' 
-        return prompt
-    
     def construct_prompt(self,dataset_test, dataset_dev):
         ri = []
         for row in tqdm(dataset_test, desc="Constructing Prompts"):
@@ -55,8 +48,21 @@ class MMLU_ScenarioBuilder(ScenarioBuilder):
             prompt += question
             ri.append(RequestInstance(question, prompt, string.ascii_uppercase[row["answer"]]))
         return ri
+    
+    def construct_question(self,row,shot=False):
+        prompt = f'Question: {row["question"]}\n'
+        for n, choice in enumerate(row["choices"]):
+            prompt += f'{string.ascii_uppercase[n]}. {choice}\n'
+        prompt += f'Answer: {string.ascii_uppercase[row["answer"]]}\n\n' if shot else  f'Answer:' 
+        return prompt
+    
+
 
 class MMLU_Corruption_ScenarioBuilder(MMLU_ScenarioBuilder):
+    """
+    MMLU Scenario Builder with corrupted shots in the prompt. 
+    Currently support shots written in dummy english and gibberish language.
+    """
     def __init__(self, subject, shots, model_name, number_of_instances = -1, type_of_corruption="gibberish"):
         super().__init__(subject, shots, model_name, number_of_instances)
         self.type_of_corruption = type_of_corruption
@@ -68,14 +74,18 @@ class MMLU_Corruption_ScenarioBuilder(MMLU_ScenarioBuilder):
         return super().construct_prompt(dataset_test, dataset_dev)
     
 class MMLU_Invariant_ScenarioBuilder(MMLU_ScenarioBuilder):
-    
+    """
+    MMLU Scenario Builder where the shots are invariant regardless of the subject from which we take the instances.
+    """
     def construct_prompt(self, dataset_test, dataset_dev):
         dataset_dev = load_dataset('cais/mmlu','all',trust_remote_code=True)
         dataset_dev = dataset_dev["dev"].select([0,25,50,100,125])
         return super().construct_prompt(dataset_test, dataset_dev)
 
 class MMLU_Shuffled_Subject_ScenarioBuilder(MMLU_ScenarioBuilder):
-    
+    """
+    MMLU Scenario Builder where the shots come from a different subject.
+    """
     def construct_prompt(self, dataset_test, dataset_dev):       
         with open('dataset_utils/asset/subjects.txt', 'r') as f:
             subjects = f.readlines()
