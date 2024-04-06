@@ -139,7 +139,7 @@ class PointOverlap(HiddenStatesMetrics):
         assert data_i.shape[1] == data_j.shape[1], "The two runs must have the same number of layers"
         number_of_layers = data_i.shape[1]
         process_layer = partial(self.process_layer, data_i = data_i, data_j = data_j, k=k) 
-        print(f"Variation: {self.variations["overlap"]} active")
+        print(f"Variation: {self.variations['overlap']} active")
         with Parallel(n_jobs=_NUM_PROC) as parallel:
             results = parallel(delayed(process_layer)(layer) for layer in range(number_of_layers))
         #results = []
@@ -153,6 +153,7 @@ class PointOverlap(HiddenStatesMetrics):
         """
         Process a single layer.
         """
+
         data_i = data_i[:,layer,:]
         data_j = data_j[:,layer,:]
         
@@ -225,7 +226,7 @@ class LabelOverlap(HiddenStatesMetrics):
             raise ValueError("You must provide either k or class_fraction")
         start_time = time.time()
         process_layer = partial(self.process_layer, hidden_states = hidden_states,labels = labels, class_fraction = class_fraction)
-        print(f"Variation: {self.variations["overlap"]} active")
+        print(f"Is Variation: {self.variations['overlap']} active? {self.variations['overlap'] == 'norm'}")
         with Parallel(n_jobs=_NUM_PROC) as parallel:
             results = parallel(delayed(process_layer)(num_layer) for num_layer in range(hidden_states.shape[1]))
         end_time = time.time()
