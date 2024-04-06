@@ -58,5 +58,5 @@
                 "mmlu:us_foreign_policy",
                 "mmlu:virology",
                 "mmlu:world_religions"], 
-    "max_train_instances": [0,2,5]
+    "shots_list": [0,2,5]
 }
