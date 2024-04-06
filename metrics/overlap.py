@@ -153,14 +153,18 @@ class PointOverlap(HiddenStatesMetrics):
         """
         Process a single layer.
         """
-
-        data_i_norm = Data(data_i[:,layer,:]/np.linalg.norm(data_i[:,layer,:],axis=1,keepdims=True))
-        data_j_norm = Data(data_j[:,layer,:]/np.linalg.norm(data_j[:,layer,:],axis=1,keepdims=True))
-        data = Data(data_i_norm)
+        data_i = data_i[:,layer,:]
+        data_j = data_j[:,layer,:]
+        
+        if self.variations["overlap"] == "norm":   
+            data_i = Data(data_i/np.linalg.norm(data_i,axis=1,keepdims=True))
+            data_j = Data(data_j/np.linalg.norm(data_j,axis=1,keepdims=True))
+        
+        data = Data(data_i)
         #warnings.filterwarnings("ignore")
         data.compute_distances(maxk=k)
         #print(f'{k} -- {data_j[:,layer,:]}')
-        overlap = data.return_data_overlap(data_j_norm,k=k)
+        overlap = data.return_data_overlap(data_j,k=k)
         return overlap
     
     
