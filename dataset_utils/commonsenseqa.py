@@ -59,8 +59,9 @@ class CommonsenseQA_Wrong_ScenarioBuilder(CommonsenseQA_ScenarioBuilder):
         for letter, choice in zip(row["choices"]["label"],row["choices"]["text"]):
             prompt += f'{letter}. {choice}\n'
 
-        valid_answers = {"A","B","C","D"}-set(row["answerKey"])
-        wrong_answer = random.choice(list(valid_answers))
+        valid_answers = ["A", "B", "C", "D", "E"] 
+        index_answ = valid_answers.index(row["answerKey"])
+        wrong_answer = valid_answers[index_answ+1] if index_answ < 4 else valid_answers[0]
         prompt += f'Answer: {wrong_answer}\n\n' if shot else  f'Answer:'
         
         return prompt 

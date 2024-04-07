@@ -42,9 +42,15 @@ class ScenarioAdapter:
               return MMLU_ScenarioBuilder(subject, self.shots, self.model_name, self.number_of_instances).build()
           
         elif self.dataset.split(":")[0] == "openbookqa":
-            from dataset_utils.openbookqa import OpenbookQA_ScenarioBuilder
-            return OpenbookQA_ScenarioBuilder( self.shots, self.model_name, self.number_of_instances).build()
-        
+            
+            if self.dataset_folder == "openbookqa_wrong":
+              from dataset_utils.openbookqa import OpenbookQA_Wrong_ScenarioBuilder
+              return OpenbookQA_Wrong_ScenarioBuilder( self.shots, self.model_name, self.number_of_instances).build()
+            else:
+              from dataset_utils.openbookqa import OpenbookQA_ScenarioBuilder
+              return OpenbookQA_ScenarioBuilder( self.shots, self.model_name, self.number_of_instances).build()
+            
+  
         elif self.dataset.split(":")[0] == "commonsenseqa":
         
             if self.dataset_folder == "commonsenseqa_ref":

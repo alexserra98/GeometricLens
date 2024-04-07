@@ -40,3 +40,16 @@ class OpenbookQA_ScenarioBuilder(ScenarioBuilder):
             prompt += question
             ri.append(RequestInstance(question, prompt, row["answerKey"]))
         return ri, dataset["test"][0]["choices"]["label"]
+    
+class OpenbookQA_Wrong_ScenarioBuilder(OpenbookQA_ScenarioBuilder):
+    def construct_question(self, row, shot=False):
+        prompt = f'Question: {row["question_stem"]}\n'
+        for letter, choice in zip(row["choices"]["label"],row["choices"]["text"]):
+            prompt += f'{letter}. {choice}\n'
+        
+        valid_answers = ["A", "B", "C", "D"] 
+        index_answ = valid_answers.index(row["answerKey"])
+        wrong_answer = valid_answers[index_answ+1] if index_answ < 3 else valid_answers[0]
+        prompt += f'Answer: {wrong_answer}\n\n' if shot else  f'Answer:'
+                
+        return prompt
