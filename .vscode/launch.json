@@ -12,7 +12,7 @@
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}",
             "justMyCode": true,
-            "args": ["--conf-path", "/home/alexserra98/helm-suite/MCQA_Benchmark/config/config_metric.json"]
+            "args": ["--conf-path", "/home/alexserra98/helm-suite/MCQA_Benchmark/config/config.json"]
         }
     ]
 }

@@ -48,16 +48,16 @@ class ScenarioAdapter:
         elif self.dataset.split(":")[0] == "commonsenseqa":
         
             if self.dataset_folder == "commonsenseqa_ref":
-              from dataset_utils.commonsenseqa import CommonsenseQA_ScenarioBuilder 
-              return CommonsenseQA_ScenarioBuilder(self.shots, self.model_name, self.number_of_instances,"ref").build()
+              from dataset_utils.commonsenseqa import CommonsenseQA_Ref_ScenarioBuilder 
+              return CommonsenseQA_Ref_ScenarioBuilder(self.shots, self.model_name, self.number_of_instances).build()
 
             elif self.dataset_folder == "commonsenseqa_letter": 
               from dataset_utils.commonsenseqa import CommonsenseQA_ScenarioBuilder
               return CommonsenseQA_ScenarioBuilder(self.shots, self.model_name, self.number_of_instances, "letter").build()
         
             elif self.dataset_folder == "commonsenseqa_wrong":
-              from dataset_utils.commonsenseqa import CommonsenseQA_ScenarioBuilder
-              return CommonsenseQA_ScenarioBuilder(self.shots, self.model_name, self.number_of_instances, "wrong").build()
+              from dataset_utils.commonsenseqa import CommonsenseQA_Wrong_ScenarioBuilder
+              return CommonsenseQA_Wrong_ScenarioBuilder(self.shots, self.model_name, self.number_of_instances, "wrong").build()
 
         else:
             raise ValueError("Unknown dataset")
