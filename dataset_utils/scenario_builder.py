@@ -59,7 +59,7 @@ class ScenarioBuilder(ABC):
         """
         Retrieve the dataset from the Huggingface library
         """
-        dataset_name = self.dataset.split(":", 1) if ":" in self.dataset else (self.dataset,)
+        dataset_name = list(self.dataset.split(":", 1) if ":" in self.dataset else (self.dataset,))
         dataset_name[0]=_KNOWN_DATASET_ALIASES.get(dataset_name[0],dataset_name[0])
         try:
             dataset = load_dataset(*dataset_name, trust_remote_code=True)

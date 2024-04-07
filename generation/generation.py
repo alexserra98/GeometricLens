@@ -85,6 +85,9 @@ class Huggingface_client():
             self.device
             )
            
+            #if encoded_input.input_ids.shape[1] >= 1024:
+            #    Warning("Prompt longer than context lenght. Skipping...")
+            #    continue
             id_instance ={"last": _generate_hash(request_instance.question)+"last"+scenario.model_name.replace("/","-")+scenario.dataset.replace("_","")+str(scenario.shots),
                           "sum": _generate_hash(request_instance.question)+"sum"+scenario.model_name.replace("/","-")+scenario.dataset.replace("_","")+str(scenario.shots)}
             if metadata_db.query_metadata(f'id_instance = "{id_instance["last"]}"'):

@@ -13,6 +13,7 @@ class CommonsenseQA_ScenarioBuilder(ScenarioBuilder):
     def __init__(self, shots, model_name, number_of_instances = -1, answer= "letter"):
         super().__init__(shots, model_name, number_of_instances)
         self.answer = answer
+        self.dataset = "commonsenseqa"
 
     def construct_question(self,row,shot=False):
         prompt = f'Question: {row["question"]}\n'

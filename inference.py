@@ -38,7 +38,7 @@ dataset_folder = args.dataset_folder
 models_names = args.model_name
 datasets = args.dataset
 shots_list = args.shots_list
-print(f"Starting inference on {dataset_folder} with {models_names} and {datasets} with {shots_list} train instances")
+print(f"Starting inference on {dataset_folder} with {models_names} and {datasets} with {shots_list} number of shots")
 
 
 # Getting the dataset
