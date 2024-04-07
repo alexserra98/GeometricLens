@@ -1,5 +1,5 @@
 {
-    "metrics": ["letter_overlap","subject_overlap"], 
+    "metrics": ["point_overlap","subject_overlap"], 
     "dataset_folder": "mmlu_result"
 }
 
