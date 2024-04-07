@@ -59,7 +59,7 @@ class Metrics():
       df_out = {}
       
       variations = {"intrinsic_dimension": None,
-                    "point_overlap": "norm",
+                    "point_overlap": "cosine",
                     "label_overlap": "cosine"}
       logging.info(f"Metrics will be computed with the following variations:\n{variations=}")
       
@@ -96,7 +96,7 @@ class Metrics():
       elif metric == "subject_overlap":
         return hidden_states.label_overlap(label = "dataset")
       
-      elif metric == "base_finetune_overlap":
+      elif metric == "point_overlap":
         return hidden_states.point_overlap()
       
       elif metric == "base_finetune_cluster":
