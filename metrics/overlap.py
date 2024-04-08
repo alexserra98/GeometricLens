@@ -65,6 +65,13 @@ class PointOverlap(HiddenStatesMetrics):
                             df_j["exact_match"] = df_j.apply(lambda r: exact_match(r["std_pred"], r["letter_gold"]), axis=1)
                             # find the index of rows that have "exact_match" True in both df_i and df_j
                             indices_i = df_i[df_i["exact_match"] == True].index
+                            indices_j = df_j[df_j["exact_match"] == True].index
+                            # find the intersection of the two sets of indices
+                            indices = indices_i.intersection(indices_j)
+                            hidden_states_i = hidden_states_i[indices]
+                            hidden_states_j = hidden_states_j[indices]
+                            
+                            
                                 
                         #id_instance_i = list(map(lambda k: k[:64],df_i["id_instance"].tolist()))
                         #id_instance_j = list(map(lambda k: k[:64],df_j["id_instance"].tolist()))
