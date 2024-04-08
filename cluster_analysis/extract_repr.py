@@ -209,7 +209,7 @@ model = get_model(
 tokenizer = get_tokenizer(
     tokenizer_path=args.tokenizer_dir, model_path=args.checkpoint_dir
 )
-max_seq_len = tokenizer.model_max_length
+max_seq_len = model.config.max_position_embeddings
 if args.max_seq_len is not None:
     max_seq_len = args.max_seq_len
 
@@ -231,13 +231,6 @@ dataset = MMLU_Dataset(
 ).construct_dataset()
 
 
-prompt = dataset["prompt"][0]
-answers = dataset["answers"]
-
-print(prompt)
-print(answers)
-
-assert False
 dataloader = get_dataloader(
     dataset,
     args.batch_size,

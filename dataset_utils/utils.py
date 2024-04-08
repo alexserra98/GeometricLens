@@ -153,7 +153,7 @@ class MMLU_ScenarioBuilder(ScenarioBuilder):
 
 
 # prompt builder
-class MMLU_Dataset(ScenarioBuilder):
+class MMLU_Dataset:
     # num_few_shots = # shots
     # model_name number_istences to remove
     def __init__(
@@ -163,26 +163,19 @@ class MMLU_Dataset(ScenarioBuilder):
         num_few_shots=0,
         subject=None,
         num_processes=1,
-        model_name="llama",
-        number_of_instances=-1,
     ):
-        super().__init__(num_few_shots, model_name, number_of_instances)
 
         self.dataset = "mmlu"
         self.subject = subject
         if subject is not None:
             self.dataset = f"mmlu:{self.subject}"
-        self.choices = ["A", "B", "C", "D"]
+        # we add space because the prompt format ends with ":" without a space.
+        # comparing the answers in the token space requires this construction.
+        self.choices = [" A", " B", " C", " D"]
         self.num_few_shots = num_few_shots
         self.tokenizer = tokenizer
         self.max_seq_len = max_seq_len
         self.num_processes = num_processes
-
-    def retrieve_dataset(self):
-        pass
-
-    def construct_request_instance(self) -> List[RequestInstance]:
-        pass
 
     def construct_question(self, question, choices, answer, include_answer=False):
         # added strip
@@ -191,26 +184,32 @@ class MMLU_Dataset(ScenarioBuilder):
             # added strip
             prompt += f"{self.choices[i]}. {choice.strip()}\n"
         # added space to final answers
-        prompt += "Answer: "
+        prompt += "Answer:"
         if include_answer:
-            prompt += f"{self.choices[answer]}\n\n"
+            prompt += f" {self.choices[answer]}\n\n"
         return prompt
 
-    # prompt contruction
+    # prompt contruction.buils to operate on list of inputs.
     def construct_prompt(self, batch, tokenizer, dev_set, max_seq_len, num_few_shots):
-        # prompt construction
         prompts = []
         questions = batch["question"]
         subjects = batch["subject"]
         choices = batch["choices"]
         answers = batch["answer"]
+
+        # build a dict of subsets of the dev set with the subject of the batch
+        if num_few_shots > 0:
+            local_dev_set = {}
+            for subject in set(subjects):
+                local_dev_set[subject] = dev_set.filter(
+                    lambda dev_example: dev_example["subject"] == subject,
+                )
+
         for i, question in enumerate(questions):
             prompt = f"The following are multiple choice questions (with answers) about {subjects[i]}.\n\n"
-
-            local_dev_set = dev_set.filter(
-                lambda dev_example: dev_example["subject"] == subjects[i],
-            )
-            for shot in local_dev_set:
+            current_subject = subjects[i]
+            for j in range(num_few_shots):
+                shot = local_dev_set[current_subject][j]
                 prompt += self.construct_question(
                     shot["question"],
                     shot["choices"],
@@ -221,7 +220,7 @@ class MMLU_Dataset(ScenarioBuilder):
             prompt += question
             prompts.append(prompt)
 
-        # tokenization
+        # tokenization part
         tokenized_examples = [
             tokenizer(
                 prompt, return_tensors="pt", max_length=max_seq_len, truncation=False
@@ -230,29 +229,43 @@ class MMLU_Dataset(ScenarioBuilder):
         ]
 
         tokenized_labels = [
-            tokenizer(self.choices[example["answer"]], return_tensors="pt").input_ids
-            for example in batch
+            tokenizer(self.choices[answer], return_tensors="pt").input_ids
+            for answer in answers
         ]
-
-        # input_ids = tokenized_example.input_ids
-        # labels = tokenized_labels.input_ids
         attention_mask = [
             torch.ones_like(input_ids) for input_ids in tokenized_examples
         ]
 
         return {
             "prompt": prompts,
-            "answers": [self.choices[example["answer"]] for example in batch],
+            "answers": [self.choices[answer] for answer in answers],
             "input_ids": tokenized_examples,
             "labels": tokenized_labels,
             "attention_mask": attention_mask,
         }
+
+    def filter_out_long_sequences(self, tokenized_dataset, max_seq_len):
+
+        tot_examples = tokenized_dataset.num_rows
+        tokenized_datasets = tokenized_dataset.filter(
+            lambda example: len(example["input_ids"]) < max_seq_len
+        )
+        tot_filtered_examples = tokenized_datasets.num_rows
+
+        if tot_filtered_examples < tot_examples:
+            diff = tot_examples - tot_filtered_examples
+            print(
+                f"you filter out {diff} examples, {diff/tot_examples*100: .2f}% of the total"
+            )
+            sys.stdout.flush()
+        return tokenized_dataset
 
     def construct_dataset(self) -> List[RequestInstance]:
         """
         Construct the request instances for the scenario
         """
         # removed trust remote code
+        print("loading dataset")
         if self.subject is not None:
             dataset = load_dataset("cais/mmlu", self.subject, split="test")
         else:
@@ -285,37 +298,10 @@ class MMLU_Dataset(ScenarioBuilder):
 
         # remove examples loger than max seq len maybe not necessary at all
         tokenized_dataset.set_format(type="pt")
-        tot_examples = tokenized_dataset.num_rows
-        tokenized_datasets = tokenized_dataset.filter(
-            lambda example: len(example["input_ids"]) < self.max_seq_len
+        tokenized_dataset = self.filter_out_long_sequences(
+            tokenized_dataset, self.max_seq_len
         )
-        tot_filtered_examples = tokenized_datasets.num_rows
-
-        if tot_filtered_examples < tot_examples:
-            diff = tot_examples - tot_filtered_examples
-            print(
-                f"you filter out {diff} examples, {diff/tot_examples*100: .2f}% of the total"
-            )
-            sys.stdout.flush()
-
-        # just for backward compat.
-        self.scenario = Scenario(
-            tokenized_dataset["prompt"],
-            len(tokenized_dataset["prompt"]),
-            self.model_name,
-            tokenized_dataset["prompt"],
-            self.choices,
-        )
-
         return tokenized_dataset
-
-    def build(self) -> Scenario:
-        """
-        Build the scenario
-        """
-        if self.scenario is None:
-            _ = self.construct_dataset()
-        return self.scenario
 
 
 class MMLU_Gib_ScenarioBuilder(ScenarioBuilder):
