@@ -1,10 +1,11 @@
 from metrics.utils import hidden_states_collapse
 from metrics.query import DataFrameQuery
 from common.tensor_storage import TensorStorage
-#from sklearn.feature_selection import mutual_info_regression MISSIN?
+
+# from sklearn.feature_selection import mutual_info_regression MISSIN?
 from dadapy.data import Data
 
-from pathlib  import Path
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -12,6 +13,8 @@ import pandas as pd
 from common.metadata_db import MetadataDB
 from common.utils import *
 from pathlib import Path
+
+
 def set_dataframes(db) -> pd.DataFrame:
     """
     Aggregate in a dataframe the hidden states of all instances
@@ -20,10 +23,14 @@ def set_dataframes(db) -> pd.DataFrame:
     """
     df = pd.read_sql("SELECT * FROM metadata", db.conn)
     df["train_instances"] = df["train_instances"].astype(str)
-    df.drop(columns=["id"],inplace = True)
-    #import pdb; pdb.set_trace()
-    df.drop_duplicates(subset = ["id_instance"],inplace = True, ignore_index = True) # why there are duplicates???
+    df.drop(columns=["id"], inplace=True)
+    # import pdb; pdb.set_trace()
+    df.drop_duplicates(
+        subset=["id_instance"], inplace=True, ignore_index=True
+    )  # why there are duplicates???
     return df
+
+
 _PATH = Path("/orfeo/scratch/dssc/zenocosini/mmlu_result")
 metadata_db = MetadataDB(_PATH / "metadata.db")
 metadata_df = set_dataframes(metadata_db)
