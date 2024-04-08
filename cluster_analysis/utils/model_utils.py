@@ -23,8 +23,7 @@ def get_model(
             torch_dtype=precision,
             use_flash_attention_2=True if use_flash_attn else False,
         )
-        print("model loading finished. \n\n")
-        sys.stdout.flush()
+
     else:
         warnings.warn("Using a fake llama for debugging\n", stacklevel=2)
         config = LlamaConfig()
@@ -33,5 +32,9 @@ def get_model(
         config.num_attention_heads = 2
         config.num_key_value_heads = 2
         config.hidden_size = 500
+        model = AutoModelForCausalLM.from_config(config)
+
+    print("model loading finished. \n\n")
+    sys.stdout.flush()
 
     return model

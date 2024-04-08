@@ -68,11 +68,11 @@ class HiddenStates():
     return label_clustering.main(label=label)
   
   def point_overlap(self) -> pd.DataFrame:
-    point_overlap = PointOverlap(df = self.df, tensor_storage = self.tensor_storage)
+    point_overlap = PointOverlap(df = self.df, tensor_storage = self.tensor_storage, variations = self.variations)
     return point_overlap.main()
   
   def point_cluster(self) -> pd.DataFrame:
-    point_cluster = PointClustering(df = self.df, tensor_storage = self.tensor_storage)
+    point_cluster = PointClustering(df = self.df, tensor_storage = self.tensor_storage, variations = self.variations)
     return point_cluster.main()
   
   def label_overlap(self, label:str) -> pd.DataFrame:

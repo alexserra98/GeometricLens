@@ -80,9 +80,10 @@ python inference.py --dataset your_dataset.csv
 
 ## RoadMap
 
-- [ ] change storing logic (h5py)
+- [x] change storing logic (h5py)
 - [ ] add property
 - [ ] add linting
 - [ ] add annotations
-- [ ] add clustering
-- [ ] add slurm runner
+- [x] add clustering
+- [x] add slurm runner
+- [ ] change logic in dataset utils (detach prompt mutations from scenario adaption)

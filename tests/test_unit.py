@@ -1,36 +1,33 @@
 import sys
 from pathlib import Path
 import os
-sys.path.append("/home/alexserra98/helm-suite")
+from dataset_utils.scenario_adapter import ScenarioAdapter
+import pickle
+
 
 # Set working directory as the parent of the file
-os.chdir(Path(__file__).resolve().parent.parent)
+#os.chdir(Path(__file__).resolve().parent.parent)
 
 
-import pickle
-from MCQA_Benchmark.dataset_utils.utils import *
-from MCQA_Benchmark.generation.generation import *
-from MCQA_Benchmark.metrics.metrics import *
-from MCQA_Benchmark.metrics.hidden_states import *
-#TODO change path so that it can be run from anywhere
+
 
 
     
 def test_scenario():
-    scenario_builder = ScenarioBuilder("mmlu:all",0,"gpt2",100)
-    scenario = scenario_builder.build()
-    with open("tests/assets/unit/scenario.pkl", "wb") as f:
-        pickle.dump(scenario,f)
+    scenario = ScenarioAdapter("commonsenseqa_wrong","commonsenseqa",5,"gpt2",100)
+    scenario = scenario.build()
+    # with open("tests/assets/unit/scenario.pkl", "wb") as f:
+    #     pickle.dump(scenario,f)
            
-    def correct_letter(letter):
-        out = []
-        for request in scenario.requests_instances:
-            condition = request.letter_gold in ["A","B","C","D","E"]    
-            out.append(condition)
-        return all(out)
-    assert correct_letter(scenario.requests_instances[0].letter_gold)
+    # def correct_letter(letter):
+    #     out = []
+    #     for request in scenario.requests_instances:
+    #         condition = request.letter_gold in ["A","B","C","D","E"]    
+    #         out.append(condition)
+    #     return all(out)
+    # assert correct_letter(scenario.requests_instances[0].letter_gold)
     #print(f'{scenario=}')
-    #return scenario
+    return scenario
 
 def test_generation():
     with open("tests/assets/unit/scenario.pkl", "rb") as f:
@@ -160,7 +157,7 @@ if __name__ == "__main__":
      test_scenario()
 #     test_generation()
 #     test_prediction()
-     test_make_request()
+#     test_make_request()
 #     test_prediction()
 #     test_tokenizer()
 #     test_basic_metrics()

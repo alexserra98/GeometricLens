@@ -19,14 +19,10 @@ def get_dataloader(
     drop_last=True,
     num_processes=1,
 ):
-    if pad_token_id is None:
-        # we are using the image encoder
-        collate_fn = DataCollatorForViT()
-    else:
-        # we are using the text encoder
-        collate_fn = DataCollatorForCausalLM(
-            pad_token_id=pad_token_id, max_seq_len=max_seq_len
-        )
+    # we are using the text encoder
+    collate_fn = DataCollatorForCausalLM(
+        pad_token_id=pad_token_id, max_seq_len=max_seq_len
+    )
 
     if world_size > 1:
         sampler = DistributedSampler(dataset, shuffle=False, drop_last=drop_last)
@@ -76,18 +72,3 @@ class DataCollatorForCausalLM:
             labels=labels,
             attention_mask=attention_mask,
         )
-
-
-@dataclass
-class DataCollatorForViT:
-    """Collate examples for supervised fine-tuning."""
-
-    def __call__(self, batch: Sequence[Dict]) -> Dict[str, torch.Tensor]:
-        # in the structure of open-instruct the instances are already tensors, and already take into account max_seq_len
-        assert isinstance(batch[0], tuple)
-
-        images = torch.stack([b[0] for b in batch])
-        labels = torch.tensor([b[1] for b in batch], dtype=torch.int64)
-        attention_mask = None
-
-        return dict(input_ids=images, labels=labels, attention_mask=attention_mask)

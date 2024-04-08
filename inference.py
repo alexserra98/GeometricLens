@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 import argparse
 import logging
-from dataset_utils.utils import ScenarioAdapter
+from dataset_utils.scenario_adapter import ScenarioAdapter
 from generation.generation import Huggingface_client
 from common.metadata_db import MetadataDB
 from common.tensor_storage import TensorStorage
@@ -30,15 +30,15 @@ if args.conf_path:
 parser.add_argument('--dataset-folder', type=str, help='The name of the dataset folder')
 parser.add_argument('--model-name',nargs='+', action='append', type=str, help='The name of the model')
 parser.add_argument('--dataset',  nargs='+', action='append', type=str, help='The name of the dataset')
-parser.add_argument('--max-train-instances', type=int, nargs='+',  action='append',help='The name of the output directory')
+parser.add_argument('--shots-list', type=int, nargs='+',  action='append',help='The name of the output directory')
 
 args = parser.parse_args(remaining_argv)
 # Now you can use args.model_name to get the model name
 dataset_folder = args.dataset_folder
 models_names = args.model_name
 datasets = args.dataset
-max_train_instances = args.max_train_instances
-print(f"Starting inference on {dataset_folder} with {models_names} and {datasets} with {max_train_instances} train instances")
+shots_list = args.shots_list
+print(f"Starting inference on {dataset_folder} with {models_names} and {datasets} with {shots_list} number of shots")
 
 
 # Getting the dataset
@@ -65,11 +65,11 @@ for model_name in models_names:
         dataset_path = Path(model_path,dataset)
         dataset_path.mkdir(exist_ok=True,parents=True)
         
-        # max_train_instances = # shots
-        for train_instances in max_train_instances:
-            logging.info("Starting inference on %s with %s train instances...",
-                        dataset, train_instances)
-            scenario_builder = ScenarioAdapter(dataset_folder,dataset,train_instances,model_name,-1)
+        
+        for num_of_shots in shots_list:
+            logging.info("Starting inference on %s with %s number of shots...",
+                        dataset, num_of_shots)
+            scenario_builder = ScenarioAdapter(dataset_folder,dataset,num_of_shots,model_name,-1)
             #dataset construction
             scenario = scenario_builder.build()
 
@@ -80,14 +80,14 @@ for model_name in models_names:
 
             if not hidden_states_rows_i or not logits_rows_i  or not db_rows_i:
                 logging.info("Skipping inference on %s with %s train instances...",
-                        dataset, train_instances)
+                        dataset, shots_list)
                 continue
             
             # Saving tensors
-            tensor_path = Path(dataset_path,str(train_instances))
+            tensor_path = Path(dataset_path,str(num_of_shots))
             tensor_path.mkdir(exist_ok=True,parents=True)
-            tensor_storage.save_tensors(hidden_states_rows_i.values(),hidden_states_rows_i.keys(), f'{model_name.replace("/","-")}/{dataset}/{train_instances}/hidden_states')
-            tensor_storage.save_tensors(logits_rows_i.values(),logits_rows_i.keys(),f'{model_name.replace("/","-")}/{dataset}/{train_instances}/logits')
+            tensor_storage.save_tensors(hidden_states_rows_i.values(),hidden_states_rows_i.keys(), f'{model_name.replace("/","-")}/{dataset}/{num_of_shots}/hidden_states')
+            tensor_storage.save_tensors(logits_rows_i.values(),logits_rows_i.keys(),f'{model_name.replace("/","-")}/{dataset}/{num_of_shots}/logits')
             
             db_rows.extend(db_rows_i)
             

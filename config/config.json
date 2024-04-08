@@ -1,6 +1,6 @@
 {
-    "dataset_folder": "mmlu",
-    "model_name": ["gpt2","meta-llama/Llama-2-7b-chat-hf"],
+    "dataset_folder": "mmlu_shuffled_sub",
+    "model_name": ["meta-llama/Llama-2-7b-hf","meta-llama/Llama-2-7b-chat-hf"],
     "dataset":["mmlu:abstract_algebra", 
                 "mmlu:anatomy", 
                 "mmlu:astronomy", 
@@ -58,5 +58,5 @@
                 "mmlu:us_foreign_policy",
                 "mmlu:virology",
                 "mmlu:world_religions"], 
-    "max_train_instances": [0,2,5]
+    "shots_list": [0,2,5]
 }

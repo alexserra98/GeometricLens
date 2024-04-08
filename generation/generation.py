@@ -6,7 +6,7 @@ from common.metadata_db import MetadataDB
 from transformers import AutoModelForCausalLM, AutoTokenizer, LlamaForCausalLM, LlamaTokenizer
 from typing import Any, Dict, List
 from dataclasses import dataclass, field
-from dataset_utils.utils import *
+from dataset_utils.scenario_builder import Scenario, RequestInstance
 from abc import ABC, abstractmethod
 from generation.utils import *
 import pandas as pd
@@ -25,13 +25,14 @@ class RequestResult():
 @dataclass
 class ScenarioResult():
     dataset: str
-    train_instances: int
+    shots: int
     model_name: str
     requests_results: List[RequestResult] = field(default_factory=list)
     
 class Huggingface_client():
     """
-    Client for Huggingface models. It instantiate the model and the tokenizer, and provides method to make inference over a dataset
+    Client for Huggingface models. It instantiate the model and the tokenizer, 
+    and provides method to make inference over a dataset
     """
     def __init__(self,model_name) -> None:
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -69,7 +70,7 @@ class Huggingface_client():
         
         DbRow = namedtuple("DbRow", ["id_instance", 
                                      "dataset",
-                                     "train_instances", 
+                                     "shots", 
                                      "model_name", 
                                      "loss", 
                                      "std_pred", 
@@ -84,8 +85,11 @@ class Huggingface_client():
             self.device
             )
            
-            id_instance ={"last": _generate_hash(request_instance.question)+"last"+scenario.model_name.replace("/","-")+scenario.dataset.replace("_","")+str(scenario.train_instances),
-                          "sum": _generate_hash(request_instance.question)+"sum"+scenario.model_name.replace("/","-")+scenario.dataset.replace("_","")+str(scenario.train_instances)}
+            #if encoded_input.input_ids.shape[1] >= 1024:
+            #    Warning("Prompt longer than context lenght. Skipping...")
+            #    continue
+            id_instance ={"last": _generate_hash(request_instance.question)+"last"+scenario.model_name.replace("/","-")+scenario.dataset.replace("_","")+str(scenario.shots),
+                          "sum": _generate_hash(request_instance.question)+"sum"+scenario.model_name.replace("/","-")+scenario.dataset.replace("_","")+str(scenario.shots)}
             if metadata_db.query_metadata(f'id_instance = "{id_instance["last"]}"'):
                 continue
  
@@ -105,7 +109,7 @@ class Huggingface_client():
             for method in ["last","sum"]:
                 db_row = DbRow(id_instance[method], 
                                scenario.dataset, 
-                               scenario.train_instances,
+                               scenario.shots,
                                scenario.model_name, 
                                loss.item(),
                                predictions["std_pred"]["letter"], 

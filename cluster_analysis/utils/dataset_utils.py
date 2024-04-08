@@ -3,12 +3,7 @@ import torch
 from functools import partial
 from datasets.utils.logging import disable_progress_bar
 import numpy as np
-from dataset_utils.utils import ScenarioAdapter
-
-
-scenario_builder = ScenarioAdapter(dataset_folder, dataset, train_instances - 1)
-# dataset construction
-scenario = scenario_builder.build()
+from dataset_utils.utils import MMLU_Dataset
 
 disable_progress_bar()
 
