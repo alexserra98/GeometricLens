@@ -19,9 +19,14 @@ from intrinsic_dimension.compute_distances import compute_id
 import torch
 import os
 
-current_path = os.getcwd()
-print(current_path)
-sys.stdout.flush()
+
+# Get the current directory (root directory of the package)
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Add the parent directory to the Python path
+parent_dir = os.path.abspath(os.path.join(current_dir, ".."))
+sys.path.insert(0, parent_dir)
+
 
 from dataset_utils.utils import MMLU_Dataset
 
@@ -63,7 +68,7 @@ def parse_args():
         help="Pretrained config name or path if not the same as model_name",
     )
     parser.add_argument(
-        "--tokenizer_name",
+        "--tokenizer_dir",
         type=str,
         default=None,
         help="Pretrained tokenizer name or path if not the same as model_name",
@@ -158,11 +163,12 @@ def parse_args():
         help="model_name.",
     )
     parser.add_argument(
-        "--use_text_encoder",
-        action="store_true",
-        help="If passed, ID will be measured on the last token represenation.",
+        "--num_few_shots",
+        type=int,
+        default=0,
+        help="number_few_shots",
     )
-    args = parser.parse_args([])
+    args = parser.parse_args()
     return args
 
 
@@ -201,11 +207,14 @@ model = get_model(
 )
 
 tokenizer = get_tokenizer(
-    tokenizer_path=args.tokenizer_name, model_path=args.checkpoint_dir
+    tokenizer_path=args.tokenizer_dir, model_path=args.checkpoint_dir
 )
 max_seq_len = tokenizer.model_max_length
 if args.max_seq_len is not None:
     max_seq_len = args.max_seq_len
+
+
+print(max_seq_len)
 
 # useless in this case:
 pad_token_id = tokenizer.pad_token_id
@@ -218,9 +227,17 @@ dataset = MMLU_Dataset(
     max_seq_len=max_seq_len,
     num_few_shots=args.num_few_shots,
     subject=None,
-    num_prcesses=args.preprocessing_num_workers,
+    num_processes=args.preprocessing_num_workers,
 ).construct_dataset()
 
+
+prompt = dataset["prompt"][0]
+answers = dataset["answers"]
+
+print(prompt)
+print(answers)
+
+assert False
 dataloader = get_dataloader(
     dataset,
     args.batch_size,

@@ -10,6 +10,13 @@ from functools import partial
 import torch
 import sys
 
+from datasets.utils.logging import disable_progress_bar
+import sys
+
+
+disable_progress_bar()
+
+
 _TMP = True
 
 _KNOWN_DATASET_ALIASES: Dict[str, str] = {
@@ -171,43 +178,73 @@ class MMLU_Dataset(ScenarioBuilder):
         self.max_seq_len = max_seq_len
         self.num_processes = num_processes
 
-    def construct_question(self, example, include_answer=False):
+    def retrieve_dataset(self):
+        pass
+
+    def construct_request_instance(self) -> List[RequestInstance]:
+        pass
+
+    def construct_question(self, question, choices, answer, include_answer=False):
         # added strip
-        prompt = f'{example["question"].strip()}\n'
-        for i, choice in enumerate(example["choices"]):
+        prompt = f"{question.strip()}\n"
+        for i, choice in enumerate(choices):
             # added strip
             prompt += f"{self.choices[i]}. {choice.strip()}\n"
         # added space to final answers
         prompt += "Answer: "
         if include_answer:
-            prompt += f'{self.choices[example["answer"]]}\n\n'
+            prompt += f"{self.choices[answer]}\n\n"
         return prompt
 
     # prompt contruction
-    def construct_prompt(self, example, tokenizer, dev_set):
+    def construct_prompt(self, batch, tokenizer, dev_set, max_seq_len, num_few_shots):
         # prompt construction
-        prompt = f"The following are multiple choice questions (with answers) about {example['subject']}.\n\n"
-        for i in range(self.num_few_shots):
-            shot = dev_set[example["subject"]][i]
-            prompt += self.construct_question(shot, include_answer=True)
-        question = self.construct_question(example)
-        prompt += question
+        prompts = []
+        questions = batch["question"]
+        subjects = batch["subject"]
+        choices = batch["choices"]
+        answers = batch["answer"]
+        for i, question in enumerate(questions):
+            prompt = f"The following are multiple choice questions (with answers) about {subjects[i]}.\n\n"
+
+            local_dev_set = dev_set.filter(
+                lambda dev_example: dev_example["subject"] == subjects[i],
+            )
+            for shot in local_dev_set:
+                prompt += self.construct_question(
+                    shot["question"],
+                    shot["choices"],
+                    shot["answer"],
+                    include_answer=True,
+                )
+            question = self.construct_question(questions[i], choices[i], answers[i])
+            prompt += question
+            prompts.append(prompt)
 
         # tokenization
-        tokenized_example = tokenizer(
-            prompt, return_tensors="pt", max_length=self.max_seq_len, truncation=False
-        )
-        tokenized_labels = tokenizer(example["answers"], return_tensors="pt")
+        tokenized_examples = [
+            tokenizer(
+                prompt, return_tensors="pt", max_length=max_seq_len, truncation=False
+            ).input_ids
+            for prompt in prompts
+        ]
 
-        input_ids = tokenized_example.input_ids
-        labels = tokenized_labels.input_ids
-        attention_mask = torch.ones_like(input_ids)
+        tokenized_labels = [
+            tokenizer(self.choices[example["answer"]], return_tensors="pt").input_ids
+            for example in batch
+        ]
+
+        # input_ids = tokenized_example.input_ids
+        # labels = tokenized_labels.input_ids
+        attention_mask = [
+            torch.ones_like(input_ids) for input_ids in tokenized_examples
+        ]
 
         return {
-            "prompt": prompt,
-            "target": example["answer"],
-            "input_ids": input_ids,
-            "labels": labels,
+            "prompt": prompts,
+            "answers": [self.choices[example["answer"]] for example in batch],
+            "input_ids": tokenized_examples,
+            "labels": tokenized_labels,
             "attention_mask": attention_mask,
         }
 
@@ -215,39 +252,36 @@ class MMLU_Dataset(ScenarioBuilder):
         """
         Construct the request instances for the scenario
         """
+        # removed trust remote code
         if self.subject is not None:
-            dataset = load_dataset(
-                "cais/mmlu", self.subject, split="test", trust_remote_code=True
-            )
+            dataset = load_dataset("cais/mmlu", self.subject, split="test")
         else:
-            dataset = load_dataset(
-                "cais/mmlu", "all", split="test", trust_remote_code=True
-            )
+            dataset = load_dataset("cais/mmlu", "all", split="test")
 
         few_shot_dataset = None
         if self.num_few_shots > 0 and self.num_few_shots <= 5:
-            few_shot_dataset = load_dataset(
-                "cais/mmlu", "all", split="dev", trust_remote_code=True
-            )
+            few_shot_dataset = load_dataset("cais/mmlu", "all", split="dev")
         elif self.num_few_shots > 5:
-            few_shot_dataset = load_dataset(
-                "cais/mmlu", "all", split="dev+val", trust_remote_code=True
-            )
+            few_shot_dataset = load_dataset("cais/mmlu", "all", split="dev+val")
 
         encode_function = partial(
             self.construct_prompt,
             tokenizer=self.tokenizer,
-            dev_df=few_shot_dataset,
-            max_seq_length=self.max_seq_len,
-            num_few_shots=0,
+            dev_set=few_shot_dataset,
+            max_seq_len=self.max_seq_len,
+            num_few_shots=self.num_few_shots,
         )
-
+        print("tokenization started")
+        sys.stdout.flush()
         tokenized_dataset = dataset.map(
             encode_function,
-            batched=False,
+            batched=True,
+            batch_size=self.num_processes,
             num_proc=self.num_processes,
             load_from_cache_file=False,
         )
+        print("tokenization finished")
+        sys.stdout.flush()
 
         # remove examples loger than max seq len maybe not necessary at all
         tokenized_dataset.set_format(type="pt")
