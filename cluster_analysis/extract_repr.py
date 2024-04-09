@@ -6,6 +6,7 @@ import os
 import datasets
 from accelerate import Accelerator
 from accelerate.logging import get_logger
+from accelerate.utils.distributed import get_world_size
 
 import transformers
 import sys
@@ -14,21 +15,22 @@ from utils.helpers import (
 )
 from utils.model_utils import get_model
 from utils.dataloader_utils import get_dataloader
+from utils.dataset_utils import MMLU_Dataset
 from utils.tokenizer_utils import get_tokenizer
 from intrinsic_dimension.compute_distances import compute_id
 import torch
 import os
 
 
-# Get the current directory (root directory of the package)
-current_dir = os.path.dirname(os.path.abspath(__file__))
+# # Get the current directory (root directory of the package)
+# current_dir = os.path.dirname(os.path.abspath(__file__))
 
-# Add the parent directory to the Python path
-parent_dir = os.path.abspath(os.path.join(current_dir, ".."))
-sys.path.insert(0, parent_dir)
+# # Add the parent directory to the Python path
+# parent_dir = os.path.abspath(os.path.join(current_dir, ".."))
+# sys.path.insert(0, parent_dir)
 
 
-from dataset_utils.utils import MMLU_Dataset
+# from dataset_utils.utils import MMLU_Dataset
 
 logger = get_logger(__name__)
 
@@ -38,34 +40,10 @@ def parse_args():
         description="Finetune a transformers model on a causal language modeling task"
     )
     parser.add_argument(
-        "--dataset_name",
-        type=str,
-        default=None,
-        help="The name of the dataset to use (via the datasets library).",
-    )
-    parser.add_argument(
-        "--dataset_config_name",
-        type=str,
-        default=None,
-        help="The configuration name of the dataset to use (via the datasets library).",
-    )
-    parser.add_argument(
-        "--train_file",
-        type=str,
-        default=None,
-        help="A csv or a json file containing the training data.",
-    )
-    parser.add_argument(
         "--checkpoint_dir",
         type=str,
         help="Path to pretrained model or model identifier from huggingface.co/models.",
         required=False,
-    )
-    parser.add_argument(
-        "--config_name",
-        type=str,
-        default=None,
-        help="Pretrained config name or path if not the same as model_name",
     )
     parser.add_argument(
         "--tokenizer_dir",
@@ -98,7 +76,7 @@ def parse_args():
         help="The maximum total sequence length (prompt+completion) of each training example.",
     )
     parser.add_argument(
-        "--batch_size",
+        "--micro_batch_size",
         type=int,
         default=1,
         help="Batch size (per device) for the training dataloader.",
@@ -107,7 +85,7 @@ def parse_args():
         "--out_dir", type=str, default=None, help="Where to store the final model."
     )
     parser.add_argument(
-        "--out_filename", type=str, default=None, help="Where to store the final model."
+        "--out_filename", type=str, default="", help="Where to store the final model."
     )
     parser.add_argument(
         "--seed", type=int, default=None, help="A seed for reproducible training."
@@ -160,6 +138,7 @@ def parse_args():
     parser.add_argument(
         "--model_name",
         type=str,
+        default="",
         help="model_name.",
     )
     parser.add_argument(
@@ -172,108 +151,124 @@ def parse_args():
     return args
 
 
-args = parse_args()
-# Initialize the accelerator. We will let the accelerator handle device placement for us in this example.
-# If we're using tracking, we also need to initialize it here and it will by default pick up all supported trackers
-# in the environment
+def main():
+    args = parse_args()
+    # Initialize the accelerator. We will let the accelerator handle device placement for us in this example.
+    # If we're using tracking, we also need to initialize it here and it will by default pick up all supported trackers
+    # in the environment
 
-accelerator = Accelerator()
-# Make one log on every process with the configuration for debugging.
-logging.basicConfig(
-    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
-    level=logging.INFO,
-)
-logger.info(accelerator.state, main_process_only=False)
-if accelerator.is_local_main_process:
-    datasets.utils.logging.set_verbosity_warning()
-    transformers.utils.logging.set_verbosity_info()
-else:
-    datasets.utils.logging.set_verbosity_error()
-    transformers.utils.logging.set_verbosity_error()
-
-if accelerator.is_main_process and args.out_dir is not None:
-    os.makedirs(args.out_dir, exist_ok=True)
-
-accelerator.wait_for_everyone()
-world_size = accelerator.num_processes
-
-# **************************************************************************************
-model = get_model(
-    model_name_or_path=args.checkpoint_dir,
-    precision=torch.bfloat16,
-    low_cpu_mem_usage=args.low_cpu_mem_usage,
-    use_flash_attn=args.use_flash_attn,
-)
-
-tokenizer = get_tokenizer(
-    tokenizer_path=args.tokenizer_dir, model_path=args.checkpoint_dir
-)
-max_seq_len = model.config.max_position_embeddings
-if args.max_seq_len is not None:
-    max_seq_len = args.max_seq_len
-
-
-print(max_seq_len)
-
-# useless in this case:
-pad_token_id = tokenizer.pad_token_id
-n_layer = model.config.num_hidden_layers
-print("model loaded. \n\n")
-sys.stdout.flush()
-
-dataset = MMLU_Dataset(
-    tokenizer=tokenizer,
-    max_seq_len=max_seq_len,
-    num_few_shots=args.num_few_shots,
-    subject=None,
-    num_processes=args.preprocessing_num_workers,
-).construct_dataset()
-
-
-dataloader = get_dataloader(
-    dataset,
-    args.batch_size,
-    pad_token_id,
-    max_seq_len=max_seq_len,
-    world_size=world_size,
-    shuffle=False,
-    num_processes=args.preprocessing_num_workers,
-)
-# ***********************************************************************
-
-# Prepare everything with `accelerator`.
-model = accelerator.prepare(model)
-
-if args.model_name.startswith("llama"):
-    target_layers = get_target_layers_llama(
-        model=model,
-        n_layer=n_layer,
-        option=args.target_layer,
-        every=args.layer_interval,
+    accelerator = Accelerator()
+    # Make one log on every process with the configuration for debugging.
+    logging.basicConfig(
+        format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
+        datefmt="%m/%d/%Y %H:%M:%S",
+        level=logging.INFO,
     )
-elif args.model_name.startswith("mistral"):
-    pass
+    logger.info(accelerator.state, main_process_only=False)
+    if accelerator.is_local_main_process:
+        datasets.utils.logging.set_verbosity_warning()
+        transformers.utils.logging.set_verbosity_info()
+    else:
+        datasets.utils.logging.set_verbosity_error()
+        transformers.utils.logging.set_verbosity_error()
 
-elif args.model_name.startswith("pythia"):
-    pass
+    if accelerator.is_main_process and args.out_dir is not None:
+        os.makedirs(args.out_dir, exist_ok=True)
 
-nsamples = len(dataloader.dataset)
-print("num_total_samples", nsamples)
-print("terget_layers", target_layers)
+    accelerator.wait_for_everyone()
+    world_size = accelerator.num_processes
+    if world_size > 1:
+        args.micro_batch_size = 1
+        accelerator.print(
+            f"world size = {args.micro_batch_size}. Setting micro_batch_size =1"
+        )
 
-compute_id(
-    model,
-    args.model_name,
-    dataloader,
-    target_layers,
-    nsamples=nsamples,
-    use_last_token=args.use_last_token,
-    maxk=args.maxk,
-    range_scaling=1050,
-    dirpath=args.out_dir + f"/{args.model_name}",
-    filename=args.out_filename,
-    save_distances=args.save_distances,
-    remove_duplicates=args.remove_duplicates,
-    print_every=args.logging_steps,
-)
+    model_name = args.model_name
+    if args.checkpoint_dir is not None:
+        model_name_tmp = args.chackpoint_dir.spli("/")[-1]
+        if model_name_tmp.startswith("llama-2"):
+            model_name = model_name_tmp
+
+    # **************************************************************************************
+    model = get_model(
+        model_name_or_path=args.checkpoint_dir,
+        precision=torch.bfloat16,
+        low_cpu_mem_usage=args.low_cpu_mem_usage,
+        use_flash_attn=args.use_flash_attn,
+    )
+
+    tokenizer = get_tokenizer(
+        tokenizer_path=args.tokenizer_dir, model_path=args.checkpoint_dir
+    )
+    max_seq_len = model.config.max_position_embeddings
+    if args.max_seq_len is not None:
+        max_seq_len = args.max_seq_len
+
+    accelerator.print(max_seq_len)
+
+    # useless in this case:
+    pad_token_id = tokenizer.pad_token_id
+    n_layer = model.config.num_hidden_layers
+    accelerator.print("model loaded. \n\n")
+    sys.stdout.flush()
+
+    dataset = MMLU_Dataset(
+        tokenizer=tokenizer,
+        max_seq_len=max_seq_len,
+        num_few_shots=args.num_few_shots,
+        subject=None,
+        num_processes=args.preprocessing_num_workers,
+    ).construct_dataset()
+
+    dataloader = get_dataloader(
+        dataset,
+        args.micro_batch_size,
+        pad_token_id,
+        max_seq_len=max_seq_len,
+        world_size=world_size,
+        shuffle=False,
+        num_processes=args.preprocessing_num_workers,
+    )
+    # ***********************************************************************
+
+    # Put the model on with `accelerator`.
+    model = accelerator.prepare(model)
+
+    if model_name.startswith("llama"):
+        target_layers = get_target_layers_llama(
+            model=model,
+            n_layer=n_layer,
+            option=args.target_layer,
+            every=args.layer_interval,
+        )
+
+    elif model_name.startswith("mistral"):
+        pass
+
+    elif model_name.startswith("pythia"):
+        pass
+
+    nsamples = len(dataloader.dataset)
+    accelerator.print("num_total_samples", nsamples)
+    accelerator.print("terget_layers", target_layers)
+
+    dirpath = args.out_dir + f"/{model_name}/{args.num_few_shots}shot"
+    compute_id(
+        accelerator,
+        model,
+        model_name,
+        dataloader,
+        target_layers,
+        use_last_token=args.use_last_token,
+        maxk=args.maxk,
+        dirpath=dirpath,
+        filename=args.out_filename,
+        save_distances=args.save_distances,
+        save_repr=args.save_repr,
+        remove_duplicates=args.remove_duplicates,
+        print_every=args.logging_steps,
+    )
+
+
+if __name__ == "__main__":
+    main()

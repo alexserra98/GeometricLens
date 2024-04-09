@@ -3,71 +3,164 @@ import torch
 from functools import partial
 from datasets.utils.logging import disable_progress_bar
 import numpy as np
-from dataset_utils.utils import MMLU_Dataset
+
+# from dataset_utils.utils import MMLU_Dataset
+import sys
+
 
 disable_progress_bar()
 
 
-def encode_func(example, tokenizer, max_seq_length, text_field):
-    example_text = example[text_field]
-    tokenized_example = tokenizer(
-        example_text.strip(),
-        add_special_tokens=False,
-        return_tensors="pt",
-        max_length=max_seq_length,
-        truncation=True,
+def filter_out_long_sequences(self, tokenized_dataset, max_seq_len):
+
+    tot_examples = tokenized_dataset.num_rows
+    tokenized_datasets = tokenized_dataset.filter(
+        lambda example: len(example["input_ids"]) < max_seq_len
     )
-    input_ids = tokenized_example.input_ids
-    labels = input_ids.clone()
-    attention_mask = torch.ones_like(input_ids)
-    # in the output they will be converted to lists but at least we can apply flatten
-    return {
-        "input_ids": input_ids.flatten(),
-        "labels": labels.flatten(),
-        "attention_mask": attention_mask.flatten(),
-    }
+    tot_filtered_examples = tokenized_datasets.num_rows
 
-
-def get_text_dataset(
-    filepath=None,
-    tokenizer=None,
-    max_seq_length=2048,
-    num_processes=1,
-    text_field="text",
-    n_caption_per_image=5,
-    file_format="csv",
-    split="train",
-):
-    raw_dataset = load_dataset(
-        file_format,
-        data_files=filepath,
-        split=split,
-    )
-    if n_caption_per_image != 5:
-        # this reduces the number of samples
-        assert n_caption_per_image < 5, "number of caption should be smaller than 5"
-        caption_ids = np.arange(5)[:n_caption_per_image]
-        raw_dataset = raw_dataset.filter(lambda x: x["caption_id"] in caption_ids)
-
-    encode_function = partial(
-        encode_func,
-        tokenizer=tokenizer,
-        max_seq_length=max_seq_length,
-        text_field=text_field,
-    )
-
-    tokenized_dataset = raw_dataset.map(
-        encode_function,
-        batched=False,
-        num_proc=num_processes,
-        load_from_cache_file=False,
-        remove_columns=[
-            name
-            for name in raw_dataset.column_names
-            if name not in ["input_ids", "labels", "attention_mask"]
-        ],
-    )
-    # the output is always list of lists
-    tokenized_dataset.set_format(type="pt")
-
+    if tot_filtered_examples < tot_examples:
+        diff = tot_examples - tot_filtered_examples
+        print(
+            f"you filter out {diff} examples, {diff/tot_examples*100: .2f}% of the total"
+        )
+        sys.stdout.flush()
     return tokenized_dataset
+
+
+# prompt builder
+class MMLU_Dataset:
+    # num_few_shots = # shots
+    # model_name number_istences to remove
+    def __init__(
+        self,
+        tokenizer,
+        max_seq_len,
+        num_few_shots=0,
+        subject=None,
+        num_processes=1,
+    ):
+
+        self.dataset = "mmlu"
+        self.subject = subject
+        if subject is not None:
+            self.dataset = f"mmlu:{self.subject}"
+        # we add space because the prompt format ends with ":" without a space.
+        # comparing the answers in the token space requires this construction.
+        self.choices = [" A", " B", " C", " D"]
+        self.num_few_shots = num_few_shots
+        self.tokenizer = tokenizer
+        self.max_seq_len = max_seq_len
+        self.num_processes = num_processes
+
+    def construct_question(self, question, choices, answer, include_answer=False):
+        # added strip
+        prompt = f"{question.strip()}\n"
+        for i, choice in enumerate(choices):
+            # added strip
+            prompt += f"{self.choices[i]}. {choice.strip()}\n"
+        # added space to final answers
+        prompt += "Answer:"
+        if include_answer:
+            prompt += f" {self.choices[answer]}\n\n"
+        return prompt
+
+    # prompt contruction.buils to operate on list of inputs.
+    def construct_prompt(self, batch, tokenizer, dev_set, max_seq_len, num_few_shots):
+        prompts = []
+        questions = batch["question"]
+        subjects = batch["subject"]
+        choices = batch["choices"]
+        answers = batch["answer"]
+
+        # build a dict of subsets of the dev set with the subject of the batch
+        if num_few_shots > 0:
+            local_dev_set = {}
+            for subject in set(subjects):
+                local_dev_set[subject] = dev_set.filter(
+                    lambda dev_example: dev_example["subject"] == subject,
+                )
+
+        for i, question in enumerate(questions):
+            prompt = f"The following are multiple choice questions (with answers) about {subjects[i]}.\n\n"
+            current_subject = subjects[i]
+            for j in range(num_few_shots):
+                shot = local_dev_set[current_subject][j]
+                prompt += self.construct_question(
+                    shot["question"],
+                    shot["choices"],
+                    shot["answer"],
+                    include_answer=True,
+                )
+            question = self.construct_question(questions[i], choices[i], answers[i])
+            prompt += question
+            prompts.append(prompt)
+
+        # tokenization part
+        tokenized_examples = [
+            tokenizer(
+                prompt, return_tensors="pt", max_length=max_seq_len, truncation=False
+            ).input_ids
+            for prompt in prompts
+        ]
+
+        # targets are tokenized with space included
+        tokenized_labels = [
+            tokenizer(self.choices[answer], return_tensors="pt").input_ids
+            for answer in answers
+        ]
+
+        attention_mask = [
+            torch.ones_like(input_ids) for input_ids in tokenized_examples
+        ]
+
+        return {
+            "prompt": prompts,
+            "answers": [self.choices[answer] for answer in answers],
+            "input_ids": tokenized_examples,
+            "labels": tokenized_labels,
+            "attention_mask": attention_mask,
+        }
+
+    def construct_dataset(self):
+        """
+        Construct the request instances for the scenario
+        """
+        # removed trust remote code
+        print("loading dataset")
+        if self.subject is not None:
+            dataset = load_dataset("cais/mmlu", self.subject, split="test")
+        else:
+            dataset = load_dataset("cais/mmlu", "all", split="test")
+
+        few_shot_dataset = None
+        if self.num_few_shots > 0 and self.num_few_shots <= 5:
+            few_shot_dataset = load_dataset("cais/mmlu", "all", split="dev")
+        elif self.num_few_shots > 5:
+            few_shot_dataset = load_dataset("cais/mmlu", "all", split="dev+val")
+
+        encode_function = partial(
+            self.construct_prompt,
+            tokenizer=self.tokenizer,
+            dev_set=few_shot_dataset,
+            max_seq_len=self.max_seq_len,
+            num_few_shots=self.num_few_shots,
+        )
+        print("tokenization started")
+        sys.stdout.flush()
+        tokenized_dataset = dataset.map(
+            encode_function,
+            batched=True,
+            batch_size=self.num_processes,
+            num_proc=self.num_processes,
+            load_from_cache_file=False,
+        )
+        print("tokenization finished")
+        sys.stdout.flush()
+
+        # remove examples loger than max seq len maybe not necessary at all
+        tokenized_dataset.set_format(type="pt")
+        tokenized_dataset = filter_out_long_sequences(
+            tokenized_dataset, self.max_seq_len
+        )
+        return tokenized_dataset
