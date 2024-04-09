@@ -169,10 +169,12 @@ class StandardPrediction(PredictionStrategy):
     """
     def predict(self) -> int:
         #scores = request_result.logits[:,-1].detach().cpu()
-        rescaled_logit=self.logits/float(self.request_config["temperature"])
-        #import pdb; pdb.set_trace()
-        probs = torch.nn.functional.softmax(rescaled_logit,dim=-1)
-        pred =  torch.multinomial(probs, num_samples=1)
+        # Sample with temperature
+        # rescaled_logit=self.logits/float(self.request_config["temperature"])
+        # probs = torch.nn.functional.softmax(rescaled_logit,dim=-1)
+        # pred =  torch.multinomial(probs, num_samples=1)
+        # Sample with argmax
+        pred = self.logits.max(1)[1]
         return pred.item()
     
 class OnlyReferencePrediction(PredictionStrategy):
@@ -185,8 +187,11 @@ class OnlyReferencePrediction(PredictionStrategy):
     
     def predict(self) -> int:
         stripped_logits = self.logits.index_select(-1,torch.tensor(self.tokens_answers))
-        rescaled_logits=stripped_logits/float(self.request_config["temperature"])
-        probs = torch.nn.functional.softmax(rescaled_logits,dim=-1)
-        pred = probs.max(1)[1]
+        # Sample with temperature
+        # rescaled_logits=stripped_logits/float(self.request_config["temperature"])
+        # probs = torch.nn.functional.softmax(rescaled_logits,dim=-1)
+        # pred = torch.multinomial(probs, num_samples=1)
+        # Sample with argmax
+        pred = stripped_logits.max(1)[1]
         return self.tokens_answers[pred]
    

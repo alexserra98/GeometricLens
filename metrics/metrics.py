@@ -29,12 +29,13 @@ class Layer(Enum):
     SUM = "sum"
     
 class Metrics():
-    def __init__(self, db: MetadataDB, metrics_list: List, path_result: Path) -> None:
+    def __init__(self, db: MetadataDB, metrics_list: List, path_result: Path, variations: dict) -> None:
       self.db = db
       self.metrics_list = metrics_list
       self.df = self.set_dataframes()
       self.path_result = path_result
       self.tensor_path = Path(path_result, "tensor_files")
+      self.variations = variations
     
     def set_dataframes(self) -> pd.DataFrame:
       """
@@ -58,12 +59,10 @@ class Metrics():
       """
       df_out = {}
       
-      variations = {"intrinsic_dimension": None,
-                    "point_overlap": "cosine",
-                    "label_overlap": "cosine"}
-      logging.info(f"Metrics will be computed with the following variations:\n{variations=}")
       
-      hidden_states = HiddenStates(self.df, self.tensor_path, variations)
+      logging.info(f"Metrics will be computed with the following variations:\n{self.variations=}")
+      
+      hidden_states = HiddenStates(self.df, self.tensor_path, self.variations)
       
       #hidden_states = HiddenStates(self.df, self.tensor_path)
       for metric in tqdm.tqdm(self.metrics_list, desc = "Computing metrics"):
@@ -75,7 +74,7 @@ class Metrics():
         else:
           variation_key = metric
     
-        variation = variations.get(variation_key, None)
+        variation = self.variations.get(variation_key, None)
         
         
         

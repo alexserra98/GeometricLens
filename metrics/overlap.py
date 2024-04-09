@@ -1,5 +1,5 @@
 from metrics.hidden_states_metrics import HiddenStatesMetrics
-from .utils import  hidden_states_collapse
+from .utils import  hidden_states_collapse, exact_match
 from metrics.query import DataFrameQuery
 from common.globals_vars import _NUM_PROC
 
@@ -56,9 +56,23 @@ class PointOverlap(HiddenStatesMetrics):
                                 "train_instances": train_instances_j,})
                                 #"dataset": "mmlu:miscellaneous"})
                         
-                        
                         hidden_states_i, _, df_i = hidden_states_collapse(self.df,query_i, self.tensor_storage)
                         hidden_states_j, _, df_j = hidden_states_collapse(self.df,query_j, self.tensor_storage)
+                        for row_i, row_j in zip(df_i.iterrows(), df_j.iterrows()):
+                            assert row_i["id_instance"].replace("chat-","") == row_j["id_instance"].replace("chat-",""), "The two runs must have the same instances"
+                        if self.variations["point_overlap"] == "cosine":
+                            df_i["exact_match"] = df_i.apply(lambda r: exact_match(r["std_pred"], r["letter_gold"]), axis=1)
+                            df_j["exact_match"] = df_j.apply(lambda r: exact_match(r["std_pred"], r["letter_gold"]), axis=1)
+                            # find the index of rows that have "exact_match" True in both df_i and df_j
+                            indices_i = df_i[df_i["exact_match"] == True].index
+                            indices_j = df_j[df_j["exact_match"] == True].index
+                            # find the intersection of the two sets of indices
+                            indices = indices_i.intersection(indices_j)
+                            hidden_states_i = hidden_states_i[indices]
+                            hidden_states_j = hidden_states_j[indices]
+                            
+                            
+                                
                         #id_instance_i = list(map(lambda k: k[:64],df_i["id_instance"].tolist()))
                         #id_instance_j = list(map(lambda k: k[:64],df_j["id_instance"].tolist()))
                         #

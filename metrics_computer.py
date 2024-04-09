@@ -22,10 +22,14 @@ if args.conf_path:
 
 parser.add_argument('--dataset-folder', type=str, help='The name of the dataset folder')
 parser.add_argument('--metrics',  nargs='+', action='append',type=str, help='Metrics to compute')
+parser.add_argument('--variations', action='append',type=str, help='Variations applied')
 args = parser.parse_args(remaining_argv)
 
 dataset_folder = args.dataset_folder
 metrics_list = args.metrics
+print(args.variations)
+#variations = '"'+args.variations+'"'
+variations = json.loads(args.variations)
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logging.info(f'Configuration:\ndata_folder: {dataset_folder}\nmetrics: {metrics_list}')
@@ -35,7 +39,7 @@ results_path = os.path.join(g._OUTPUT_DIR, dataset_folder)
 db = MetadataDB(Path(results_path,'metadata.db'))
 
 # Evaluate metrics
-metrics = Metrics(db, metrics_list,Path(results_path))
+metrics = Metrics(db, metrics_list,Path(results_path), variations)
 out = metrics.evaluate()
 logging.info(f'Saving results...')
 #for metric in out.keys():
