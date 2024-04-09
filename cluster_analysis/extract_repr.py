@@ -258,18 +258,18 @@ def main():
 
     dirpath = args.out_dir + f"/{model_name}/{args.num_few_shots}shot"
     compute_id(
-        accelerator,
-        model,
-        model_name,
-        dataloader,
-        target_layers,
-        use_last_token=args.use_last_token,
+        accelerator=accelerator,
+        model=model,
+        dataloader=dataloader,
+        tokenizer=tokenizer,
+        target_layers=target_layers,
         maxk=args.maxk,
         dirpath=dirpath,
         filename=args.out_filename,
+        use_last_token=args.use_last_token,
+        remove_duplicates=args.remove_duplicates,
         save_distances=args.save_distances,
         save_repr=args.save_repr,
-        remove_duplicates=args.remove_duplicates,
         print_every=args.logging_steps,
     )
 
