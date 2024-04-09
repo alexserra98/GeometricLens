@@ -6,7 +6,6 @@ import os
 import datasets
 from accelerate import Accelerator
 from accelerate.logging import get_logger
-from accelerate.utils.distributed import get_world_size
 
 import transformers
 import sys
@@ -113,6 +112,11 @@ def parse_args():
         help="If passed, the distance matrices will be saved",
     )
     parser.add_argument(
+        "--save_repr",
+        action="store_true",
+        help="If passed, the distance matrices will be saved",
+    )
+    parser.add_argument(
         "--remove_duplicates",
         action="store_true",
         help="If passed, duplicate datapoints will be removed",
@@ -185,7 +189,7 @@ def main():
 
     model_name = args.model_name
     if args.checkpoint_dir is not None:
-        model_name_tmp = args.chackpoint_dir.spli("/")[-1]
+        model_name_tmp = args.checkpoint_dir.split("/")[-1]
         if model_name_tmp.startswith("llama-2"):
             model_name = model_name_tmp
 
@@ -229,6 +233,7 @@ def main():
         shuffle=False,
         num_processes=args.preprocessing_num_workers,
     )
+    print(next(iter(dataloader)))
     # ***********************************************************************
 
     # Put the model on with `accelerator`.
@@ -250,7 +255,6 @@ def main():
 
     nsamples = len(dataloader.dataset)
     accelerator.print("num_total_samples", nsamples)
-    accelerator.print("terget_layers", target_layers)
 
     dirpath = args.out_dir + f"/{model_name}/{args.num_few_shots}shot"
     compute_id(

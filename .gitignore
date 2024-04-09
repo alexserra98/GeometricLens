@@ -1,3 +1,7 @@
+env_amd/
+slurm*
+results/
+
 *.pkl
 **/__pycache__/
 **/assets/

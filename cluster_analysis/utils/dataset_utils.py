@@ -11,7 +11,7 @@ import sys
 disable_progress_bar()
 
 
-def filter_out_long_sequences(self, tokenized_dataset, max_seq_len):
+def filter_out_long_sequences(tokenized_dataset, max_seq_len):
 
     tot_examples = tokenized_dataset.num_rows
     tokenized_datasets = tokenized_dataset.filter(
