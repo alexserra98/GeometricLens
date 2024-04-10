@@ -60,7 +60,7 @@ class PointOverlap(HiddenStatesMetrics):
                         hidden_states_j, _, df_j = hidden_states_collapse(self.df,query_j, self.tensor_storage)
                         for row_i, row_j in zip(df_i.iterrows(), df_j.iterrows()):
                             assert row_i["id_instance"].replace("chat-","") == row_j["id_instance"].replace("chat-",""), "The two runs must have the same instances"
-                        if self.variations["point_overlap"] == "cosine":
+                        if self.variations["point_overlap"] == "cosine" or self.variations["point_overlap"] == "norm" or self.variations["point_overlap"] == "shared_correct":
                             df_i["exact_match"] = df_i.apply(lambda r: exact_match(r["std_pred"], r["letter_gold"]), axis=1)
                             df_j["exact_match"] = df_j.apply(lambda r: exact_match(r["std_pred"], r["letter_gold"]), axis=1)
                             # find the index of rows that have "exact_match" True in both df_i and df_j
