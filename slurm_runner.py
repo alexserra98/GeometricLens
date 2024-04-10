@@ -10,6 +10,7 @@ def create_bash_script(script_name, arguments, config_path):
         script_file.write(f'#SBATCH --partition={arguments.partition}\n')
         script_file.write(f'#SBATCH --account=LADE\n')
         script_file.write(f'#SBATCH --nodes={arguments.nodes}\n')
+        #if arguments.job_type == 'inference':
         script_file.write(f'#SBATCH --exclusive\n')
         #script_file.write(f'#SBATCH --begin=now+4hour\n')
         #script_file.write(f'#SBATCH --nodelist=dgx002\n')
