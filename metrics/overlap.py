@@ -1,9 +1,10 @@
 from metrics.hidden_states_metrics import HiddenStatesMetrics
-from .utils import  hidden_states_collapse, exact_match
+from .utils import  hidden_states_collapse, exact_match, angular_distance
 from metrics.query import DataFrameQuery
 from common.globals_vars import _NUM_PROC
 
 from .dadapy_handler import DataAdapter
+from dadapy import Data
 from sklearn.metrics import mutual_info_score
 from sklearn.metrics.cluster import adjusted_rand_score, adjusted_mutual_info_score
 
@@ -179,12 +180,17 @@ class PointOverlap(HiddenStatesMetrics):
         if self.variations["point_overlap"] == "norm":   
             data_i = data_i/np.linalg.norm(data_i,axis=1,keepdims=True)
             data_j = data_j/np.linalg.norm(data_j,axis=1,keepdims=True)
-        
-        data = DataAdapter(data_i, variation=self.variations["point_overlap"], maxk=k)
+        elif self.variations["point_overlap"] == "cosine":
+            distances_i = angular_distance(data_i)
+            distances_j = angular_distance(data_j)
+            data = Data(coordinates=data_i,distances=distances_i,maxk=k)
+            overlap = data.return_data_overlap(data_j,distances=distances_j,k=k)
+        else:
+            overlap = data.return_data_overlap(data_j,k=k)
+        #data = DataAdapter(data_i, variation=self.variations["point_overlap"], maxk=k)
         #warnings.filterwarnings("ignore")
         #data.compute_distances(maxk=k)
         #print(f'{k} -- {data_j[:,layer,:]}')
-        overlap = data.return_data_overlap(data_j,k=k)
         return overlap
     
     
