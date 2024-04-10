@@ -28,7 +28,6 @@ def get_embdims(model, dataloader, target_layers):
             handles[name] = module.register_forward_hook(get_hook(name, embdims))
 
     batch = next(iter(dataloader))
-    print(batch)
     sys.stdout.flush()
     _ = model(batch["input_ids"].to("cuda"))
 
@@ -95,7 +94,7 @@ def compute_id(
         use_last_token=use_last_token,
         print_every=print_every,
     )
-    extr_act.extract(dataloader)
+    extr_act.extract(dataloader, tokenizer)
     accelerator.print(f"num_tokens: {extr_act.tot_tokens/10**3}k")
     accelerator.print((time.time() - start) / 3600, "hours")
 

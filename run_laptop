@@ -8,6 +8,7 @@ accelerate launch \
     --tokenizer_dir /home/diego/area_science/ricerca/llama_analysis/hf_llama \
     --use_slow_tokenizer \
     --num_few_shots 0 \
+    --micro_batch_size 3 \
     --preprocessing_num_workers 16 \
     --model_name 'llama' \
     --out_dir '.'

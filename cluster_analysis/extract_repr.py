@@ -77,7 +77,7 @@ def parse_args():
     parser.add_argument(
         "--micro_batch_size",
         type=int,
-        default=1,
+        default=4,
         help="Batch size (per device) for the training dataloader.",
     )
     parser.add_argument(
@@ -98,7 +98,7 @@ def parse_args():
     parser.add_argument(
         "--logging_steps",
         type=int,
-        default=None,
+        default=100,
         help="Print every logging_steps samples processed.",
     )
     parser.add_argument(
@@ -233,7 +233,6 @@ def main():
         shuffle=False,
         num_processes=args.preprocessing_num_workers,
     )
-    print(next(iter(dataloader)))
     # ***********************************************************************
 
     # Put the model on with `accelerator`.

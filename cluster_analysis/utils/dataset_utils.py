@@ -47,7 +47,7 @@ class MMLU_Dataset:
             self.dataset = f"mmlu:{self.subject}"
         # we add space because the prompt format ends with ":" without a space.
         # comparing the answers in the token space requires this construction.
-        self.choices = [" A", " B", " C", " D"]
+        self.answers = np.array([" A", " B", " C", " D"])
         self.num_few_shots = num_few_shots
         self.tokenizer = tokenizer
         self.max_seq_len = max_seq_len
@@ -58,20 +58,21 @@ class MMLU_Dataset:
         prompt = f"{question.strip()}\n"
         for i, choice in enumerate(choices):
             # added strip
-            prompt += f"{self.choices[i]}. {choice.strip()}\n"
+            prompt += f"{self.answers[i]}. {choice.strip()}\n"
         # added space to final answers
         prompt += "Answer:"
         if include_answer:
-            prompt += f" {self.choices[answer]}\n\n"
+            prompt += f" {self.answers[answer]}\n\n"
         return prompt
 
     # prompt contruction.buils to operate on list of inputs.
     def construct_prompt(self, batch, tokenizer, dev_set, max_seq_len, num_few_shots):
         prompts = []
-        questions = batch["question"]
-        subjects = batch["subject"]
-        choices = batch["choices"]
-        answers = batch["answer"]
+
+        questions = batch["question"]  # list of strings
+        subjects = batch["subject"]  # list of strings
+        choices = batch["choices"]  # list of list of strings
+        answer_indices = np.array(batch["answer"])  # array of integers
 
         # build a dict of subsets of the dev set with the subject of the batch
         if num_few_shots > 0:
@@ -92,31 +93,56 @@ class MMLU_Dataset:
                     shot["answer"],
                     include_answer=True,
                 )
-            question = self.construct_question(questions[i], choices[i], answers[i])
+            question = self.construct_question(
+                questions[i], choices[i], answer_indices[i]
+            )
             prompt += question
             prompts.append(prompt)
 
         # tokenization part
         tokenized_examples = [
             tokenizer(
-                prompt, return_tensors="pt", max_length=max_seq_len, truncation=False
-            ).input_ids
+                prompt,
+                return_tensors="pt",
+                max_length=max_seq_len,
+                truncation=False,
+                add_special_tokens=True,
+            ).input_ids.flatten()
             for prompt in prompts
         ]
 
         # targets are tokenized with space included
         tokenized_labels = [
-            tokenizer(self.choices[answer], return_tensors="pt").input_ids
-            for answer in answers
+            tokenizer(
+                self.answers[index], return_tensors="pt", add_special_tokens=False
+            ).input_ids.flatten()
+            for index in answer_indices
         ]
 
         attention_mask = [
             torch.ones_like(input_ids) for input_ids in tokenized_examples
         ]
 
+        # requires todefine padding here, we create batche in the dataloader
+        # tokenized_examples = tokenizer(
+        #     prompts,
+        #     return_tensors="pt",
+        #     max_length=max_seq_len,
+        #     truncation=False,
+        #     add_special_tokens=False,
+        # ).input_ids
+
+        # tokenized_labels = tokenizer(
+        #     self.answers[answer_indices],
+        #     return_tensors="pt",
+        #     max_length=max_seq_len,
+        #     truncation=False,
+        #     add_special_tokens=False,
+        # ).input_ids
+
         return {
             "prompt": prompts,
-            "answers": [self.choices[answer] for answer in answers],
+            "answers": [self.answers[index] for index in answer_indices],
             "input_ids": tokenized_examples,
             "labels": tokenized_labels,
             "attention_mask": attention_mask,
@@ -155,12 +181,15 @@ class MMLU_Dataset:
             num_proc=self.num_processes,
             load_from_cache_file=False,
         )
+
         print("tokenization finished")
         sys.stdout.flush()
 
         # remove examples loger than max seq len maybe not necessary at all
+        # list of list is made list of tensors
         tokenized_dataset.set_format(type="pt")
         tokenized_dataset = filter_out_long_sequences(
             tokenized_dataset, self.max_seq_len
         )
+
         return tokenized_dataset
