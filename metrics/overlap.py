@@ -66,7 +66,7 @@ class PointOverlap(HiddenStatesMetrics):
                             assert row_i[1]["id_instance"].replace("chat-","")[:-1] == row_j[1]["id_instance"].replace("chat-","")[:-1], "The two runs must have the same instances"
 
                         #import pdb; pdb.set_trace()
-                        if self.variations["point_overlap"] == "cosine":
+                        if self.variations["point_overlap"] == "cosine" or self.variations["point_overlap"] == "norm" or self.variations["point_overlap"] == "shared_answers":
                             df_i["exact_match"] = df_i.apply(lambda r: exact_match(r["std_pred"], r["letter_gold"]), axis=1)
                             df_j["exact_match"] = df_j.apply(lambda r: exact_match(r["std_pred"], r["letter_gold"]), axis=1)
                             # find the index of rows that have "exact_match" True in both df_i and df_j
