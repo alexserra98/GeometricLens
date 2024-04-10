@@ -1,9 +1,7 @@
-import os
 import time
 import torch
 import numpy as np
 from collections import defaultdict
-import math
 import torch.distributed as dist
 import psutil
 
@@ -14,33 +12,35 @@ rng = np.random.default_rng(42)
 class extract_activations:
     def __init__(
         self,
+        accelerator,
         model,
         dataloader,
         target_layers,
         embdim,
         dtypes,
-        nsamples,
         use_last_token=False,
         print_every=100,
     ):
+        self.accelerator = accelerator
         self.model = model
         # embedding size
         self.embdim = embdim
         # number of samples to collect (e.g. 10k)
-        self.nsamples = nsamples
+        self.nsamples = len(dataloader.dataset)
         # whether to compute the id on the last token /class_token
         self.use_last_token = use_last_token
         self.print_every = print_every
 
         self.micro_batch_size = dataloader.batch_size
         self.nbatches = len(dataloader)
-        self.world_size = int(os.environ["WORLD_SIZE"])
-        self.rank = int(os.environ["RANK"])
+        self.world_size = self.accelerator.num_processes
+        self.rank = self.accelerator.process_index
         self.global_batch_size = self.world_size * self.micro_batch_size
+
         self.hidden_size = 0
 
         if self.rank == 0:
-            print(
+            self.accelerator.print(
                 "before hidden states RAM Used (GB):",
                 psutil.virtual_memory()[3] / 10**9,
             )
@@ -53,11 +53,12 @@ class extract_activations:
         self.hidden_states_tmp = defaultdict(lambda: None)
 
         # dict storing the all the representations
-        self.hidden_states = {}
-        for name in target_layers:
-            self.hidden_states[name] = torch.zeros(
-                (self.nsamples, self.embdim[name]), dtype=dtypes[name]
-            )
+        if self.accelerator.is_main_process:
+            self.hidden_states = {}
+            for name in target_layers:
+                self.hidden_states[name] = torch.zeros(
+                    (self.nsamples, self.embdim[name]), dtype=dtypes[name]
+                )
 
     def init_hooks(self, target_layers):
         for name, module in self.model.named_modules():
@@ -79,6 +80,31 @@ class extract_activations:
 
         return hook_fn
 
+    def gather_logits(self, logits, seq_len, targets):
+
+        _, _, embdim = logits.shape
+        if self.world_size > 1:
+            if self.rank == 0:
+                # gather the logits to rank 0
+                states_list = [
+                    torch.zeros((1, embdim), device="cuda", dtype=logits.dtype)
+                    for _ in range(self.world_size)
+                ]
+                target_list = [
+                    torch.zeros_like(targets, device="cuda", dtype=logits.dtype)
+                    for _ in range(self.world_size)
+                ]
+
+                dist.gather(logits[:, seq_len[self.rank] - 1, :], states_list, dst=0)
+                dist.gather(targets, target_list, dst=0)
+            else:
+                dist.gather(logits[:, seq_len[self.rank] - 1, :], dst=0)
+                dist.gather(targets, dst=0)
+        else:
+            logits = logits[:, seq_len - 1, :]
+
+        return logits, targets
+
     def _gather_and_update_fsdp(self, mask, is_last_batch):
         # batch size ==  1 we handle just this setup for world size > 1
         assert mask.shape[0] == 1
@@ -89,7 +115,6 @@ class extract_activations:
         dist.all_gather(seq_len_list, seq_len)
         max_size = max(seq_len_list).item()
         size_diff = max_size - seq_len.item()
-        num_current_tokens = sum(seq_len_list).item()
 
         for _, (name, hidden_state) in enumerate(self.hidden_states_tmp.items()):
             _, _, embdim = hidden_state.shape
@@ -113,7 +138,7 @@ class extract_activations:
 
                 # move to cpu, remove padding, and update hidden states
                 num_current_tokens = self._update_hidden_state_fsdp(
-                    states_list, seq_len_list, name, num_current_tokens, is_last_batch
+                    states_list, seq_len_list, name, is_last_batch
                 )
             else:
                 dist.gather(hidden_state, dst=0)
@@ -124,9 +149,9 @@ class extract_activations:
         if self.rank == 0:
             self.hidden_size += num_current_tokens
 
-    def _update_hidden_state_fsdp(
-        self, states_list, seq_len_list, name, num_current_tokens, is_last_batch
-    ):
+        return seq_len_list
+
+    def _update_hidden_state_fsdp(self, states_list, seq_len_list, name, is_last_batch):
         if self.use_last_token:
             act_tmp = torch.cat(
                 [
@@ -181,15 +206,24 @@ class extract_activations:
                     self.hidden_size : self.hidden_size + num_current_tokens
                 ] = act_tmp
         self.hidden_size += num_current_tokens
+        return seq_len
 
     @torch.no_grad()
-    def extract(self, dataloader):
-        self.t_load = 0
-        self.t_forw = 0
-        self.t_extr = 0
-        self.gather_time = 0
+    def extract(self, dataloader, tokenizer):
         start = time.time()
         is_last_batch = False
+        choices = ["A", "B", "C", "D"]
+
+        self.predictions = []
+        self.constrained_predictions = []
+        self.targets = []
+        # entries in the vocabulary space restriced to the 4 output options.
+        # space is added (see prompt construction)
+        candidate_token_ids = [
+            tokenizer.encode(" " + answer_choice, add_special_tokens=False)[-1]
+            for answer_choice in choices
+        ]
+
         for i, data in enumerate(dataloader):
             if (i + 1) == self.nbatches:
                 is_last_batch = True
@@ -197,20 +231,42 @@ class extract_activations:
             mask = data["attention_mask"] != 0
             mask = mask.to("cuda")
             batch = data["input_ids"].to("cuda")
-            _ = self.model(batch)
+            targets = data["labels"]
+            outputs = self.model(batch)
 
             if self.world_size > 1:
-                self._gather_and_update_fsdp(mask, is_last_batch)
+                seq_len = self._gather_and_update_fsdp(mask, is_last_batch)
+
             else:
-                self._update_hidden_state(mask.cpu(), is_last_batch)
+                seq_len = self._update_hidden_state(mask.cpu(), is_last_batch)
+
+            # this outputs a (world_size x batch_size) x embedding matrix
+            # for the current implementation recall that when world size > 1 batch size must be ==1.
+            logits, targets = self.gather_logits(outputs.logits, seq_len, targets)
 
             if self.rank == 0:
+
+                logits_targets = logits[:, candidate_token_ids]
+                constrained_prediction_batch = candidate_token_ids[
+                    torch.argmax(logits_targets, dim=-1)
+                ]
+                self.constrained_predictions += (
+                    constrained_prediction_batch.cpu().tolist()
+                )
+                self.targets += targets.cpu().tolist()
+
+                # unconstrained predictions and targets
+                self.predictions += torch.argmax(logits, dim=-1).cpu().tolist()
 
                 if (i + 1) % (self.print_every // self.global_batch_size) == 0:
                     torch.cuda.synchronize()
                     end = time.time()
-                    self.fabric.print(
+                    self.accelerator.print(
                         f"{(i+1)*self.global_batch_size/1000}k data, \
                         batch {i+1}/{self.nbatches}, \
                         tot_time: {(end-start)/60: .3f}min, "
                     )
+
+        self.predictions = torch.tensor(self.predictions)
+        self.constrained_predictions = torch.tensor(self.constrained_predictions)
+        self.targets = torch.tensor(self.targets)
