@@ -1,7 +1,7 @@
-!slurm_runner.py
 env/
 env_amd/
 slurm*
+!slurm_runner.py
 results/
 
 *.pkl
