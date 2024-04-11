@@ -151,6 +151,12 @@ def parse_args():
         default=0,
         help="number_few_shots",
     )
+    parser.add_argument(
+        "--num_samples",
+        type=int,
+        default=None,
+        help="number_few_shots",
+    )
     args = parser.parse_args()
     return args
 
@@ -222,6 +228,7 @@ def main():
         num_few_shots=args.num_few_shots,
         subject=None,
         num_processes=args.preprocessing_num_workers,
+        num_samples=args.num_samples,
     ).construct_dataset()
 
     dataloader = get_dataloader(

@@ -244,20 +244,12 @@ class extract_activations:
             logits, targets = self.gather_logits(outputs.logits, seq_len, targets)
 
             if self.rank == 0:
-                # print(logits)
                 logits = logits.cpu()
-
                 logits_targets = logits[:, candidate_token_ids]
                 constrained_prediction_batch = candidate_token_ids[
                     torch.argmax(logits_targets, dim=-1)
                 ]
-                print(
-                    logits,
-                    candidate_token_ids,
-                    logits_targets,
-                    constrained_prediction_batch,
-                )
-                assert False
+
                 self.constrained_predictions += (
                     constrained_prediction_batch.cpu().tolist()
                 )

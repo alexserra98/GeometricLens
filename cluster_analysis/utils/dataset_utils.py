@@ -39,6 +39,7 @@ class MMLU_Dataset:
         num_few_shots=0,
         subject=None,
         num_processes=1,
+        num_samples=None,
     ):
 
         self.dataset = "mmlu"
@@ -52,6 +53,7 @@ class MMLU_Dataset:
         self.tokenizer = tokenizer
         self.max_seq_len = max_seq_len
         self.num_processes = num_processes
+        self.num_samples = num_samples
 
     def construct_question(self, question, choices, answer, include_answer=False):
         # added strip
@@ -123,26 +125,10 @@ class MMLU_Dataset:
             torch.ones_like(input_ids) for input_ids in tokenized_examples
         ]
 
-        # requires todefine padding here, we create batche in the dataloader
-        # tokenized_examples = tokenizer(
-        #     prompts,
-        #     return_tensors="pt",
-        #     max_length=max_seq_len,
-        #     truncation=False,
-        #     add_special_tokens=False,
-        # ).input_ids
-
-        # tokenized_labels = tokenizer(
-        #     self.answers[answer_indices],
-        #     return_tensors="pt",
-        #     max_length=max_seq_len,
-        #     truncation=False,
-        #     add_special_tokens=False,
-        # ).input_ids
-
         return {
             "prompt": prompts,
             "answers": [self.answers[index] for index in answer_indices],
+            "subjects": subjects,
             "input_ids": tokenized_examples,
             "labels": tokenized_labels,
             "attention_mask": attention_mask,
@@ -154,10 +140,13 @@ class MMLU_Dataset:
         """
         # removed trust remote code
         print("loading dataset")
+        split = "test"
+        if self.num_samples is not None:
+            split = f"test[:{self.num_samples}]"
         if self.subject is not None:
-            dataset = load_dataset("cais/mmlu", self.subject, split="test")
+            dataset = load_dataset("cais/mmlu", self.subject, split=split)
         else:
-            dataset = load_dataset("cais/mmlu", "all", split="test")
+            dataset = load_dataset("cais/mmlu", "all", split=split)
 
         few_shot_dataset = None
         if self.num_few_shots > 0 and self.num_few_shots <= 5:
