@@ -103,6 +103,8 @@ class extract_activations:
                 dist.gather(targets, dst=0)
         else:
             logits = logits[:, seq_len[0] - 1, :]
+
+        print(logits.shape, targets.shape)
         return logits, targets
 
     def _gather_and_update_fsdp(self, mask, is_last_batch):
@@ -231,7 +233,7 @@ class extract_activations:
             mask = data["attention_mask"] != 0
             mask = mask.to("cuda")
             batch = data["input_ids"].to("cuda")
-            targets = data["labels"]
+            targets = data["labels"].to("cuda")
             outputs = self.model(batch)
 
             if self.world_size > 1:
