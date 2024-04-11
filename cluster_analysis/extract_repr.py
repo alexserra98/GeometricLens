@@ -233,7 +233,6 @@ def main():
         shuffle=False,
         num_processes=args.preprocessing_num_workers,
     )
-    print(next(iter(dataloader)))
     # ***********************************************************************
 
     # Put the model on with `accelerator`.

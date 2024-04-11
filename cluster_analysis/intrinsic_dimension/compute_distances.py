@@ -28,7 +28,6 @@ def get_embdims(model, dataloader, target_layers):
             handles[name] = module.register_forward_hook(get_hook(name, embdims))
 
     batch = next(iter(dataloader))
-    print(batch)
     sys.stdout.flush()
     _ = model(batch["input_ids"].to("cuda"))
 
