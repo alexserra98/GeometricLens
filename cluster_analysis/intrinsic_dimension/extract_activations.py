@@ -36,7 +36,6 @@ class extract_activations:
         self.world_size = self.accelerator.num_processes
         self.rank = self.accelerator.process_index
         self.global_batch_size = self.world_size * self.micro_batch_size
-        print(self.print_every, self.global_batch_size)
         self.hidden_size = 0
 
         if self.rank == 0:

@@ -3,16 +3,11 @@ from transformers import AutoConfig, AutoModelForCausalLM, LlamaConfig
 import sys
 
 
-def get_model(
-    model_name_or_path,
-    precision,
-    low_cpu_mem_usage,
-):
+def get_model(model_name_or_path, precision, low_cpu_mem_usage, accelerator):
 
     if model_name_or_path:
         config = AutoConfig.from_pretrained(model_name_or_path)
-        print("model_loading started. \n\n")
-        print(config)
+        accelerator.print("model_loading started. \n\n")
         sys.stdout.flush()
         model = AutoModelForCausalLM.from_pretrained(
             model_name_or_path,

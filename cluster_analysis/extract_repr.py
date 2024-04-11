@@ -202,6 +202,7 @@ def main():
         model_name_or_path=args.checkpoint_dir,
         precision=torch.bfloat16,
         low_cpu_mem_usage=args.low_cpu_mem_usage,
+        accelerator=accelerator,
     )
 
     tokenizer = get_tokenizer(
@@ -248,6 +249,7 @@ def main():
             n_layer=n_layer,
             option=args.target_layer,
             every=args.layer_interval,
+            world_size=accelerator.num_processes,
         )
 
     elif model_name.startswith("mistral"):

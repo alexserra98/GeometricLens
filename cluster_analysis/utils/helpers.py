@@ -2,7 +2,7 @@ import sys
 import torch
 
 
-def get_target_layers_llama(model, n_layer, option="norm1", every=1):
+def get_target_layers_llama(model, n_layer, option="norm1", every=1, world_size=1):
     map_names = dict(
         norm1=".input_layernorm",
         norm2=".post_attention_layernorm",
