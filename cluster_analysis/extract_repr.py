@@ -51,11 +51,6 @@ def parse_args():
         help="Pretrained tokenizer name or path if not the same as model_name",
     )
     parser.add_argument(
-        "--use_flash_attn",
-        action="store_true",
-        help="If passed, will use flash attention to train the model.",
-    )
-    parser.add_argument(
         "--low_cpu_mem_usage",
         action="store_true",
         help=(
@@ -207,7 +202,6 @@ def main():
         model_name_or_path=args.checkpoint_dir,
         precision=torch.bfloat16,
         low_cpu_mem_usage=args.low_cpu_mem_usage,
-        use_flash_attn=args.use_flash_attn,
     )
 
     tokenizer = get_tokenizer(

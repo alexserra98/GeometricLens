@@ -7,7 +7,6 @@ def get_model(
     model_name_or_path,
     precision,
     low_cpu_mem_usage,
-    use_flash_attn,
 ):
 
     if model_name_or_path:
@@ -21,7 +20,7 @@ def get_model(
             config=config,
             low_cpu_mem_usage=low_cpu_mem_usage,
             torch_dtype=precision,
-            use_flash_attention_2=True if use_flash_attn else False,
+            use_flash_attention_2=False,
         )
 
     else:
