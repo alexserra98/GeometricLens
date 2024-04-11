@@ -1,9 +1,10 @@
 from metrics.hidden_states_metrics import HiddenStatesMetrics
-from .utils import  hidden_states_collapse, exact_match
+from .utils import  hidden_states_collapse, exact_match, angular_distance
 from metrics.query import DataFrameQuery
 from common.globals_vars import _NUM_PROC
 
 from .dadapy_handler import DataAdapter
+from dadapy import Data
 from sklearn.metrics import mutual_info_score
 from sklearn.metrics.cluster import adjusted_rand_score, adjusted_mutual_info_score
 
@@ -33,8 +34,8 @@ class PointOverlap(HiddenStatesMetrics):
                               "mutual_info_score":mutual_info_score}
         
         iter_list = [5,10,30,100,500]
-        #iter_list = [30]
-        #iter_list = [100,250,500,1000]
+        iter_list = [5,10,30,100]
+
         rows = []
         for k in tqdm.tqdm(iter_list, desc = "Computing overlaps k"):
             for couples in self.pair_names(self.df["model_name"].unique().tolist()):
@@ -58,9 +59,15 @@ class PointOverlap(HiddenStatesMetrics):
                         
                         hidden_states_i, _, df_i = hidden_states_collapse(self.df,query_i, self.tensor_storage)
                         hidden_states_j, _, df_j = hidden_states_collapse(self.df,query_j, self.tensor_storage)
+
+                        df_i.reset_index(inplace=True)
+                        df_j.reset_index(inplace=True)
+
                         for row_i, row_j in zip(df_i.iterrows(), df_j.iterrows()):
-                            assert row_i["id_instance"].replace("chat-","") == row_j["id_instance"].replace("chat-",""), "The two runs must have the same instances"
-                        if self.variations["point_overlap"] == "cosine":
+                            assert row_i[1]["id_instance"].replace("chat-","")[:-1] == row_j[1]["id_instance"].replace("chat-","")[:-1], "The two runs must have the same instances"
+
+                        #import pdb; pdb.set_trace()
+                        if self.variations["point_overlap"] == "cosine" or self.variations["point_overlap"] == "norm" or self.variations["point_overlap"] == "shared_answers":
                             df_i["exact_match"] = df_i.apply(lambda r: exact_match(r["std_pred"], r["letter_gold"]), axis=1)
                             df_j["exact_match"] = df_j.apply(lambda r: exact_match(r["std_pred"], r["letter_gold"]), axis=1)
                             # find the index of rows that have "exact_match" True in both df_i and df_j
@@ -153,7 +160,6 @@ class PointOverlap(HiddenStatesMetrics):
         assert data_i.shape[1] == data_j.shape[1], "The two runs must have the same number of layers"
         number_of_layers = data_i.shape[1]
         process_layer = partial(self.process_layer, data_i = data_i, data_j = data_j, k=k) 
-        print(f"Variation: {self.variations['overlap']} active")
         with Parallel(n_jobs=_NUM_PROC) as parallel:
             results = parallel(delayed(process_layer)(layer) for layer in range(number_of_layers))
         #results = []
@@ -174,12 +180,17 @@ class PointOverlap(HiddenStatesMetrics):
         if self.variations["point_overlap"] == "norm":   
             data_i = data_i/np.linalg.norm(data_i,axis=1,keepdims=True)
             data_j = data_j/np.linalg.norm(data_j,axis=1,keepdims=True)
-        
-        data = DataAdapter(data_i, variation=self.variations["point_overlap"], maxk=k)
+        elif self.variations["point_overlap"] == "cosine":
+            distances_i = angular_distance(data_i)
+            distances_j = angular_distance(data_j)
+            data = Data(coordinates=data_i,distances=distances_i,maxk=k)
+            overlap = data.return_data_overlap(data_j,distances=distances_j,k=k)
+        else:
+            overlap = data.return_data_overlap(data_j,k=k)
+        #data = DataAdapter(data_i, variation=self.variations["point_overlap"], maxk=k)
         #warnings.filterwarnings("ignore")
         #data.compute_distances(maxk=k)
         #print(f'{k} -- {data_j[:,layer,:]}')
-        overlap = data.return_data_overlap(data_j,k=k)
         return overlap
     
     

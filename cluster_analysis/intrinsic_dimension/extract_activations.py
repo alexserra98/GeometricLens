@@ -36,7 +36,7 @@ class extract_activations:
         self.world_size = self.accelerator.num_processes
         self.rank = self.accelerator.process_index
         self.global_batch_size = self.world_size * self.micro_batch_size
-
+        print(self.print_every, self.global_batch_size)
         self.hidden_size = 0
 
         if self.rank == 0:
@@ -101,8 +101,7 @@ class extract_activations:
                 dist.gather(logits[:, seq_len[self.rank] - 1, :], dst=0)
                 dist.gather(targets, dst=0)
         else:
-            logits = logits[:, seq_len - 1, :]
-
+            logits = logits[:, seq_len[0] - 1, :]
         return logits, targets
 
     def _gather_and_update_fsdp(self, mask, is_last_batch):
@@ -219,10 +218,10 @@ class extract_activations:
         self.targets = []
         # entries in the vocabulary space restriced to the 4 output options.
         # space is added (see prompt construction)
-        candidate_token_ids = [
-            tokenizer.encode(" " + answer_choice, add_special_tokens=False)[-1]
-            for answer_choice in choices
-        ]
+
+        candidate_token_ids = tokenizer(
+            choices, add_special_tokens=False, return_tensors="pt"
+        ).input_ids.flatten()
 
         for i, data in enumerate(dataloader):
             if (i + 1) == self.nbatches:
@@ -245,11 +244,12 @@ class extract_activations:
             logits, targets = self.gather_logits(outputs.logits, seq_len, targets)
 
             if self.rank == 0:
-
+                logits = logits.cpu()
                 logits_targets = logits[:, candidate_token_ids]
                 constrained_prediction_batch = candidate_token_ids[
                     torch.argmax(logits_targets, dim=-1)
                 ]
+
                 self.constrained_predictions += (
                     constrained_prediction_batch.cpu().tolist()
                 )

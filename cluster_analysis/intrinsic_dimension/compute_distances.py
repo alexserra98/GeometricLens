@@ -9,6 +9,7 @@ from intrinsic_dimension.extract_activations import extract_activations
 from transformers import PreTrainedModel, LlamaTokenizer
 import sys
 from accelerate import Accelerator
+import pickle
 
 
 def get_embdims(model, dataloader, target_layers):
@@ -39,17 +40,18 @@ def get_embdims(model, dataloader, target_layers):
     return embdims, dtypes
 
 
-def compute_accuracy(predictions, ground_truths, tokenizer):
+def compute_accuracy(predictions, answers):
 
     # ground_truths is an array of letters, without trailing spaces
     # predictions is an array of tokens
-    assert predictions.shape[0] == ground_truths.shape[0]
 
     # we remove spaces in from of the letters
-    string_predictions = tokenizer.batch_decode(predictions).strip()
-    is_correct = string_predictions == ground_truths
-    exact_match = np.mean(is_correct)
-    return exact_match
+    tot_ans = len(predictions)
+    num_correct = 0
+    for pred, ans in zip(predictions, answers):
+        if pred == ans:
+            num_correct += 1
+    return num_correct / tot_ans
 
 
 @torch.inference_mode()
@@ -94,30 +96,48 @@ def compute_id(
         use_last_token=use_last_token,
         print_every=print_every,
     )
-    extr_act.extract(dataloader)
-    accelerator.print(f"num_tokens: {extr_act.tot_tokens/10**3}k")
+    extr_act.extract(dataloader, tokenizer)
+    accelerator.print(f"num_tokens: {extr_act.hidden_size/10**3}k")
     accelerator.print((time.time() - start) / 3600, "hours")
 
     if accelerator.is_main_process:
 
-        act_dict = extr_act.hidden_states
         predictions = extr_act.predictions
-        constrained_predictions = extr_act.predictions
-
+        constrained_predictions = extr_act.constrained_predictions
         processed_labels = extr_act.targets
+
         ground_truths = dataloader.dataset["labels"]
         assert torch.all(ground_truths == processed_labels), (
             processed_labels,
             ground_truths,
         )
 
-        acc_pred = compute_accuracy(predictions, ground_truths, tokenizer)
-        acc_costrained = compute_accuracy(
-            constrained_predictions, ground_truths, tokenizer
+        answers = dataloader.dataset["answers"]
+
+        answers = np.array([ans.strip() for ans in answers])
+        predictions = np.array([tokenizer.decode(pred).strip() for pred in predictions])
+        constrained_predictions = np.array(
+            [tokenizer.decode(pred).strip() for pred in constrained_predictions]
         )
-        accelerator.print("exact_match constrained:", acc_costrained)
+
+        acc_pred = compute_accuracy(predictions, answers)
+        acc_constrained = compute_accuracy(constrained_predictions, answers)
+        accelerator.print("exact_match constrained:", acc_constrained)
         accelerator.print("exact_match:", acc_pred)
 
+        statistics = {
+            "subjects": dataloader.dataset["subjects"],
+            "answers": answers,
+            "predictions": predictions,
+            "contrained_predictions": constrained_predictions,
+            "accuracy": acc_pred,
+            "constrained_accuracy": acc_constrained,
+        }
+
+        with open(f"{dirpath}/statistics.pkl", "wb") as f:
+            pickle.dump(statistics, f)
+
+        act_dict = extr_act.hidden_states
         for i, (layer, act) in enumerate(act_dict.items()):
             if save_repr:
                 torch.save(act, f"{dirpath}/l{target_layer_labels[i]}{filename}.pt")

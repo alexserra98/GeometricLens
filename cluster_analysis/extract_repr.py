@@ -77,11 +77,14 @@ def parse_args():
     parser.add_argument(
         "--micro_batch_size",
         type=int,
-        default=1,
+        default=4,
         help="Batch size (per device) for the training dataloader.",
     )
     parser.add_argument(
-        "--out_dir", type=str, default=None, help="Where to store the final model."
+        "--out_dir",
+        type=str,
+        default="./results",
+        help="Where to store the final model.",
     )
     parser.add_argument(
         "--out_filename", type=str, default="", help="Where to store the final model."
@@ -98,7 +101,7 @@ def parse_args():
     parser.add_argument(
         "--logging_steps",
         type=int,
-        default=None,
+        default=100,
         help="Print every logging_steps samples processed.",
     )
     parser.add_argument(
@@ -149,6 +152,12 @@ def parse_args():
         "--num_few_shots",
         type=int,
         default=0,
+        help="number_few_shots",
+    )
+    parser.add_argument(
+        "--num_samples",
+        type=int,
+        default=None,
         help="number_few_shots",
     )
     args = parser.parse_args()
@@ -222,6 +231,7 @@ def main():
         num_few_shots=args.num_few_shots,
         subject=None,
         num_processes=args.preprocessing_num_workers,
+        num_samples=args.num_samples,
     ).construct_dataset()
 
     dataloader = get_dataloader(

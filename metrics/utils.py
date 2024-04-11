@@ -169,3 +169,18 @@ class HiddenPrints:
     def __exit__(self, exc_type, exc_val, exc_tb):
         sys.stdout.close()
         sys.stdout = self._original_stdout
+
+def angular_distance(mat):
+    """
+    Computes distance based on angles between vectors, over the rows of the matrix
+    """
+    dot_product = mat @ mat.T
+    norm_vector = np.linalg.norm(mat, axis=1)
+    stacked_vector = np.tile(norm_vector, (100, 1))
+    norm_product = stacked_vector.T*stacked_vector
+
+    cosine_similarity = dot_product / norm_product
+    cosine_similarity = np.clip(cosine_similarity, -1, 1)
+    distances = np.arccos(cosine_similarity) / np.pi
+    distances.sort(axis=1)
+    return mat
