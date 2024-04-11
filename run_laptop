@@ -12,4 +12,4 @@ accelerate launch \
     --micro_batch_size 1 \
     --preprocessing_num_workers 16 \
     --model_name 'llama' \
-    --out_dir '.'
+    --out_dir './results'

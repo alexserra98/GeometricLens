@@ -134,7 +134,7 @@ def compute_id(
             "constrained_accuracy": acc_constrained,
         }
 
-        with open(f"{dirpath}/statistics", "wb") as f:
+        with open(f"{dirpath}/statistics.pkl", "wb") as f:
             pickle.dump(statistics, f)
 
         act_dict = extr_act.hidden_states

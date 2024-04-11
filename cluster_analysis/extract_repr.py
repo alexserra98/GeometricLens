@@ -81,7 +81,10 @@ def parse_args():
         help="Batch size (per device) for the training dataloader.",
     )
     parser.add_argument(
-        "--out_dir", type=str, default=None, help="Where to store the final model."
+        "--out_dir",
+        type=str,
+        default="./results",
+        help="Where to store the final model.",
     )
     parser.add_argument(
         "--out_filename", type=str, default="", help="Where to store the final model."
