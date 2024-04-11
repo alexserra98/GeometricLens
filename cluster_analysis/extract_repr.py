@@ -248,6 +248,7 @@ def main():
             n_layer=n_layer,
             option=args.target_layer,
             every=args.layer_interval,
+            world_size=accelerator.num_processes
         )
 
     elif model_name.startswith("mistral"):

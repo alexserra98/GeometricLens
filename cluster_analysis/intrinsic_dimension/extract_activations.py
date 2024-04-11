@@ -4,6 +4,7 @@ import numpy as np
 from collections import defaultdict
 import torch.distributed as dist
 import psutil
+import sys
 
 rng = np.random.default_rng(42)
 # ***************************************************
@@ -36,7 +37,6 @@ class extract_activations:
         self.world_size = self.accelerator.num_processes
         self.rank = self.accelerator.process_index
         self.global_batch_size = self.world_size * self.micro_batch_size
-        print(self.print_every, self.global_batch_size)
         self.hidden_size = 0
 
         if self.rank == 0:
@@ -266,6 +266,7 @@ class extract_activations:
                         batch {i+1}/{self.nbatches}, \
                         tot_time: {(end-start)/60: .3f}min, "
                     )
+                    sys.stdout.flush()
 
         self.predictions = torch.tensor(self.predictions)
         self.constrained_predictions = torch.tensor(self.constrained_predictions)
