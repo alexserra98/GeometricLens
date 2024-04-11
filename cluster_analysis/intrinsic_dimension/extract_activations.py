@@ -91,14 +91,15 @@ class extract_activations:
                     for _ in range(self.world_size)
                 ]
                 target_list = [
-                    torch.zeros_like(targets, device="cuda", dtype=logits.dtype)
+                    torch.zeros_like(targets, device="cuda", dtype=targets.dtype)
                     for _ in range(self.world_size)
                 ]
+                
 
-                dist.gather(logits[:, seq_len[self.rank] - 1, :], states_list, dst=0)
+                dist.gather(logits[:, seq_len[self.rank][0] - 1, :], states_list, dst=0)
                 dist.gather(targets, target_list, dst=0)
             else:
-                dist.gather(logits[:, seq_len[self.rank] - 1, :], dst=0)
+                dist.gather(logits[:, seq_len[self.rank][0] - 1, :], dst=0)
                 dist.gather(targets, dst=0)
         else:
             logits = logits[:, seq_len[0] - 1, :]

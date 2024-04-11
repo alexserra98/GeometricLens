@@ -11,14 +11,14 @@ def get_target_layers_llama(model, n_layer, option="norm1", every=1, world_size 
     suffix = map_names[option]
     names = [name for name, _ in model.named_modules()]
     
-    prefix = 'model'
+    prefix = ''
     if world_size > 1:
-        prefix = 'module.model'
+        prefix = 'module.'
 
-    target_layers = {i: f"{prefix}.layers.{i}{suffix}" for i in range(0, n_layer, every)}
-    target_layers[-1] = f"{prefix}.embed_tokens"
-    target_layers[n_layer] = f"{prefix}.norm"
-    target_layers[n_layer + 1] = f"{prefix}.lm_head"
+    target_layers = {i: f"{prefix}model.layers.{i}{suffix}" for i in range(0, n_layer, every)}
+    target_layers[-1] = f"{prefix}model.embed_tokens"
+    target_layers[n_layer] = f"{prefix}model.norm"
+    target_layers[n_layer + 1] = f"{prefix}lm_head"
 
     for target_layer in target_layers.values():
         assert target_layer in names, (target_layer, names)
