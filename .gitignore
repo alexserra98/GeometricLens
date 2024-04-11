@@ -1,3 +1,4 @@
+!slurm_runner.py
 env/
 env_amd/
 slurm*
