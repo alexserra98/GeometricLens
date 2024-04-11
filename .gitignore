@@ -1,3 +1,4 @@
+env/
 env_amd/
 slurm*
 results/

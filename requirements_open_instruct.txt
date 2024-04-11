@@ -1,12 +1,9 @@
 torch
 scipy
-packaging
 sentencepiece
 datasets<=2.17.0  # 2.18.0 throws many warnings and caching seems not working in distributed setup
-accelerate>=0.21.0,<0.23.0  # 0.23.0 will cause an incorrect learning rate schedule when using deepspeed, which is likely caused by https://github.com/huggingface/accelerate/commit/727d624322c67db66a43c559d8c86414d5ffb537
-evaluate>=0.4.0
+accelerate
 tokenizers
-protobuf
 # Transformers library (v4.34.0) still has a bug for left padding, 
 # and significantly affect the inference and thus our evaluation performance (e.g., MMLU and TruthfulQA).
 # Follwing PR is a temporary fix for it but has not been merged yet.

@@ -1,4 +1,4 @@
-conda activate open_instruct
+conda activate ./env
 
 
 accelerate launch \
