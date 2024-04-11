@@ -162,6 +162,7 @@ def compute_id(
             sys.stdout.flush()
 
             n_samples = act.shape[0]
+            print(n_samples)
             range_scaling = min(1050, n_samples - 1)
             maxk = min(maxk, n_samples - 1)
 

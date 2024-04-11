@@ -36,6 +36,7 @@ class MMLU_Dataset:
         self,
         tokenizer,
         max_seq_len,
+        accelerator,
         num_few_shots=0,
         subject=None,
         num_processes=1,
@@ -54,6 +55,7 @@ class MMLU_Dataset:
         self.max_seq_len = max_seq_len
         self.num_processes = num_processes
         self.num_samples = num_samples
+        self.accelerator = accelerator
 
     def construct_question(self, question, choices, answer, include_answer=False):
         # added strip
@@ -139,7 +141,7 @@ class MMLU_Dataset:
         Construct the request instances for the scenario
         """
         # removed trust remote code
-        print("loading dataset")
+        self.accelerator.print("loading dataset")
         split = "test"
         if self.num_samples is not None:
             split = f"test[:{self.num_samples}]"
@@ -161,7 +163,7 @@ class MMLU_Dataset:
             max_seq_len=self.max_seq_len,
             num_few_shots=self.num_few_shots,
         )
-        print("tokenization started")
+        self.accelerator.print("tokenization started")
         sys.stdout.flush()
         tokenized_dataset = dataset.map(
             encode_function,
@@ -171,7 +173,7 @@ class MMLU_Dataset:
             load_from_cache_file=False,
         )
 
-        print("tokenization finished")
+        self.accelerator.print("tokenization finished")
         sys.stdout.flush()
 
         # remove examples loger than max seq len maybe not necessary at all

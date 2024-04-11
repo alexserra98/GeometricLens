@@ -4,6 +4,7 @@ import numpy as np
 from collections import defaultdict
 import torch.distributed as dist
 import psutil
+import sys
 
 rng = np.random.default_rng(42)
 # ***************************************************
@@ -265,6 +266,7 @@ class extract_activations:
                         batch {i+1}/{self.nbatches}, \
                         tot_time: {(end-start)/60: .3f}min, "
                     )
+                    sys.stdout.flush()
 
         self.predictions = torch.tensor(self.predictions)
         self.constrained_predictions = torch.tensor(self.constrained_predictions)
