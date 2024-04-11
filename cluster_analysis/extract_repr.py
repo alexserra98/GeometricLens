@@ -19,7 +19,7 @@ from utils.tokenizer_utils import get_tokenizer
 from intrinsic_dimension.compute_distances import compute_id
 import torch
 import os
-
+from utils.helpers import print_memory_consumed
 
 # # Get the current directory (root directory of the package)
 # current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -242,7 +242,9 @@ def main():
     # ***********************************************************************
 
     # Put the model on with `accelerator`.
+    print_memory_consumed(accelerator.process_index)
     model = accelerator.prepare(model)
+    print_memory_consumed(accelerator.process_index)
 
     if model_name.startswith("llama"):
         target_layers = get_target_layers_llama(
