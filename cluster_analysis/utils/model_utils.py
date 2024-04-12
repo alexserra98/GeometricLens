@@ -28,7 +28,7 @@ def get_model(model_name_or_path, precision, low_cpu_mem_usage, accelerator):
         config.hidden_size = 500
         model = AutoModelForCausalLM.from_config(config)
 
-    print("model loading finished. \n\n")
+    accelerator.print("model loading finished. \n\n")
     sys.stdout.flush()
 
     return model
