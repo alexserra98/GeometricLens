@@ -86,7 +86,7 @@ class extract_activations:
         if self.world_size > 1:
             if self.rank == 0:
                 # gather the logits to rank 0
-                states_list = [
+                logit_list = [
                     torch.zeros((1, embdim), device="cuda", dtype=logits.dtype)
                     for _ in range(self.world_size)
                 ]
@@ -94,17 +94,17 @@ class extract_activations:
                     torch.zeros_like(targets, device="cuda", dtype=targets.dtype)
                     for _ in range(self.world_size)
                 ]
-                
-
-                dist.gather(logits[:, seq_len[self.rank][0] - 1, :], states_list, dst=0)
+                dist.gather(logits[:, seq_len[self.rank][0] - 1, :], logit_list, dst=0)
                 dist.gather(targets, target_list, dst=0)
+
+                logits = torch.cat(logit_list,dim = 0)
+                targets = torch.cat(target_list, dim = 0)
             else:
                 dist.gather(logits[:, seq_len[self.rank][0] - 1, :], dst=0)
                 dist.gather(targets, dst=0)
         else:
             logits = logits[:, seq_len[0] - 1, :]
 
-        print(logits.shape, targets.shape)
         return logits, targets
 
     def _gather_and_update_fsdp(self, mask, is_last_batch):
