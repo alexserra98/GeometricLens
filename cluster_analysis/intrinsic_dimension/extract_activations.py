@@ -84,6 +84,8 @@ class extract_activations:
 
         _, _, embdim = logits.shape
         if self.world_size > 1:
+
+            assert seq_len.shape[0] == 1, "batch_size must be 1 when world size >1 "
             if self.rank == 0:
                 # gather the logits to rank 0
                 logit_list = [
@@ -94,16 +96,17 @@ class extract_activations:
                     torch.zeros_like(targets, device="cuda", dtype=targets.dtype)
                     for _ in range(self.world_size)
                 ]
-                dist.gather(logits[:, seq_len[self.rank][0] - 1, :], logit_list, dst=0)
+                dist.gather(logits[:, seq_len[0] - 1, :], states_list, dst=0)
                 dist.gather(targets, target_list, dst=0)
 
                 logits = torch.cat(logit_list,dim = 0)
                 targets = torch.cat(target_list, dim = 0)
             else:
-                dist.gather(logits[:, seq_len[self.rank][0] - 1, :], dst=0)
+                dist.gather(logits[:, seq_len[0] - 1, :], dst=0)
                 dist.gather(targets, dst=0)
         else:
-            logits = logits[:, seq_len[0] - 1, :]
+            assert seq_len.shape[0] == logits.shape[0]
+            logits = logits[torch.arange(logits.shape[0]), seq_len - 1, :]
 
         return logits, targets
 
@@ -151,7 +154,7 @@ class extract_activations:
         if self.rank == 0:
             self.hidden_size += num_current_tokens
 
-        return seq_len_list
+        return torch.cat(seq_len_list, dim=0)
 
     def _update_hidden_state_fsdp(self, states_list, seq_len_list, name, is_last_batch):
         if self.use_last_token:
@@ -244,6 +247,7 @@ class extract_activations:
 
             # this outputs a (world_size x batch_size) x embedding matrix
             # for the current implementation recall that when world size > 1 batch size must be ==1.
+            seq_len = torch.sum(mask, dim = 1)
             logits, targets = self.gather_logits(outputs.logits, seq_len, targets)
 
             if self.rank == 0:
