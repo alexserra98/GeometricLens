@@ -277,8 +277,7 @@ class extract_activations:
 
             seq_len = torch.sum(mask, dim=1)
             logits, targets = self.all_gather_logits(outputs.logits, targets, seq_len)
-            logits.cpu()
-            targets.cpu()
+            logits, targets = logits.cpu(), targets.cpu()
 
             if self.rank == 0:
                 logits_targets = logits[:, candidate_token_ids]
