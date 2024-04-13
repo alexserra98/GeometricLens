@@ -172,15 +172,16 @@ def main():
     # If we're using tracking, we also need to initialize it here and it will by default pick up all supported trackers
     # in the environment
 
-    # fsdp_plugin = FullyShardedDataParallelPlugin(
-    #     auto_wrap_policy=
-    #     mixed_precision_policy=
-    #     cpu_offload=False
-    #     state_dict_config=FullStateDictConfig(offload_to_cpu=False, rank0_only=False),
-    #     optim_state_dict_config=FullOptimStateDictConfig(
-    #         offload_to_cpu=False, rank0_only=False
-    #     ),
-    # )
+    os.environ["ACCELERATE_MIXED_PRECISION"] = "bf16"
+    os.environ["ACCELERATE_USE_FSDP"] = "True"
+
+    os.environ["FSDP_SHRDING_STRATEGY"] = "FULL_SHARD"
+    os.environ["FSDP_AUTO_WRAP_POLICY"] = "TRANSFORMER_BASED_WRAP"
+    os.environ["FSDP_TRANSFORMER_CLS_TO_WRAP"] = "LlamaDecoderLayer"
+
+    os.environ["FSDP_BACKWARD_PREFETCH"] = "BACKWARD_PRE"
+    os.environ["FSDP_STATE_DICT_TYPE"] = "SHARDED_STATE_DICT"
+    os.environ["FSDP_OFFLOAD_PARAMS"] = "False"
 
     accelerator = Accelerator()
 
@@ -248,7 +249,6 @@ def main():
         num_processes=args.preprocessing_num_workers,
         num_samples=args.num_samples,
     ).construct_dataset()
-    
 
     dataloader = get_dataloader(
         dataset,
