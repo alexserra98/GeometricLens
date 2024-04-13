@@ -22,6 +22,9 @@ accelerate launch \
     --mixed_precision bf16 \
     --num_machines 1 \
     --num_processes 1 \
+    --dynamo_backend no \
+    --use_fsdp \
+    --config_file fsdp.conf \
     cluster_analysis/extract_repr.py \
     --checkpoint_dir  "/u/area/ddoimo/ddoimo/llama/llama_v2/models_hf/llama-2-7b" \
     --use_slow_tokenizer \

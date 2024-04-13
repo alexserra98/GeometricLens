@@ -21,6 +21,13 @@ import torch
 import os
 from utils.helpers import print_memory_consumed
 
+from accelerate import FullyShardedDataParallelPlugin
+from torch.distributed.fsdp.fully_sharded_data_parallel import (
+    FullOptimStateDictConfig,
+    FullStateDictConfig,
+)
+
+
 # # Get the current directory (root directory of the package)
 # current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -165,7 +172,19 @@ def main():
     # If we're using tracking, we also need to initialize it here and it will by default pick up all supported trackers
     # in the environment
 
+    # fsdp_plugin = FullyShardedDataParallelPlugin(
+    #     auto_wrap_policy=
+    #     mixed_precision_policy=
+    #     cpu_offload=False
+    #     state_dict_config=FullStateDictConfig(offload_to_cpu=False, rank0_only=False),
+    #     optim_state_dict_config=FullOptimStateDictConfig(
+    #         offload_to_cpu=False, rank0_only=False
+    #     ),
+    # )
+
     accelerator = Accelerator()
+
+    # accelerator = Accelerator()
     # Make one log on every process with the configuration for debugging.
     logging.basicConfig(
         format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
@@ -255,6 +274,7 @@ def main():
     # Put the model on with `accelerator`.
     print_memory_consumed(accelerator.process_index)
     model = accelerator.prepare(model)
+    accelerator.print("model loaded")
     print_memory_consumed(accelerator.process_index)
 
     if model_name.startswith("llama"):
