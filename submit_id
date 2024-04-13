@@ -27,10 +27,11 @@ accelerate launch \
     --micro_batch_size 1 \
     --out_dir "./results" \
     --logging_steps 1000 \
-    --layer_interval 2 \
+    --layer_interval 1 \
     --num_few_shots 0 \
     --save_distances --save_repr \
     --remove_duplicates \
-    --use_last_token
+    --use_last_token \
+    --filename '2gpu'
 
 
