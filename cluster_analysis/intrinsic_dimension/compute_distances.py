@@ -102,17 +102,18 @@ def compute_id(
 
     if accelerator.is_main_process:
 
-        predictions = extr_act.predictions
-        constrained_predictions = extr_act.constrained_predictions
-        processed_labels = extr_act.targets
+        predictions = extr_act.predictions  # tokens
+        constrained_predictions = extr_act.constrained_predictions  # tokens
+        processed_labels = extr_act.targets  # tokens
 
-        ground_truths = dataloader.dataset["labels"]
+        answers = dataloader.dataset["answers"]  # letters
+        ground_truths = dataloader.dataset["labels"]  # tokens
+
+        # check
         assert torch.all(ground_truths == processed_labels), (
             processed_labels,
             ground_truths,
         )
-
-        answers = dataloader.dataset["answers"]
 
         answers = np.array([ans.strip() for ans in answers])
         predictions = np.array([tokenizer.decode(pred).strip() for pred in predictions])
@@ -137,8 +138,8 @@ def compute_id(
         with open(f"{dirpath}/statistics.pkl", "wb") as f:
             pickle.dump(statistics, f)
 
+        # dictionary containing the representation
         act_dict = extr_act.hidden_states
-
         if save_repr:
             for i, (layer, act) in enumerate(act_dict.items()):
                 torch.save(act, f"{dirpath}/l{target_layer_labels[i]}{filename}.pt")
@@ -146,6 +147,8 @@ def compute_id(
         if save_distances:
             for i, (layer, act) in enumerate(act_dict.items()):
 
+                accelerator.print(act.shape)
+                accelerator.print(act.shape)
                 act = act.to(torch.float64).numpy()
 
                 save_backward_indices = False
