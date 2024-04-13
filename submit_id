@@ -19,9 +19,6 @@ source /u/area/ddoimo/anaconda3/bin/activate ./env_amd
 export OMP_NUM_THREADS=32
 
 
-accelerate config
-#accelerate launch \
-#    --config_file fsdp.conf \
 torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
        	--nnodes=1  --nproc-per-node=2 \
     cluster_analysis/extract_repr.py \
@@ -36,6 +33,6 @@ torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
     --save_distances --save_repr \
     --remove_duplicates \
     --use_last_token \
-    --filename '2gpu'
+    --out_filename '2gpu'
 
 

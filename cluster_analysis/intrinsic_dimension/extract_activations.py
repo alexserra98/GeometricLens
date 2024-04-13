@@ -276,7 +276,7 @@ class extract_activations:
             # logits, targets = self.all_gather_logits(outputs.logits, seq_len, targets)
 
             seq_len = torch.sum(mask, dim=1)
-            logits, targets = self.all_gather_logits(logits, targets, seq_len)
+            logits, targets = self.all_gather_logits(outputs.logits, targets, seq_len)
             logits.cpu()
             targets.cpu()
 
