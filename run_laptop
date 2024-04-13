@@ -9,7 +9,7 @@ accelerate launch \
     --use_slow_tokenizer \
     --num_few_shots 0 \
     --num_samples 200 \
-    --micro_batch_size 1 \
+    --micro_batch_size 2 \
     --preprocessing_num_workers 16 \
     --model_name 'llama' \
     --out_dir './results'

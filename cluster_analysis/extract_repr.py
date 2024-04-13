@@ -245,6 +245,16 @@ def main():
         shuffle=False,
         num_processes=args.preprocessing_num_workers,
     )
+
+    # instance = next(iter(dataloader))
+    # tokens = instance["input_ids"][0]
+    # labels = instance["labels"][0]
+    # prompt = dataloader.dataset["prompt"][0]
+    # answers = dataloader.dataset["answers"][0]
+    # print(repr(prompt), repr(answers))
+    # print(tokens)
+    # print(labels)
+    # assert False
     # ***********************************************************************
 
     # Put the model on with `accelerator`.

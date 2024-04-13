@@ -49,13 +49,20 @@ class MMLU_Dataset:
             self.dataset = f"mmlu:{self.subject}"
         # we add space because the prompt format ends with ":" without a space.
         # comparing the answers in the token space requires this construction.
-        self.answers = np.array([" A", " B", " C", " D"])
+        self.answers = np.array(["A", "B", "C", "D"])
         self.num_few_shots = num_few_shots
         self.tokenizer = tokenizer
         self.max_seq_len = max_seq_len
         self.num_processes = num_processes
         self.num_samples = num_samples
         self.accelerator = accelerator
+
+    def format_subject(self, subject):
+        l = subject.split("_")
+        s = ""
+        for entry in l:
+            s += " " + entry
+        return s
 
     def construct_question(self, question, choices, answer, include_answer=False):
         # added strip
@@ -87,7 +94,7 @@ class MMLU_Dataset:
                 )
 
         for i, question in enumerate(questions):
-            prompt = f"The following are multiple choice questions (with answers) about {subjects[i]}.\n\n"
+            prompt = f"The following are multiple choice questions (with answers) about{self.format_subject(subjects[i])}.\n\n"
             current_subject = subjects[i]
             for j in range(num_few_shots):
                 shot = local_dev_set[current_subject][j]
