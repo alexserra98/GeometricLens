@@ -22,13 +22,16 @@ accelerate launch \
     --mixed_precision bf16 \
     --num_machines 1 \
     --num_processes 1 \
+    --dynamo_backend no \
+    --use_fsdp \
+    --config fsdp.conf \
     cluster_analysis/extract_repr.py \
     --checkpoint_dir  "/u/area/ddoimo/ddoimo/llama/llama_v2/models_hf/llama-2-7b" \
     --use_slow_tokenizer \
     --preprocessing_num_workers 16 \
     --micro_batch_size 1 \
     --out_dir "./results" \
-    --logging_steps 500 \
+    --logging_steps 1000 \
     --layer_interval 2 \
     --num_few_shots 0 \
     --num_samples 5000 \
