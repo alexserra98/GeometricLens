@@ -18,8 +18,12 @@ source /u/area/ddoimo/anaconda3/bin/activate ./env_amd
 
 export OMP_NUM_THREADS=32
 
-accelerate launch \
-    --config_file fsdp.conf \
+
+accelerate config
+#accelerate launch \
+#    --config_file fsdp.conf \
+torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
+       	--nnodes=1  --nproc-per-node=2 \
     cluster_analysis/extract_repr.py \
     --checkpoint_dir  "/u/area/ddoimo/ddoimo/llama/llama_v2/models_hf/llama-2-7b" \
     --use_slow_tokenizer \
