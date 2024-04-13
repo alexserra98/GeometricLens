@@ -231,11 +231,6 @@ def main():
     ).construct_dataset()
     
 
-    print(repr(dataset['prompt'][0])
-
-    print(dataset['input_ids'][0])
-
-    assert False
     dataloader = get_dataloader(
         dataset,
         args.micro_batch_size,
