@@ -80,6 +80,31 @@ class extract_activations:
 
         return hook_fn
 
+    def all_gather_logits(self, logits, targets, seq_len):
+
+        _, _, embdim = logits.shape
+        if self.world_size > 1:
+            # gather the logits to rank 0
+            logit_list = [
+                torch.zeros((1, embdim), device="cuda", dtype=logits.dtype)
+                for _ in range(self.world_size)
+            ]
+            target_list = [
+                torch.zeros_like(targets, device="cuda", dtype=targets.dtype)
+                for _ in range(self.world_size)
+            ]
+            # seq_len_list = [torch.zeros_like(seq_len) for _ in range(self.world_size)]
+            # dist.all_gather(seq_len_list, seq_len)
+            dist.all_gather(logit_list, logits[:, seq_len[0] - 1, :])
+            dist.all_gather(target_list, targets)
+            logits = torch.cat(logit_list, dim=0)
+            targets = torch.cat(target_list, dim=0)
+        else:
+            assert logits.shape[0] == seq_len.shape[0]
+            logits = logits[torch.arange(logits.shape[0]), seq_len - 1, :]
+
+        return logits, targets
+
     def gather_logits(self, logits, seq_len, targets):
 
         _, _, embdim = logits.shape
@@ -247,11 +272,15 @@ class extract_activations:
 
             # this outputs a (world_size x batch_size) x embedding matrix
             # for the current implementation recall that when world size > 1 batch size must be ==1.
+            # seq_len = torch.sum(mask, dim=1)
+            # logits, targets = self.all_gather_logits(outputs.logits, seq_len, targets)
+
             seq_len = torch.sum(mask, dim=1)
-            logits, targets = self.gather_logits(outputs.logits, seq_len, targets)
+            logits, targets = self.all_gather_logits(logits, targets, seq_len)
+            logits.cpu()
+            targets.cpu()
 
             if self.rank == 0:
-                logits = logits.cpu()
                 logits_targets = logits[:, candidate_token_ids]
                 constrained_prediction_batch = candidate_token_ids[
                     torch.argmax(logits_targets, dim=-1)
