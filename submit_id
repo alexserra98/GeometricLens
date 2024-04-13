@@ -5,9 +5,9 @@
 #SBATCH --time=6:00:00            
 #SBATCH --ntasks-per-node=1       
 #SBATCH --cpus-per-task=32           
-#SBATCH --mem=80G                
+#SBATCH --mem=100G                
 #SBATCH --job-name=test
-#SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:2
 
 source /etc/profile.d/modules.sh
 module use /opt/nvidia/hpc_sdk/modulefiles/
@@ -19,11 +19,6 @@ source /u/area/ddoimo/anaconda3/bin/activate ./env_amd
 export OMP_NUM_THREADS=32
 
 accelerate launch \
-    --mixed_precision bf16 \
-    --num_machines 1 \
-    --num_processes 1 \
-    --dynamo_backend no \
-    --use_fsdp \
     --config_file fsdp.conf \
     cluster_analysis/extract_repr.py \
     --checkpoint_dir  "/u/area/ddoimo/ddoimo/llama/llama_v2/models_hf/llama-2-7b" \
@@ -34,7 +29,6 @@ accelerate launch \
     --logging_steps 1000 \
     --layer_interval 2 \
     --num_few_shots 0 \
-    --num_samples 5000 \
     --save_distances --save_repr \
     --remove_duplicates \
     --use_last_token
