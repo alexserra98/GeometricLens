@@ -12,15 +12,16 @@ def get_target_layers_llama(model, n_layer, option="norm1", every=1, world_size=
     names = [name for name, _ in model.named_modules()]
 
     prefix = "module."
-    middle=""
-    sys.stdout.flush()
+    middle = ""
     if world_size > 1:
         prefix = "_fsdp_wrapped_module."
         if map_names[option] != "":
-            middle =  "._fsdp_wrapped_module"
-    
-    target_layers = {i: f"{prefix}model.layers.{i}{middle}{suffix}" for i in range(0, n_layer, every)}
-    target_layers[-1] = f"{prefix}model.embed_tokens"
+            middle = "._fsdp_wrapped_module"
+
+    target_layers = {
+        i: f"{prefix}model.layers.{i}{middle}{suffix}" for i in range(0, n_layer, every)
+    }
+
     target_layers[n_layer] = f"{prefix}model.norm"
     target_layers[n_layer + 1] = f"{prefix}lm_head"
 

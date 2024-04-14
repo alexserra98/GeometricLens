@@ -31,6 +31,7 @@ class extract_activations:
         # whether to compute the id on the last token /class_token
         self.use_last_token = use_last_token
         self.print_every = print_every
+        self.target_layers = target_layers
 
         self.micro_batch_size = dataloader.batch_size
         self.nbatches = len(dataloader)
@@ -76,10 +77,6 @@ class extract_activations:
         else:
 
             def hook_fn(module, input, output):
-                if name.endswith("layers.0.input_layernorm") or name.endswith("embed_tokens"):
-                    #print(name)
-                    print(name, "input", input)
-                    print(name, "output", output)
                 hidden_states[name] = output.cpu()
 
         return hook_fn
@@ -97,8 +94,6 @@ class extract_activations:
                 torch.zeros_like(targets, device="cuda", dtype=targets.dtype)
                 for _ in range(self.world_size)
             ]
-            # seq_len_list = [torch.zeros_like(seq_len) for _ in range(self.world_size)]
-            # dist.all_gather(seq_len_list, seq_len)
             dist.all_gather(logit_list, logits[:, seq_len[0] - 1, :])
             dist.all_gather(target_list, targets)
             logits = torch.cat(logit_list, dim=0)
@@ -240,7 +235,7 @@ class extract_activations:
                     self.hidden_size : self.hidden_size + num_current_tokens
                 ] = act_tmp
 
-            #if i==0:
+            # if i==0:
             #    print(activations)
 
         self.hidden_size += num_current_tokens
@@ -271,10 +266,7 @@ class extract_activations:
             batch = data["input_ids"].to("cuda")
             targets = data["labels"].to("cuda")
 
-            #print(dataloader.dataset[i]["prompt"])
-            print(batch, batch.shape)
             outputs = self.model(batch)
-            print(outputs.logits)
 
             if self.world_size > 1:
                 seq_len = self._gather_and_update_fsdp(mask, is_last_batch)

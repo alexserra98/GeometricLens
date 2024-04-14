@@ -162,6 +162,11 @@ def parse_args():
         default=None,
         help="number_few_shots",
     )
+    parser.add_argument(
+        "--precision",
+        type=str,
+        default="bf16",
+    )
     args = parser.parse_args()
     return args
 
@@ -172,9 +177,11 @@ def main():
     # If we're using tracking, we also need to initialize it here and it will by default pick up all supported trackers
     # in the environment
 
-    os.environ["ACCELERATE_MIXED_PRECISION"] = "bf16"
-    
-    if int(os.environ["WORLD_SIZE"])>1:
+    os.environ["ACCELERATE_MIXED_PRECISION"] = args.precision
+
+    if int(os.environ["WORLD_SIZE"]) > 1:
+        os.environ["ACCELERATE_USE_FSDP"] = "true"
+
         os.environ["ACCELERATE_USE_FSDP"] = "true"
 
         os.environ["FSDP_SHRDING_STRATEGY"] = "FULL_SHARD"
@@ -185,7 +192,7 @@ def main():
         os.environ["FSDP_STATE_DICT_TYPE"] = "SHARDED_STATE_DICT"
         os.environ["FSDP_OFFLOAD_PARAMS"] = "false"
 
-    accelerator = Accelerator()
+    accelerator = Accelerator(mixed_precision=args.precision)
 
     # accelerator = Accelerator()
     # Make one log on every process with the configuration for debugging.
@@ -278,6 +285,8 @@ def main():
     model = accelerator.prepare(model)
     accelerator.print("model loaded")
     print_memory_consumed(accelerator.process_index)
+    sys.stdout.flush()
+    assert False
 
     if model_name.startswith("llama"):
         target_layers = get_target_layers_llama(

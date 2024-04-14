@@ -75,6 +75,9 @@ def compute_id(
         dirpath = str(dirpath).lower()
         os.makedirs(dirpath, exist_ok=True)
 
+    if filename != "":
+        filename = "_" + filename
+
     if use_last_token:
         filename = f"{filename}_target"
     else:
@@ -101,7 +104,7 @@ def compute_id(
     accelerator.print((time.time() - start) / 3600, "hours")
 
     if accelerator.is_main_process:
-
+        print('here')
         predictions = extr_act.predictions  # tokens
         constrained_predictions = extr_act.constrained_predictions  # tokens
         processed_labels = extr_act.targets  # tokens
@@ -135,7 +138,7 @@ def compute_id(
             "constrained_accuracy": acc_constrained,
         }
 
-        with open(f"{dirpath}/statistics.pkl", "wb") as f:
+        with open(f"{dirpath}/statistics{filename}.pkl", "wb") as f:
             pickle.dump(statistics, f)
 
         # dictionary containing the representation
@@ -146,9 +149,6 @@ def compute_id(
 
         if save_distances:
             for i, (layer, act) in enumerate(act_dict.items()):
-
-                accelerator.print(act.shape)
-                accelerator.print(act)
                 act = act.to(torch.float64).numpy()
 
                 save_backward_indices = False
@@ -163,36 +163,39 @@ def compute_id(
                         act = act[inverse]
                     else:
                         save_backward_indices = True
+                    accelerator.print(f"unique_samples = {len(idx)}")
                     accelerator.print(f"num_duplicates = {len(inverse)-len(idx)}")
 
-                accelerator.print(f"{layer} act_shape {act.shape}")
-                sys.stdout.flush()
-
                 n_samples = act.shape[0]
-                print(n_samples)
-                range_scaling = min(1050, n_samples - 1)
-                maxk = min(maxk, n_samples - 1)
-
-                start = time.time()
-                distances, dist_index, mus, _ = compute_distances(
-                    X=act,
-                    n_neighbors=maxk + 1,
-                    n_jobs=1,
-                    working_memory=2048,
-                    range_scaling=range_scaling,
-                    argsort=False,
-                )
-                accelerator.print((time.time() - start) / 60, "min")
-
-                np.save(
-                    f"{dirpath}/l{target_layer_labels[i]}{filename}_dist", distances
-                )
-                np.save(
-                    f"{dirpath}/l{target_layer_labels[i]}{filename}_index", dist_index
-                )
-                if save_backward_indices:
-                    np.save(
-                        f"{dirpath}/l{target_layer_labels[i]}{filename}_inverse",
-                        inverse,
+                if n_samples == 1:
+                    accelerator.print(
+                        f"{layer} has only one sample:distance matrices not computed"
                     )
-                np.save(f"{dirpath}/l{target_layer_labels[i]}{filename}_mus", mus)
+                else:
+                    range_scaling = min(1050, n_samples - 1)
+                    maxk = min(maxk, n_samples - 1)
+
+                    start = time.time()
+                    distances, dist_index, mus, _ = compute_distances(
+                        X=act,
+                        n_neighbors=maxk + 1,
+                        n_jobs=1,
+                        working_memory=2048,
+                        range_scaling=range_scaling,
+                        argsort=False,
+                    )
+                    accelerator.print((time.time() - start) / 60, "min")
+
+                    np.save(
+                        f"{dirpath}/l{target_layer_labels[i]}{filename}_dist", distances
+                    )
+                    np.save(
+                        f"{dirpath}/l{target_layer_labels[i]}{filename}_index",
+                        dist_index,
+                    )
+                    if save_backward_indices:
+                        np.save(
+                            f"{dirpath}/l{target_layer_labels[i]}{filename}_inverse",
+                            inverse,
+                        )
+                    np.save(f"{dirpath}/l{target_layer_labels[i]}{filename}_mus", mus)
