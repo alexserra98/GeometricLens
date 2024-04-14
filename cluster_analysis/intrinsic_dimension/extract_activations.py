@@ -286,8 +286,8 @@ class extract_activations:
             logits, targets = logits.cpu(), targets.cpu()
 
             if i < 100:
-                logit_list.append(logits.cpu()[-1])
-                batch_list.append(batch.cpu().squeeze())
+                logit_list.append(logits.cpu()[-2:-1])
+                batch_list.append(batch.cpu())
 
             if self.rank == 0:
                 logits_targets = logits[:, candidate_token_ids]

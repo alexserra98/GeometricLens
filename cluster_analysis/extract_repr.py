@@ -286,8 +286,6 @@ def main():
     model = accelerator.prepare(model)
     accelerator.print("model put to gpus")
     print_memory_consumed(accelerator.process_index)
-    sys.stdout.flush()
-    assert False
 
     if model_name.startswith("llama"):
         target_layers = get_target_layers_llama(
