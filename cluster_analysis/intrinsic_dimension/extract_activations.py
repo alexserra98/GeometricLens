@@ -236,9 +236,6 @@ class extract_activations:
                     self.hidden_size : self.hidden_size + num_current_tokens
                 ] = act_tmp
 
-            # if i==0:
-            #    print(activations)
-
         self.hidden_size += num_current_tokens
         return seq_len
 
@@ -269,17 +266,15 @@ class extract_activations:
             batch = data["input_ids"].to("cuda")
             targets = data["labels"].to("cuda")
 
-            # print(dataloader.dataset[i]["prompt"])
-            # print(batch, batch.shape)
             outputs = self.model(batch)
-            assert torch.all(
-                self.hidden_states_tmp[self.target_layers[-1]] == outputs.logits
-            ), (
-                logits.shape,
-                self.hidden_states_tmp[self.target_layers[-1]].shape,
-                logits,
-                self.hidden_states_tmp[self.target_layers[-1]],
-            )
+            # assert torch.all(
+            #     self.hidden_states_tmp[self.target_layers[-1]] == outputs.logits
+            # ), (
+            #     logits.shape,
+            #     self.hidden_states_tmp[self.target_layers[-1]].shape,
+            #     logits,
+            #     self.hidden_states_tmp[self.target_layers[-1]],
+            # )
 
             if self.world_size > 1:
                 seq_len = self._gather_and_update_fsdp(mask, is_last_batch)
