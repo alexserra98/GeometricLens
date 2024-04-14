@@ -76,7 +76,10 @@ class extract_activations:
         else:
 
             def hook_fn(module, input, output):
-                
+                if name.endswith("layers.0.input_layernorm") or name.endswith("embed_tokens"):
+                    #print(name)
+                    print(name, "input", input)
+                    print(name, "output", output)
                 hidden_states[name] = output.cpu()
 
         return hook_fn
@@ -269,7 +272,7 @@ class extract_activations:
             targets = data["labels"].to("cuda")
 
             #print(dataloader.dataset[i]["prompt"])
-            #print(batch, batch.shape)
+            print(batch, batch.shape)
             outputs = self.model(batch)
             print(outputs.logits)
 
