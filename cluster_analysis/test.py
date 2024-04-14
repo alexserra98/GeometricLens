@@ -19,6 +19,9 @@ np.all(np.array(stat["subjects"]) == np.array(stat1["subjects"]))
 letters = np.array(["A", "B", "C", "D"])
 
 
+stat["input_ids"]
+stat["logits"]
+
 set(stat["constrained_predictions"])
 
 np.where(stat1["contrained_predictions"] != letters[stat["constrained_predictions"]])

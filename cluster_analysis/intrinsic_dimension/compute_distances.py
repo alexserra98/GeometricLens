@@ -104,7 +104,6 @@ def compute_id(
     accelerator.print((time.time() - start) / 3600, "hours")
 
     if accelerator.is_main_process:
-
         predictions = extr_act.predictions  # tokens
         constrained_predictions = extr_act.constrained_predictions  # tokens
         processed_labels = extr_act.targets  # tokens
@@ -136,8 +135,8 @@ def compute_id(
             "contrained_predictions": constrained_predictions,
             "accuracy": acc_pred,
             "constrained_accuracy": acc_constrained,
-            "logits": extr_act.logits,
-            "input_ids": extr_act.input_ids,
+            # "logits": extr_act.logits,
+            # "input_ids": extr_act.input_ids,
         }
 
         with open(f"{dirpath}/statistics{filename}.pkl", "wb") as f:

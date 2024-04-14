@@ -77,7 +77,6 @@ class extract_activations:
         else:
 
             def hook_fn(module, input, output):
-
                 hidden_states[name] = output.cpu()
 
         return hook_fn
@@ -267,14 +266,6 @@ class extract_activations:
             targets = data["labels"].to("cuda")
 
             outputs = self.model(batch)
-            # assert torch.all(
-            #     self.hidden_states_tmp[self.target_layers[-1]] == outputs.logits
-            # ), (
-            #     logits.shape,
-            #     self.hidden_states_tmp[self.target_layers[-1]].shape,
-            #     logits,
-            #     self.hidden_states_tmp[self.target_layers[-1]],
-            # )
 
             if self.world_size > 1:
                 seq_len = self._gather_and_update_fsdp(mask, is_last_batch)
@@ -291,9 +282,9 @@ class extract_activations:
             logits, targets = self.all_gather_logits(outputs.logits, targets, seq_len)
             logits, targets = logits.cpu(), targets.cpu()
 
-            if i < 100:
-                logit_list.append(logits.cpu()[-1])
-                batch_list.append(batch.cpu().squeeze())
+            # if i < 100:
+            #     logit_list.append(logits.cpu()[-2:-1])
+            #     batch_list.append(batch.cpu())
 
             if self.rank == 0:
                 logits_targets = logits[:, candidate_token_ids]
@@ -322,5 +313,5 @@ class extract_activations:
         self.predictions = torch.tensor(self.predictions)
         self.constrained_predictions = torch.tensor(self.constrained_predictions)
         self.targets = torch.tensor(self.targets)
-        self.logits = torch.cat(logit_list, dim=0)
-        self.input_ids = torch.cat(batch_list, dim=0)
+        # self.logits = torch.cat(logit_list, dim=0)
+        # self.input_ids = torch.cat(batch_list, dim=0)

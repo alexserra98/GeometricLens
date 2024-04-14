@@ -30,10 +30,9 @@ torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
     --logging_steps 500 \
     --layer_interval 1 \
     --num_few_shots 0 \
-    --num_samples 100 \
     --save_distances --save_repr \
     --remove_duplicates \
     --use_last_token \
-    --out_filename '1gpu_test'
+    --out_filename '2gpu_test'
 
 
