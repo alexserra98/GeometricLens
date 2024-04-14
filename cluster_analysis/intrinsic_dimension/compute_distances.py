@@ -75,6 +75,9 @@ def compute_id(
         dirpath = str(dirpath).lower()
         os.makedirs(dirpath, exist_ok=True)
 
+    if filename != "":
+        filename = "_" + filename
+
     if use_last_token:
         filename = f"{filename}_target"
     else:
@@ -135,7 +138,7 @@ def compute_id(
             "constrained_accuracy": acc_constrained,
         }
 
-        with open(f"{dirpath}/statistics.pkl", "wb") as f:
+        with open(f"{dirpath}/statistics{filename}.pkl", "wb") as f:
             pickle.dump(statistics, f)
 
         # dictionary containing the representation
@@ -148,7 +151,7 @@ def compute_id(
             for i, (layer, act) in enumerate(act_dict.items()):
 
                 accelerator.print(act.shape)
-                accelerator.print(act.shape)
+                accelerator.print(act)
                 act = act.to(torch.float64).numpy()
 
                 save_backward_indices = False
