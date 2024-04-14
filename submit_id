@@ -33,6 +33,7 @@ torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
     --save_distances --save_repr \
     --remove_duplicates \
     --use_last_token \
-    --out_filename '2gpu_test'
+    --max_seq_len 4096 \
+    --out_filename ''
 
 
