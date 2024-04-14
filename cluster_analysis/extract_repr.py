@@ -179,7 +179,8 @@ def main():
 
     os.environ["ACCELERATE_MIXED_PRECISION"] = args.precision
 
-    if int(os.environ["WORLD_SIZE"]) > 1:
+    # we use fsdp also when world size ==1. accelerate issue in casting
+    if int(os.environ["WORLD_SIZE"]) > 0:
         os.environ["ACCELERATE_USE_FSDP"] = "true"
 
         os.environ["ACCELERATE_USE_FSDP"] = "true"
@@ -283,7 +284,7 @@ def main():
     # Put the model on with `accelerator`.
     print_memory_consumed(accelerator.process_index)
     model = accelerator.prepare(model)
-    accelerator.print("model loaded")
+    accelerator.print("model put to gpus")
     print_memory_consumed(accelerator.process_index)
     sys.stdout.flush()
     assert False
