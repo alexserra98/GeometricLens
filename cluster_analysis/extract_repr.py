@@ -173,17 +173,16 @@ def main():
     # in the environment
 
     os.environ["ACCELERATE_MIXED_PRECISION"] = "bf16"
-    
-    if int(os.environ["WORLD_SIZE"])>0:
-        os.environ["ACCELERATE_USE_FSDP"] = "true"
 
-        os.environ["FSDP_SHRDING_STRATEGY"] = "FULL_SHARD"
-        os.environ["FSDP_AUTO_WRAP_POLICY"] = "TRANSFORMER_BASED_WRAP"
-        os.environ["FSDP_TRANSFORMER_CLS_TO_WRAP"] = "LlamaDecoderLayer"
+    os.environ["ACCELERATE_USE_FSDP"] = "true"
 
-        os.environ["FSDP_BACKWARD_PREFETCH"] = "BACKWARD_PRE"
-        os.environ["FSDP_STATE_DICT_TYPE"] = "SHARDED_STATE_DICT"
-        os.environ["FSDP_OFFLOAD_PARAMS"] = "false"
+    os.environ["FSDP_SHRDING_STRATEGY"] = "FULL_SHARD"
+    os.environ["FSDP_AUTO_WRAP_POLICY"] = "TRANSFORMER_BASED_WRAP"
+    os.environ["FSDP_TRANSFORMER_CLS_TO_WRAP"] = "LlamaDecoderLayer"
+
+    os.environ["FSDP_BACKWARD_PREFETCH"] = "BACKWARD_PRE"
+    os.environ["FSDP_STATE_DICT_TYPE"] = "SHARDED_STATE_DICT"
+    os.environ["FSDP_OFFLOAD_PARAMS"] = "false"
 
     accelerator = Accelerator()
 
