@@ -174,7 +174,7 @@ def main():
 
     os.environ["ACCELERATE_MIXED_PRECISION"] = "bf16"
     
-    if int(os.environ["WORLD_SIZE"])>0:
+    if int(os.environ["WORLD_SIZE"])>1:
         os.environ["ACCELERATE_USE_FSDP"] = "true"
 
         os.environ["FSDP_SHRDING_STRATEGY"] = "FULL_SHARD"

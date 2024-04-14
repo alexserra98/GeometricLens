@@ -11,8 +11,9 @@ def get_target_layers_llama(model, n_layer, option="norm1", every=1, world_size=
     suffix = map_names[option]
     names = [name for name, _ in model.named_modules()]
 
-    prefix = ""
+    prefix = "module."
     middle=""
+    sys.stdout.flush()
     if world_size > 1:
         prefix = "_fsdp_wrapped_module."
         if map_names[option] != "":

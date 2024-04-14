@@ -148,7 +148,7 @@ def compute_id(
             for i, (layer, act) in enumerate(act_dict.items()):
 
                 accelerator.print(act.shape)
-                accelerator.print(act.shape)
+                accelerator.print(act)
                 act = act.to(torch.float64).numpy()
 
                 save_backward_indices = False
