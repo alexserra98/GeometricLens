@@ -76,6 +76,7 @@ class extract_activations:
         else:
 
             def hook_fn(module, input, output):
+                
                 hidden_states[name] = output.cpu()
 
         return hook_fn
@@ -215,7 +216,7 @@ class extract_activations:
     def _update_hidden_state(self, mask, is_last_batch):
         seq_len = torch.sum(mask, dim=1)
         mask = mask.unsqueeze(-1)
-        for _, (name, activations) in enumerate(self.hidden_states_tmp.items()):
+        for i, (name, activations) in enumerate(self.hidden_states_tmp.items()):
             if self.use_last_token:
                 batch_size = seq_len.shape[0]
                 act_tmp = activations[
@@ -235,6 +236,10 @@ class extract_activations:
                 self.hidden_states[name][
                     self.hidden_size : self.hidden_size + num_current_tokens
                 ] = act_tmp
+
+            #if i==0:
+            #    print(activations)
+
         self.hidden_size += num_current_tokens
         return seq_len
 
@@ -262,7 +267,11 @@ class extract_activations:
             mask = mask.to("cuda")
             batch = data["input_ids"].to("cuda")
             targets = data["labels"].to("cuda")
+
+            #print(dataloader.dataset[i]["prompt"])
+            #print(batch, batch.shape)
             outputs = self.model(batch)
+            print(outputs.logits)
 
             if self.world_size > 1:
                 seq_len = self._gather_and_update_fsdp(mask, is_last_batch)
