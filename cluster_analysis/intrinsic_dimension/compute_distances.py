@@ -135,8 +135,8 @@ def compute_id(
             "contrained_predictions": constrained_predictions,
             "accuracy": acc_pred,
             "constrained_accuracy": acc_constrained,
-            "logits": extr_act.logits,
-            "input_ids": extr_act.input_ids,
+            # "logits": extr_act.logits,
+            # "input_ids": extr_act.input_ids,
         }
 
         with open(f"{dirpath}/statistics{filename}.pkl", "wb") as f:
