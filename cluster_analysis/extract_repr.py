@@ -174,7 +174,8 @@ def main():
 
     os.environ["ACCELERATE_MIXED_PRECISION"] = "bf16"
 
-    if int(os.environ["WORLD_SIZE"]) > 1:
+    # we use fsdp also when world size ==1. accelerate issue in casting
+    if int(os.environ["WORLD_SIZE"]) > 0:
         os.environ["ACCELERATE_USE_FSDP"] = "true"
 
         os.environ["ACCELERATE_USE_FSDP"] = "true"
@@ -187,7 +188,7 @@ def main():
         os.environ["FSDP_STATE_DICT_TYPE"] = "SHARDED_STATE_DICT"
         os.environ["FSDP_OFFLOAD_PARAMS"] = "false"
 
-    accelerator = Accelerator()
+    accelerator = Accelerator(mixed_precision="bf16")
 
     # accelerator = Accelerator()
     # Make one log on every process with the configuration for debugging.
@@ -278,7 +279,7 @@ def main():
     # Put the model on with `accelerator`.
     print_memory_consumed(accelerator.process_index)
     model = accelerator.prepare(model)
-    accelerator.print("model loaded")
+    accelerator.print("model put to gpus")
     print_memory_consumed(accelerator.process_index)
 
     if model_name.startswith("llama"):
