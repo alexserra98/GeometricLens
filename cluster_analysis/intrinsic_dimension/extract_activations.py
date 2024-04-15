@@ -43,6 +43,9 @@ class extract_activations:
         self.global_batch_size = self.world_size * self.micro_batch_size
         self.hidden_size = 0
 
+        print("rank: nsamples", self.rank, self.nsamples)
+        print("rank: nbatches", self.rank, self.nbatches)
+        sys.stdout.flush()
         if self.rank == 0:
             self.accelerator.print(
                 "before hidden states RAM Used (GB):",
@@ -233,12 +236,15 @@ class extract_activations:
 
             num_current_tokens = act_tmp.shape[0]
             if is_last_batch:
-                print("act_tmp shape", act_tmp.shape)
-                print("hidden_states_shape", self.hidden_states[name].shape)
+
+                print("act_tmp shape", self.rank, act_tmp.shape)
+                print("hidden_states_shape", self.rank, self.hidden_states[name].shape)
                 print(
                     "hidden_states_shape",
+                    self.rank,
                     self.hidden_states[name][self.hidden_size :].shape,
                 )
+                sys.stdout.flush()
                 self.hidden_states[name] = torch.cat(
                     (self.hidden_states[name][: self.hidden_size], act_tmp), dim=0
                 )
