@@ -210,7 +210,16 @@ class extract_activations:
 
         if is_last_batch:
 
-            self.hidden_states[name][self.hidden_size :] = act_tmp
+            print("act_tmp shape", self.rank, act_tmp.shape)
+            print("hidden_states_shape", self.rank, self.hidden_states[name].shape)
+            print("hidden_states_shape",self.rank,
+                    self.hidden_states[name][self.hidden_size :].shape,
+            )
+            sys.stdout.flush()
+            self.hidden_states[name] = torch.cat((self.hidden_states[name][: self.hidden_size], act_tmp), dim=0
+                )
+            # self.hidden_states[name][self.hidden_size :] = act_tmp
+          
         else:
             self.hidden_states[name][
                 self.hidden_size : self.hidden_size + num_current_tokens
@@ -237,18 +246,7 @@ class extract_activations:
             num_current_tokens = act_tmp.shape[0]
             if is_last_batch:
 
-                print("act_tmp shape", self.rank, act_tmp.shape)
-                print("hidden_states_shape", self.rank, self.hidden_states[name].shape)
-                print(
-                    "hidden_states_shape",
-                    self.rank,
-                    self.hidden_states[name][self.hidden_size :].shape,
-                )
-                sys.stdout.flush()
-                self.hidden_states[name] = torch.cat(
-                    (self.hidden_states[name][: self.hidden_size], act_tmp), dim=0
-                )
-                # self.hidden_states[name][self.hidden_size :] = act_tmp
+                self.hidden_states[name][self.hidden_size :] = act_tmp
             else:
                 self.hidden_states[name][
                     self.hidden_size : self.hidden_size + num_current_tokens
