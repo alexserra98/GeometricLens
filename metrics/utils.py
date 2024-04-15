@@ -38,7 +38,7 @@ class InstanceHiddenStates():
   hidden_states: Dict[str, np.ndarray]
 
 
-def hidden_states_collapse(df_hiddenstates: pd.DataFrame(), 
+def hidden_states_collapse(df_hiddenstates: pd.DataFrame, 
                            query: DataFrameQuery, 
                            tensor_storage: TensorStorage)-> np.ndarray:
     """

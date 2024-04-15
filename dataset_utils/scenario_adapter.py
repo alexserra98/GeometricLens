@@ -37,6 +37,9 @@ class ScenarioAdapter:
             elif self.dataset_folder == "mmlu_shuffled_sub":
               from dataset_utils.mmlu import MMLU_Shuffled_Subject_ScenarioBuilder
               return MMLU_Shuffled_Subject_ScenarioBuilder(subject, self.shots, self.model_name, self.number_of_instances).build()
+            elif self.dataset_folder == "mmlu_train":
+              from dataset_utils.mmlu import MMLU_train_ScenarioBuilder
+              return MMLU_train_ScenarioBuilder(subject, self.shots, self.model_name, self.number_of_instances).build()
             else:
               from dataset_utils.mmlu import MMLU_ScenarioBuilder
               return MMLU_ScenarioBuilder(subject, self.shots, self.model_name, self.number_of_instances).build()
