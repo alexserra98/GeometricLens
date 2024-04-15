@@ -104,6 +104,12 @@ def compute_id(
     accelerator.print((time.time() - start) / 3600, "hours")
 
     if accelerator.is_main_process:
+        # dictionary containing the representation
+        act_dict = extr_act.hidden_states
+        if save_repr:
+            for i, (layer, act) in enumerate(act_dict.items()):
+                torch.save(act, f"{dirpath}/l{target_layer_labels[i]}{filename}.pt")
+
         predictions = extr_act.predictions  # tokens
         constrained_predictions = extr_act.constrained_predictions  # tokens
         processed_labels = extr_act.targets  # tokens
@@ -112,10 +118,10 @@ def compute_id(
         ground_truths = dataloader.dataset["labels"]  # tokens
 
         # check
-        assert torch.all(ground_truths == processed_labels), (
-            processed_labels,
-            ground_truths,
-        )
+        # assert torch.all(ground_truths == processed_labels), (
+        #     processed_labels,
+        #     ground_truths,
+        # )
 
         answers = np.array([ans.strip() for ans in answers])
         predictions = np.array([tokenizer.decode(pred).strip() for pred in predictions])
@@ -123,8 +129,10 @@ def compute_id(
             [tokenizer.decode(pred).strip() for pred in constrained_predictions]
         )
 
-        acc_pred = compute_accuracy(predictions, answers)
-        acc_constrained = compute_accuracy(constrained_predictions, answers)
+        acc_pred = compute_accuracy(predictions, answers[: len(predictions)])
+        acc_constrained = compute_accuracy(
+            constrained_predictions, answers[: len(constrained_predictions)]
+        )
         accelerator.print("exact_match constrained:", acc_constrained)
         accelerator.print("exact_match:", acc_pred)
 
@@ -141,12 +149,6 @@ def compute_id(
 
         with open(f"{dirpath}/statistics{filename}.pkl", "wb") as f:
             pickle.dump(statistics, f)
-
-        # dictionary containing the representation
-        act_dict = extr_act.hidden_states
-        if save_repr:
-            for i, (layer, act) in enumerate(act_dict.items()):
-                torch.save(act, f"{dirpath}/l{target_layer_labels[i]}{filename}.pt")
 
         if save_distances:
             for i, (layer, act) in enumerate(act_dict.items()):

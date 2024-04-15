@@ -8,6 +8,9 @@ import sys
 
 rng = np.random.default_rng(42)
 # ***************************************************
+14042 // 8
+
+1755 * 8
 
 
 class extract_activations:
@@ -203,6 +206,7 @@ class extract_activations:
             num_current_tokens = act_tmp.shape[0]
 
         if is_last_batch:
+
             self.hidden_states[name][self.hidden_size :] = act_tmp
         else:
             self.hidden_states[name][
@@ -229,7 +233,16 @@ class extract_activations:
 
             num_current_tokens = act_tmp.shape[0]
             if is_last_batch:
-                self.hidden_states[name][self.hidden_size :] = act_tmp
+                print("act_tmp shape", act_tmp.shape)
+                print("hidden_states_shape", self.hidden_states[name].shape)
+                print(
+                    "hidden_states_shape",
+                    self.hidden_states[name][self.hidden_size :].shape,
+                )
+                self.hidden_states[name] = torch.cat(
+                    (self.hidden_states[name][: self.hidden_size], act_tmp), dim=0
+                )
+                # self.hidden_states[name][self.hidden_size :] = act_tmp
             else:
                 self.hidden_states[name][
                     self.hidden_size : self.hidden_size + num_current_tokens
