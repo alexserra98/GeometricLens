@@ -68,5 +68,4 @@ def is_memory_enough(
 
         _ = model(input_ids=data["input_ids"])
 
-    model = model.train()
     torch.cuda.empty_cache()
