@@ -183,6 +183,17 @@ class MMLU_Dataset:
         self.accelerator.print("tokenization finished")
         sys.stdout.flush()
 
+        def sort_by_token_length(example):
+            return len(example["input_ids"])
+
+        sorted_indices = sorted(
+            range(len(tokenized_dataset)),
+            key=lambda i: sort_by_token_length(tokenized_dataset[i]),
+            reverse=True,
+        )
+        longest_sequences = tokenized_dataset.select(sorted_indices[:10])
+        longest_sequences.set_format(type="pt")
+
         # remove examples loger than max seq len maybe not necessary at all
         # list of list is made list of tensors
         tokenized_dataset.set_format(type="pt")
@@ -190,4 +201,4 @@ class MMLU_Dataset:
             tokenized_dataset, self.max_seq_len
         )
 
-        return tokenized_dataset
+        return tokenized_dataset, longest_sequences
