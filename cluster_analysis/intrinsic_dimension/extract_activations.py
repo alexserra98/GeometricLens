@@ -8,9 +8,6 @@ import sys
 
 rng = np.random.default_rng(42)
 # ***************************************************
-14042 // 8
-
-1755 * 8
 
 
 class extract_activations:
@@ -29,8 +26,6 @@ class extract_activations:
         self.model = model
         # embedding size
         self.embdim = embdim
-        # number of samples to collect (e.g. 10k)
-        self.nsamples = len(dataloader.dataset)
         # whether to compute the id on the last token /class_token
         self.use_last_token = use_last_token
         self.print_every = print_every
@@ -39,6 +34,10 @@ class extract_activations:
         self.micro_batch_size = dataloader.batch_size
         self.nbatches = len(dataloader)
         self.world_size = self.accelerator.num_processes
+
+        # number of samples to collect (e.g. 10k) for llama 70B we remove the last 2 samples
+        self.nsamples = self.nbatches * self.micro_batch_size * self.world_size
+
         self.rank = self.accelerator.process_index
         self.global_batch_size = self.world_size * self.micro_batch_size
         self.hidden_size = 0
@@ -210,16 +209,16 @@ class extract_activations:
 
         if is_last_batch:
 
-            print("act_tmp shape", self.rank, act_tmp.shape)
-            print("hidden_states_shape", self.rank, self.hidden_states[name].shape)
-            print("hidden_states_shape",self.rank,
-                    self.hidden_states[name][self.hidden_size :].shape,
-            )
-            sys.stdout.flush()
-            self.hidden_states[name] = torch.cat((self.hidden_states[name][: self.hidden_size], act_tmp), dim=0
-                )
-            # self.hidden_states[name][self.hidden_size :] = act_tmp
-          
+            # print("act_tmp shape", self.rank, act_tmp.shape)
+            # print("hidden_states_shape", self.rank, self.hidden_states[name].shape)
+            # print("hidden_states_shape",self.rank,
+            #         self.hidden_states[name][self.hidden_size :].shape,
+            # )
+            # sys.stdout.flush()
+            # self.hidden_states[name] = torch.cat((self.hidden_states[name][: self.hidden_size], act_tmp), dim=0
+            #     )
+            self.hidden_states[name][self.hidden_size :] = act_tmp
+
         else:
             self.hidden_states[name][
                 self.hidden_size : self.hidden_size + num_current_tokens

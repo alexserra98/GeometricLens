@@ -1,5 +1,6 @@
 import sys
 import torch
+from .dataloader_utils import get_dataloader
 
 
 def get_target_layers_llama(model, n_layer, option="norm1", every=1, world_size=1):
@@ -43,3 +44,29 @@ def print_memory_consumed(rank=None):
         print(f"CUDA mem allocated: {allocated} GB")
         print(f"CUDA mem reserved: {reserved} GB")
     sys.stdout.flush()
+
+
+def is_memory_enough(
+    model, longest_seq, micro_batch_size, pad_token_id, max_seq_len, world_size
+):
+    # just a series of forward passes with the longest sequences
+    model = model.eval()
+    longest_loader = get_dataloader(
+        longest_seq,
+        micro_batch_size,
+        pad_token_id,
+        max_seq_len=max_seq_len,
+        world_size=world_size,
+        shuffle=False,
+        num_processes=4,
+    )
+
+    for i, data in enumerate(longest_loader):
+
+        for val in data.values():
+            val = val.to("cuda")
+
+        _ = model(input_ids=data["input_ids"])
+
+    model = model.train()
+    torch.cuda.empty_cache()

@@ -19,7 +19,7 @@ from utils.tokenizer_utils import get_tokenizer
 from intrinsic_dimension.compute_distances import compute_id
 import torch
 import os
-from utils.helpers import print_memory_consumed
+from utils.helpers import print_memory_consumed, is_memory_enough
 
 from accelerate import FullyShardedDataParallelPlugin
 from torch.distributed.fsdp.fully_sharded_data_parallel import (
@@ -250,7 +250,7 @@ def main():
     accelerator.print("model loaded. \n\n")
     sys.stdout.flush()
 
-    dataset = MMLU_Dataset(
+    dataset, longest_seq = MMLU_Dataset(
         tokenizer=tokenizer,
         max_seq_len=max_seq_len,
         num_few_shots=args.num_few_shots,
@@ -270,15 +270,6 @@ def main():
         num_processes=args.preprocessing_num_workers,
     )
 
-    # instance = next(iter(dataloader))
-    # tokens = instance["input_ids"][0]
-    # labels = instance["labels"][0]
-    # prompt = dataloader.dataset["prompt"][0]
-    # answers = dataloader.dataset["answers"][0]
-    # print(repr(prompt), repr(answers))
-    # print(tokens)
-    # print(labels)
-    # assert False
     # ***********************************************************************
 
     # Put the model on with `accelerator`.
@@ -286,6 +277,11 @@ def main():
     model = accelerator.prepare(model)
     accelerator.print("model put to gpus")
     print_memory_consumed(accelerator.process_index)
+
+    # just few forward passes with the longest sequences
+    is_memory_enough(
+        model, longest_seq, args.micro_batch_size, pad_token_id, max_seq_len, world_size
+    )
 
     if model_name.startswith("llama"):
         target_layers = get_target_layers_llama(
