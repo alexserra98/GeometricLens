@@ -317,12 +317,17 @@ class extract_activations:
                 self.predictions += torch.argmax(logits, dim=-1).cpu().tolist()
 
                 if (i + 1) % (self.print_every // self.global_batch_size) == 0:
+
                     torch.cuda.synchronize()
+                    torch.cuda.empty_cache()
+                    allocated = torch.cuda.max_memory_allocated() / 2**30
+                    reserved = torch.cuda.max_memory_reserved() / 2**30
                     end = time.time()
                     self.accelerator.print(
                         f"{(i+1)*self.global_batch_size/1000}k data, \
                         batch {i+1}/{self.nbatches}, \
-                        tot_time: {(end-start)/60: .3f}min, "
+                        tot_time: {(end-start)/60: .3f}min \
+                        mem alloc/reserved {allocated: .2f}{reserved: .2f}"
                     )
                     sys.stdout.flush()
 
