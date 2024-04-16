@@ -41,6 +41,7 @@ class InstanceHiddenStates():
 def hidden_states_collapse( df_hiddenstates: pd.DataFrame(), 
                             tensor_storage: TensorStorage,
                             query: DataFrameQuery = None) -> np.ndarray:
+
     """
     Collect hidden states of all instances and collapse them in one tensor
     using the provided method
