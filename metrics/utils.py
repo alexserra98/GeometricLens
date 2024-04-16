@@ -38,9 +38,9 @@ class InstanceHiddenStates():
   hidden_states: Dict[str, np.ndarray]
 
 
-def hidden_states_collapse(df_hiddenstates: pd.DataFrame(), 
-                           query: DataFrameQuery, 
-                           tensor_storage: TensorStorage)-> np.ndarray:
+def hidden_states_collapse( df_hiddenstates: pd.DataFrame(), 
+                            tensor_storage: TensorStorage,
+                            query: DataFrameQuery = None) -> np.ndarray:
     """
     Collect hidden states of all instances and collapse them in one tensor
     using the provided method
@@ -57,8 +57,9 @@ def hidden_states_collapse(df_hiddenstates: pd.DataFrame(),
     df_hiddenstates: pd.DataFrame(hiddens_states, match, layer, answered letter, gold letter)
                      dataframe containing the hidden states of all instances
     """ 
-
-    df_hiddenstates = query.apply_query(df_hiddenstates)
+    if  query is not None:
+        df_hiddenstates = query.apply_query(df_hiddenstates)
+    
     hidden_states = []
     start_time = time.time()
     rows = [row for _, row in df_hiddenstates.iterrows()]
