@@ -13,8 +13,8 @@ from sklearn.model_selection import train_test_split
 from pathlib import Path
 
 
-#_PATH = Path("/orfeo/scratch/dssc/zenocosini/mmlu_result/")
-_PATH = Path("/home/alexserra98/helm-suite/mmlu_result/")
+_PATH = Path("/orfeo/scratch/dssc/zenocosini/mmlu_result/")
+#_PATH = Path("/home/alexserra98/helm-suite/mmlu_result/")
 _TENSOR_STORAGE = TensorStorage(Path(_PATH, "tensor_files"))
 
 def set_dataframes(db) -> pd.DataFrame:

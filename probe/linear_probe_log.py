@@ -34,9 +34,11 @@ def main():
     
     skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=42)
     
+    X,y  = retrieve_dataset(df_hiddenstates)
+
     for train, test in skf.split(df_hiddenstates, df_hiddenstates["dataset"]):
-        X_train, y_train = retrieve_dataset(df_hiddenstates.iloc[train])
-        X_test, y_test = retrieve_dataset(df_hiddenstates.iloc[test])
+        X_train, y_train = X[train],y[train]
+        X_test, y_test = X[test],y[test]
         classes = np.unique(y_train)
         weights = compute_class_weight('balanced', classes=classes, y=y_train)
         class_weight = dict(zip(classes, weights))
@@ -60,7 +62,7 @@ def main():
 
     # Pretty print the accuracies
     logging.info(f'The accuracy of the logistic regression model at each layers is')
-    accuracies_df = pd.DataFrame(list(accuracies.items()), columns=['Layer', 'Accuracy'])
+    accuracies_df = pd.DataFrame(accuracies, columns=['Layer', 'Accuracy'])
     print(accuracies_df.to_string(index=False))
     
 if __name__ == "__main__":
