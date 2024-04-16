@@ -15,33 +15,6 @@ class IntrinsicDimension(HiddenStatesMetrics):
     
     def main(self) -> pd.DataFrame:
         rows = []
-        datasets = ['mmlu:clinical_knowledge',
-                    'mmlu:astronomy',
-                    'mmlu:computer_security',
-                    'mmlu:econometrics',
-                    'mmlu:electrical_engineering',
-                    'mmlu:elementary_mathematics',
-                    'mmlu:formal_logic',
-                    'mmlu:global_facts',
-                    'mmlu:high_school_biology,high_school_chemistry',
-                    'mmlu:high_school_computer_science',
-                    'mmlu:high_school_geography',
-                    'mmlu:high_school_government_and_politics',
-                    'mmlu:high_school_psychology',
-                    'mmlu:high_school_us_history',
-                    'mmlu:international_law',
-                    'mmlu:jurisprudence',
-                    'mmlu:management',
-                    'mmlu:marketing',
-                    'mmlu:medical_genetics',
-                    'mmlu:miscellaneous',
-                    'mmlu:nutrition',
-                    'mmlu:prehistory',
-                    'mmlu:public_relations']
-        datasets = ['mmlu:clinical_knowledge',
-                    'mmlu:astronomy']
-        
-
         for model in tqdm.tqdm(self.df["model_name"].unique().tolist()):
             if "13" in model:
                 continue
@@ -62,10 +35,10 @@ class IntrinsicDimension(HiddenStatesMetrics):
                             raise ValueError("Unknown variation. It must be either None or 'norm'")
                                         
                         if match == "correct":
-                            df = self.df[self.df.apply(lambda r: exact_match(r["only_ref_pred"], r["letter_gold"]), axis=1)]
+                            df = self.df[self.df.apply(lambda r: exact_match(r["std_pred"], r["letter_gold"]), axis=1)]
                             hidden_states,_, _= hidden_states_collapse(df,query, self.tensor_storage)
                         elif match == "incorrect":
-                            df = self.df[self.df.apply(lambda r: not exact_match(r["only_ref_pred"], r["letter_gold"]), axis=1)]
+                            df = self.df[self.df.apply(lambda r: not exact_match(r["std_pred"], r["letter_gold"]), axis=1)]
                             hidden_states,_, _= hidden_states_collapse(df,query, self.tensor_storage)
                         else:
                             df = self.df
@@ -134,3 +107,30 @@ class IntrinsicDimension(HiddenStatesMetrics):
             return skdim.id.DANCo().fit(hidden_states[:, i, :])
         elif algorithm == "lPCA":
             return skdim.id.lPCA().fit_pw(hidden_states[:, i, :], n_neighbors = 100, n_jobs = 4)
+
+
+# datasets = ['mmlu:clinical_knowledge',
+#             'mmlu:astronomy',
+#             'mmlu:computer_security',
+#             'mmlu:econometrics',
+#             'mmlu:electrical_engineering',
+#             'mmlu:elementary_mathematics',
+#             'mmlu:formal_logic',
+#             'mmlu:global_facts',
+#             'mmlu:high_school_biology,high_school_chemistry',
+#             'mmlu:high_school_computer_science',
+#             'mmlu:high_school_geography',
+#             'mmlu:high_school_government_and_politics',
+#             'mmlu:high_school_psychology',
+#             'mmlu:high_school_us_history',
+#             'mmlu:international_law',
+#             'mmlu:jurisprudence',
+#             'mmlu:management',
+#             'mmlu:marketing',
+#             'mmlu:medical_genetics',
+#             'mmlu:miscellaneous',
+#             'mmlu:nutrition',
+#             'mmlu:prehistory',
+#             'mmlu:public_relations']
+# datasets = ['mmlu:clinical_knowledge',
+#             'mmlu:astronomy']
