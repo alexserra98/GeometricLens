@@ -1,27 +1,14 @@
 #!/bin/bash
-#SBATCH --partition=DGX
-#SBATCH --nodelist=dgx001
-#SBATCH --account=lade
-#SBATCH --nodes=1
-#SBATCH --time=24:00:00            
-#SBATCH --ntasks-per-node=1       
-#SBATCH --cpus-per-task=32           
-#SBATCH --mem=900G                
-#SBATCH --job-name=test
-#SBATCH --gres=gpu:8
 
-source /etc/profile.d/modules.sh
-module use /opt/nvidia/hpc_sdk/modulefiles/
-module load nvhpc
+# source /etc/profile.d/modules.sh
+# module use /opt/nvidia/hpc_sdk/modulefiles/
+# module load nvhpc
 source /u/area/ddoimo/anaconda3/bin/activate ./env_amd
-
-#source /u/area/ddoimo/anaconda3/bin/activate /u/area/ddoimo/ddoimo/open/open-instruct/env_amd
 
 export OMP_NUM_THREADS=32
 
-
 torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
-       	--nnodes=1  --nproc-per-node=8 \
+        --nnodes=1  --nproc-per-node=8 \
     cluster_analysis/extract_repr.py \
     --checkpoint_dir  "/u/area/ddoimo/ddoimo/llama/llama_v2/models_hf/llama-2-70b" \
     --use_slow_tokenizer \
@@ -36,5 +23,4 @@ torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
     --use_last_token \
     --max_seq_len 4096 \
     --out_filename ''
-
 
