@@ -1,15 +1,14 @@
 #!/bin/bash
 #SBATCH --partition=DGX
-#SBATCH --nodelist=dgx001
+##SBATCH --nodelist=dgx001
 #SBATCH --account=lade
 #SBATCH --nodes=1
 #SBATCH --time=24:00:00            
 #SBATCH --ntasks-per-node=1       
 #SBATCH --cpus-per-task=32           
-#SBATCH --mem=900G                
+#SBATCH --mem=100G                
 #SBATCH --job-name=test
-#SBATCH --gres=gpu:8
-
+#SBATCH --gres=gpu:1
 source /etc/profile.d/modules.sh
 module use /opt/nvidia/hpc_sdk/modulefiles/
 module load nvhpc
@@ -21,20 +20,20 @@ export OMP_NUM_THREADS=32
 
 
 torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
-       	--nnodes=1  --nproc-per-node=8 \
+       	--nnodes=1  --nproc-per-node=1 \
     cluster_analysis/extract_repr.py \
-    --checkpoint_dir  "/u/area/ddoimo/ddoimo/llama/llama_v2/models_hf/llama-2-70b" \
+    --checkpoint_dir  "/u/area/ddoimo/ddoimo/llama/llama_v2/models_hf/llama-2-7b" \
     --use_slow_tokenizer \
     --preprocessing_num_workers 16 \
     --micro_batch_size 1 \
     --out_dir "./results" \
     --logging_steps 100 \
     --layer_interval 1 \
-    --num_few_shots 0 \
+    --num_few_shots 5 \
     --save_distances --save_repr \
     --remove_duplicates \
     --use_last_token \
     --max_seq_len 4096 \
-    --out_filename ''
+    --out_filename 'test'
 
 

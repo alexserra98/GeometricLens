@@ -46,6 +46,7 @@ def print_memory_consumed(rank=None):
     sys.stdout.flush()
 
 
+@torch.no_grad()
 def is_memory_enough(
     model, longest_seq, micro_batch_size, pad_token_id, max_seq_len, world_size
 ):
