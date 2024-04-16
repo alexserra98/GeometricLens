@@ -14,7 +14,7 @@ import pickle
 
     
 def test_scenario():
-    scenario = ScenarioAdapter("commonsenseqa_wrong","commonsenseqa",5,"gpt2",100)
+    scenario = ScenarioAdapter("mmlu_train","mmlu:all",0,"gpt2",100)
     scenario = scenario.build()
     # with open("tests/assets/unit/scenario.pkl", "wb") as f:
     #     pickle.dump(scenario,f)

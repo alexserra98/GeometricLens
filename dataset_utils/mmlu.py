@@ -26,7 +26,8 @@ class MMLU_ScenarioBuilder(ScenarioBuilder):
         """
         Construct the request instances for the scenario
         """
-        dataset = self.retrieve_dataset()
+        from datasets import load_dataset
+        dataset = load_dataset('cais/mmlu','all',trust_remote_code=True)
         output_mapping = [letter 
                           for letter in string.ascii_uppercase[:len(dataset["test"][0]["choices"])]]
 
@@ -34,16 +35,13 @@ class MMLU_ScenarioBuilder(ScenarioBuilder):
         dataset_test = dataset["test"].select(range(self.number_of_instances)) \
                                   if self.number_of_instances != -1 else dataset["test"]
                                 
-        ri = self.construct_prompt(dataset_test, dataset["dev"])
+        ri = self.construct_prompt(dataset)
         return ri, output_mapping
     
-    def construct_prompt(self,dataset_test, dataset_dev):
+    def construct_prompt(self,dataset):
         ri = []
-        for row in tqdm(dataset_test, desc="Constructing Prompts"):
+        for row in tqdm(dataset["validation"], desc="Constructing Prompts"):
             prompt = f'The following are multiple choice questions (with answers) about {subject_retriever(self.dataset)}.\n\n'
-            for i in range(self.shots):
-                random_row = dataset_dev[i]
-                prompt += self.construct_question(random_row,shot=True)
             question = self.construct_question(row) 
             prompt += question
             ri.append(RequestInstance(question, prompt, string.ascii_uppercase[row["answer"]]))
@@ -96,3 +94,39 @@ class MMLU_Shuffled_Subject_ScenarioBuilder(MMLU_ScenarioBuilder):
         dataset_dev = load_dataset(_KNOWN_DATASET_ALIASES["mmlu"],subject,trust_remote_code=True)["dev"]
  
         return super().construct_prompt(dataset_test, dataset_dev)
+    
+class MMLU_train_ScenarioBuilder(MMLU_ScenarioBuilder):
+    
+    def __init__(self, subject, shots, model_name, number_of_instances=-1):
+        if shots != 0:
+            Warning.warn("Shots are not supported for this scenario")
+        self.shots = 0
+        super().__init__(subject, shots, model_name, number_of_instances)
+    
+    def retrieve_dataset(self):
+        #from datasets import load_dataset
+        dataset = load_dataset('cais/mmlu','all',trust_remote_code=True)
+        return dataset
+    def construct_request_instance(self) -> List[RequestInstance]:
+        """
+        Construct the request instances for the scenario
+        """
+        dataset = self.retrieve_dataset()
+        output_mapping = [letter 
+                          for letter in string.ascii_uppercase[:len(dataset["test"][0]["choices"])]]
+        ri = self.construct_prompt(dataset)
+        return ri, output_mapping
+    
+    def construct_prompt(self, dataset):
+        ri = []
+        for row in tqdm(dataset["validation"], desc="Constructing Prompts"):
+            prompt = f'The following are multiple choice questions (with answers).\n\n'
+            question = self.construct_question(row) 
+            prompt += question
+            ri.append(RequestInstance(question, prompt, string.ascii_uppercase[row["answer"]]))
+        for row in tqdm(dataset["dev"], desc="Constructing Prompts"):
+            prompt = f'The following are multiple choice questions (with answers).\n\n'
+            question = self.construct_question(row) 
+            prompt += question
+            ri.append(RequestInstance(question, prompt, string.ascii_uppercase[row["answer"]]))
+        return ri
