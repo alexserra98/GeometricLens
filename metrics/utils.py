@@ -7,6 +7,7 @@ from dadapy.data import Data
 import numpy as np
 import torch
 import pandas as pd
+from einops import rearrange
 
 from dataclasses import dataclass
 from enum import Enum
@@ -20,6 +21,7 @@ import os
 from pathlib import Path
 import os
 import re
+
 @dataclass
 class RunMeta():
   num_layers: int
@@ -46,7 +48,7 @@ class InstanceHiddenStates():
   hidden_states: Dict[str, np.ndarray]
 
 class TensorStorageManager:
-    def __init__(self, storage_config_h5: TensorStorage, storage_config_npy: Path):
+    def __init__(self, storage_config_h5: TensorStorage = None, storage_config_npy: Path = None):
         # Initialization with storage configurations or connections
         self.storage_h5 = storage_config_h5
         self.storage_npy = storage_config_npy
@@ -129,11 +131,14 @@ class TensorStorageManager:
         tensors = [torch.load(os.path.join(storage_path, file)) for file in filtered_files]
 
         # Stack all tensors along a new dimension
-        stacked_tensor = torch.stack(tensors)
-        
-        df = pd.load_pickle("/orfeo/scratch/dssc/zenocosini/mmlu_result/transposed_dataset/df.pkl")
+        stacked_tensor = torch.stack(tensors[:-1])
+        stacked_tensor = rearrange(stacked_tensor, 'l n d -> n l d')
+        logits = torch.tensor(tensors[-1])
 
-        return stacked_tensor, df
+        
+        df = pd.read_pickle("/orfeo/scratch/dssc/zenocosini/mmlu_result/transposed_dataset/df.pkl")
+
+        return stacked_tensor.float().numpy(), logits.float().numpy(), df
    
     def retrieve_tensor(self, query, criteria):
         # Decision logic to choose the storage

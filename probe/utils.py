@@ -30,13 +30,13 @@ def set_dataframes(db) -> pd.DataFrame:
     df.drop_duplicates(subset = ["id_instance"],inplace = True, ignore_index = True) # why there are duplicates???
     return df
 
-def retrieve_df():
+def retrieve_df(method="last", train_instances=0):
     metadata_db = MetadataDB(_PATH / "metadata.db")
     metadata_df = set_dataframes(metadata_db)
 
-    dict_query = { "method":"last",
+    dict_query = { "method":method,
                    "model_name":"meta-llama/Llama-2-7b-hf",
-                   "train_instances": 0}
+                   "train_instances": train_instances}
     query = DataFrameQuery(dict_query)
     df_hiddenstates = query.apply_query(metadata_df)
     return df_hiddenstates
@@ -57,9 +57,12 @@ def stratified_split(df_hiddenstates):
 
     return train_df, test_df
 
-def retrieve_dataset(df):
+def retrieve_dataset(df,label):
     # Train set
     X, _, result_df = hidden_states_collapse(df_hiddenstates=df,tensor_storage=_TENSOR_STORAGE)
-    y = np.asarray(df['only_ref_pred'].tolist())
+    if label == "subject":
+        y = np.asarray(df['dataset'].tolist())
+    elif label == "letter":
+        y = np.asarray(df['only_ref_pred'].tolist())
     return X, y
     
