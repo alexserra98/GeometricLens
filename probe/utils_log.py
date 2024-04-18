@@ -17,7 +17,7 @@ def cross_validate_model(train_folds,
         X_train = X_train[:,layer,:]
         X_test, y_test = test_folds[i]
         X_test = X_test[:,layer,:]        
-        model = LogisticRegression(max_iter=5000, class_weight=class_weights_folds[i])
+        model = LogisticRegression(max_iter=3000, class_weight=class_weights_folds[i])
         model.fit(X_train, y_train)
         predictions = model.predict(X_test)
         scores.append(accuracy_score(y_test, predictions))

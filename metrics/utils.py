@@ -117,7 +117,8 @@ class TensorStorageManager:
     def retrieve_from_storage_npy(self, query):
         query_dict = query.query
         #TODO - Adapt path to query
-        storage_path = Path(f"/orfeo/cephfs/scratch/area/ddoimo/open/geometric_lens/repo/results/mmlu/llama-2-7b/0shot")
+        #import pdb; pdb.set_trace()
+        storage_path = Path(f"/orfeo/cephfs/scratch/area/ddoimo/open/geometric_lens/repo/results/mmlu/llama-2-7b/{query_dict['train_instances']}shot")
         files = os.listdir(storage_path)
 
         # Filter files with the specific pattern and range check
