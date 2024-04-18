@@ -80,9 +80,9 @@ class HiddenStates():
     label_overlap = LabelOverlap(df = self.df, tensor_storage = self.tensor_storage, variations = self.variations)
     return label_overlap.main(label=label)
  
-  def cka(self, label:str) -> pd.DataFrame:
+  def cka(self) -> pd.DataFrame:
     ck_align = CenteredKernelAlignement(df = self.df, tensor_storage = self.tensor_storage, variations = self.variations)
-    return ck_align.main(label=label)
+    return ck_align.main()
   
   
  

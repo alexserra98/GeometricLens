@@ -28,16 +28,12 @@ class CenteredKernelAlignement(HiddenStatesMetrics):
         Output
         df: pd.DataFrame (k,dataset,method,train_instances_i,train_instances_j,overlap)
         """
-        #warn("Computing overlap using k with  2 -25- 500")
-        
-        iter_list = [5,10,30,100,500]
-        iter_list = [5,10,30,100]
 
         rows = []
         if self.variations["cka"]=="rbf":
-            k = [0.1, 1, 10]
+            iter_list = [0.1, 1, 10]
         else:
-            k = 1
+            iter_list = 1
         for k in tqdm.tqdm(iter_list, desc = "Computing overlaps k"):
             for couples in self.pair_names(self.df["model_name"].unique().tolist()):
                 if '13' in couples[0]:
@@ -58,8 +54,8 @@ class CenteredKernelAlignement(HiddenStatesMetrics):
                                 "train_instances": train_instances_j,})
                                 #"dataset": "mmlu:miscellaneous"})
                         
-                        hidden_states_i, _, df_i = hidden_states_collapse(self.df,query_i, self.tensor_storage)
-                        hidden_states_j, _, df_j = hidden_states_collapse(self.df,query_j, self.tensor_storage)
+                        hidden_states_i, _, df_i = hidden_states_collapse(self.df,self.tensor_storage, query_i)
+                        hidden_states_j, _, df_j = hidden_states_collapse(self.df, self.tensor_storage,query_j)
 
                         df_i.reset_index(inplace=True)
                         df_j.reset_index(inplace=True)
@@ -159,15 +155,15 @@ class CenteredKernelAlignement(HiddenStatesMetrics):
         
         if self.variations["cka"]=="rbf":
             data = Data(data_i)
-            data.compute_distaces()
+            data.compute_distances()
             avg_dist = np.average(data.distances[:,1])
             sigma = avg_dist * k
-            cka = cka(gram_rbf(data_i, sigma), gram_rbf(data_j, sigma))
+            cka_out = cka(gram_rbf(data_i, sigma), gram_rbf(data_j, sigma))
         else:
             # CKA from examples
             # cka = cka(gram_linear(X), gram_linear(Y))
             # CKA from features
-            cka = feature_space_linear_cka(data_i, data_j)
+            cka_out = feature_space_linear_cka(data_i, data_j)
         
         return cka
     

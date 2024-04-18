@@ -24,7 +24,7 @@ def main():
     base_dir = Path("/orfeo/scratch/dssc/zenocosini/mmlu_result/transposed_dataset")
     shots = {
         "0shot": 0,
-        "0shot": 2,
+        "2shot": 2,
         "5shot": 5,
     }
     model_name = "meta-llama/Llama-2-7b-hf"
