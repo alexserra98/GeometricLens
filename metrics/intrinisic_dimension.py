@@ -1,5 +1,5 @@
 from metrics.hidden_states_metrics import HiddenStatesMetrics
-from .utils import hidden_states_collapse, HiddenPrints, exact_match, quasi_exact_match
+from .utils import hidden_states_collapse, HiddenPrints, exact_match, quasi_exact_match, TensorStorageManager
 from metrics.query import DataFrameQuery
 from common.globals_vars import _NUM_PROC
 
@@ -12,37 +12,12 @@ from joblib import Parallel, delayed
 from functools import partial
 
 class IntrinsicDimension(HiddenStatesMetrics):
-    
+   
     def main(self) -> pd.DataFrame:
         rows = []
-        datasets = ['mmlu:clinical_knowledge',
-                    'mmlu:astronomy',
-                    'mmlu:computer_security',
-                    'mmlu:econometrics',
-                    'mmlu:electrical_engineering',
-                    'mmlu:elementary_mathematics',
-                    'mmlu:formal_logic',
-                    'mmlu:global_facts',
-                    'mmlu:high_school_biology,high_school_chemistry',
-                    'mmlu:high_school_computer_science',
-                    'mmlu:high_school_geography',
-                    'mmlu:high_school_government_and_politics',
-                    'mmlu:high_school_psychology',
-                    'mmlu:high_school_us_history',
-                    'mmlu:international_law',
-                    'mmlu:jurisprudence',
-                    'mmlu:management',
-                    'mmlu:marketing',
-                    'mmlu:medical_genetics',
-                    'mmlu:miscellaneous',
-                    'mmlu:nutrition',
-                    'mmlu:prehistory',
-                    'mmlu:public_relations']
-        datasets = ['mmlu:clinical_knowledge',
-                    'mmlu:astronomy']
-        
-
+           
         for model in tqdm.tqdm(self.df["model_name"].unique().tolist()):
+            tsm =  TensorStorageManager()  
             if "13" in model:
                 continue
             for method in ["last"]: #self.df["method"].unique().tolist():
@@ -62,15 +37,19 @@ class IntrinsicDimension(HiddenStatesMetrics):
                             raise ValueError("Unknown variation. It must be either None or 'norm'")
                                         
                         if match == "correct":
-                            df = self.df[self.df.apply(lambda r: exact_match(r["only_ref_pred"], r["letter_gold"]), axis=1)]
-                            hidden_states,_, _= hidden_states_collapse(df,query, self.tensor_storage)
+                            df = self.df[self.df.apply(lambda r: exact_match(r["std_pred"], r["letter_gold"]), axis=1)]
+                            #hidden_states,_, _= hidden_states_collapse(df,query, self.tensor_storage)
+                            hidden_states,_, _= tsm.retrieve_tensor(query, self.storage_logic)
+                            #import pdb; pdb.set_trace()
                         elif match == "incorrect":
-                            df = self.df[self.df.apply(lambda r: not exact_match(r["only_ref_pred"], r["letter_gold"]), axis=1)]
-                            hidden_states,_, _= hidden_states_collapse(df,query, self.tensor_storage)
+                            df = self.df[self.df.apply(lambda r: not exact_match(r["std_pred"], r["letter_gold"]), axis=1)]
+                            #hidden_states,_, _= hidden_states_collapse(df,query, self.tensor_storage)
+                            hidden_states,_, _= tsm.retrieve_tensor(query, self.storage_logic)
                         else:
                             df = self.df
                             #import pdb;pdb.set_trace()
-                            hidden_states,_, _= hidden_states_collapse(df,query, self.tensor_storage)
+                            #hidden_states,_, _= hidden_states_collapse(df,query, self.tensor_storage)
+                            hidden_states,_, _= tsm.retrieve_tensor(query, self.storage_logic)
                             #random_integers = np.random.randint(1, 14001, size=2500)
                             #hidden_states = hidden_states[random_integers]
                         id_per_layer_gride, id_per_layer_lpca, id_per_layer_danco = self.parallel_compute(hidden_states)
@@ -134,3 +113,30 @@ class IntrinsicDimension(HiddenStatesMetrics):
             return skdim.id.DANCo().fit(hidden_states[:, i, :])
         elif algorithm == "lPCA":
             return skdim.id.lPCA().fit_pw(hidden_states[:, i, :], n_neighbors = 100, n_jobs = 4)
+
+
+# datasets = ['mmlu:clinical_knowledge',
+#             'mmlu:astronomy',
+#             'mmlu:computer_security',
+#             'mmlu:econometrics',
+#             'mmlu:electrical_engineering',
+#             'mmlu:elementary_mathematics',
+#             'mmlu:formal_logic',
+#             'mmlu:global_facts',
+#             'mmlu:high_school_biology,high_school_chemistry',
+#             'mmlu:high_school_computer_science',
+#             'mmlu:high_school_geography',
+#             'mmlu:high_school_government_and_politics',
+#             'mmlu:high_school_psychology',
+#             'mmlu:high_school_us_history',
+#             'mmlu:international_law',
+#             'mmlu:jurisprudence',
+#             'mmlu:management',
+#             'mmlu:marketing',
+#             'mmlu:medical_genetics',
+#             'mmlu:miscellaneous',
+#             'mmlu:nutrition',
+#             'mmlu:prehistory',
+#             'mmlu:public_relations']
+# datasets = ['mmlu:clinical_knowledge',
+#             'mmlu:astronomy']

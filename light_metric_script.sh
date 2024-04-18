@@ -14,5 +14,6 @@ module load cuda/11.8
 eval "$(conda shell.bash hook)"
 conda activate mcqa
 export PYTHONPATH=/u/dssc/zenocosini/helm_suite/MCQA_Benchmark
-python linear_probe.py 
+python probe/linear_probe_log.py --label letter 
+python probe/linear_probe_log.py --label subject 
 echo "Running job: metrics"

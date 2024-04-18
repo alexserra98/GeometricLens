@@ -8,9 +8,10 @@ import sys
 
 class HiddenStatesMetrics(ABC):
 
-  def __init__(self, df: DataFrame(), tensor_storage, variations: dict = None):
+  def __init__(self, df: DataFrame(), tensor_storage, variations: dict = None, storage_logic: str = "h5"):
     self.df = df
     self.tensor_storage = tensor_storage
+    self.storage_logic = storage_logic
     self.variations = variations
     
   
