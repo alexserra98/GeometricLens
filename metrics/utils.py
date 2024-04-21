@@ -1,17 +1,27 @@
+from metrics.query import DataFrameQuery
+from common.tensor_storage import TensorStorage
+from common.globals_vars import _DEBUG
+
 from dadapy.data import Data
+
 import numpy as np
+import torch
+import pandas as pd
+from einops import rearrange
+
 from dataclasses import dataclass
 from enum import Enum
 from typing import Dict, List, NamedTuple
-import pandas as pd
 import functools
 from warnings import warn
 from functools import partial
-from metrics.query import DataFrameQuery
-from common.tensor_storage import TensorStorage
 import time
 import sys
 import os
+from pathlib import Path
+import os
+import re
+
 @dataclass
 class RunMeta():
   num_layers: int
@@ -37,7 +47,108 @@ class InstanceHiddenStates():
   match: Match
   hidden_states: Dict[str, np.ndarray]
 
+class TensorStorageManager:
+    def __init__(self, storage_config_h5: TensorStorage = None, storage_config_npy: Path = None):
+        # Initialization with storage configurations or connections
+        self.storage_h5 = storage_config_h5
+        self.storage_npy = storage_config_npy
 
+
+    def retrieve_from_storage_h5(self, df_hiddenstates: pd.DataFrame, query: DataFrameQuery = None) -> tuple:
+        """
+        Collect hidden states of all instances and collapse them in one tensor
+        using the provided method.
+
+        Parameters
+        ----------
+        df_hiddenstates : pd.DataFrame
+            DataFrame containing the hidden states of all instances
+            with columns: hiddens_states, match, layer, answered letter, gold letter.
+        query : DataFrameQuery
+            A query object to filter df_hiddenstates; not used if None.
+
+        Returns
+        -------
+        tuple of (np.ndarray, np.ndarray, pd.DataFrame)
+            Returns a tuple containing arrays of hidden states, logits, and the original DataFrame.
+        """
+        if query is not None:
+            df_hiddenstates = query.apply_query(df_hiddenstates)
+
+        # Generate paths using vectorized operations
+        df_hiddenstates['path_hidden_states'] = df_hiddenstates.apply(
+            lambda row: f"{row['model_name'].replace('/', '-')}/{row['dataset']}/{row['train_instances']}/hidden_states",
+            axis=1)
+        df_hiddenstates['path_logits'] = df_hiddenstates.apply(
+            lambda row: f"{row['model_name'].replace('/', '-')}/{row['dataset']}/{row['train_instances']}/logits",
+            axis=1)
+
+        hidden_states, logits = [], []
+        start_time = time.time()
+
+        # Process each unique path only once
+        for path in df_hiddenstates['path_hidden_states'].unique():
+            ids = df_hiddenstates.loc[df_hiddenstates['path_hidden_states'] == path, 'id_instance']
+            hidden_states.append(self.storage_h5.load_tensors(path, ids.tolist()))
+
+        for path in df_hiddenstates['path_logits'].unique():
+            ids = df_hiddenstates.loc[df_hiddenstates['path_logits'] == path, 'id_instance']
+            logits.append(self.storage_h5.load_tensors(path, ids.tolist()))
+
+        end_time = time.time()
+
+        # Ensure order is preserved using try-except
+        try:
+            hidden_states = np.concatenate(hidden_states)
+            logits = np.concatenate(logits)
+            assert (df_hiddenstates['id_instance'].tolist() == ids.tolist()), "The order of the instances is not the same"
+        except AssertionError as e:
+            print(f"Error in tensor retrieval: {str(e)}")
+            # Handle error or reprocess as needed
+            # This could involve reordering the arrays based on the original DataFrame order
+            # Or any other corrective action as deemed necessary
+
+        # Debugging information
+        if _DEBUG:
+            print(f"Tensor retrieval took: {end_time - start_time:.2f} seconds")
+
+        return hidden_states, logits, df_hiddenstates
+        
+    def retrieve_from_storage_npy(self, query):
+        query_dict = query.query
+        #TODO - Adapt path to query
+        #import pdb; pdb.set_trace()
+        storage_path = Path(f"/orfeo/cephfs/scratch/area/ddoimo/open/geometric_lens/repo/results/mmlu/llama-2-7b/{query_dict['train_instances']}shot")
+        files = os.listdir(storage_path)
+
+        # Filter files with the specific pattern and range check
+        pattern = re.compile(r'l(\d+)_target\.pt')
+        filtered_files = [file for file in files if pattern.match(file)]
+
+        # Sort files based on the number in the filename
+        filtered_files.sort(key=lambda x: int(pattern.match(x).group(1)))
+
+        # Load tensors and add them to a list
+        tensors = [torch.load(os.path.join(storage_path, file)) for file in filtered_files]
+
+        # Stack all tensors along a new dimension
+        stacked_tensor = torch.stack(tensors[:-1])
+        stacked_tensor = rearrange(stacked_tensor, 'l n d -> n l d')
+        logits = torch.tensor(tensors[-1])
+
+        
+        df = pd.read_pickle("/orfeo/scratch/dssc/zenocosini/mmlu_result/transposed_dataset/df.pkl")
+
+        return stacked_tensor.float().numpy(), logits.float().numpy(), df
+   
+    def retrieve_tensor(self, query, criteria):
+        # Decision logic to choose the storage
+        if criteria == 'h5':
+            return self.retrieve_from_storage_h5(query)
+        elif criteria == 'npy':
+            return self.retrieve_from_storage_npy(query)
+        
+        
 def hidden_states_collapse( df_hiddenstates: pd.DataFrame(), 
                             tensor_storage: TensorStorage,
                             query: DataFrameQuery = None) -> np.ndarray:
@@ -186,3 +297,4 @@ def angular_distance(mat):
     distances = np.arccos(cosine_similarity) / np.pi
     distances.sort(axis=1)
     return mat
+

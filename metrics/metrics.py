@@ -106,6 +106,9 @@ class Metrics():
       
       elif metric == "last_layer_id_diff":
         return self._compute_layer_id_diff()
+      
+      elif metric == "cka":
+        return hidden_states.cka()
       else:
         raise NotImplementedError
     

@@ -7,6 +7,8 @@ source /u/area/ddoimo/anaconda3/bin/activate ./env_amd
 
 export OMP_NUM_THREADS=32
 
+export PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"
+
 torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
         --nnodes=1  --nproc-per-node=8 \
     cluster_analysis/extract_repr.py \

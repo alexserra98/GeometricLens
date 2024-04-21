@@ -1,69 +1,63 @@
-from common.utils import *
-from utils import  _PATH, \
-                   retrieve_df, \
-                   retrieve_dataset
-from utils_log import cross_validate_model
-
-from pathlib  import Path
-
 import numpy as np
 import pandas as pd
-
-from sklearn.utils.class_weight import compute_class_weight
-from sklearn.model_selection import StratifiedKFold
-
-
 from pathlib import Path
-import pickle
-import joblib
+import argparse
 import logging
-import tqdm
+from joblib import Parallel, delayed
+from sklearn.model_selection import StratifiedKFold
+from sklearn.utils.class_weight import compute_class_weight
+from utils_log import cross_validate_model
+from utils import _PATH, retrieve_df, retrieve_dataset
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s-%(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+def perform_cross_validation(train_folds, test_folds, class_weights_folds, layer):
+    average_accuracy, scores = cross_validate_model(
+        train_folds=train_folds,
+        test_folds=test_folds,
+        class_weights_folds=class_weights_folds,
+        layer=layer,
+        n_folds=5
+    )
+    return layer, average_accuracy, scores
 
 def main():
-    result_path = Path(_PATH,"log_reg")
-    result_path.mkdir(exist_ok=True,parents=True)    
-    df_hiddenstates = retrieve_df()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--label', help='Label to probe', required=True)
+    args = parser.parse_args()
+
+    result_path = Path(_PATH, "log_reg")
+    result_path.mkdir(exist_ok=True, parents=True)
     n_folds = 5
-    accuracies = []
-    
-    train_folds = []
-    test_folds = []
-    class_weight_folds = []
-    
-    skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=42)
-    
-    for train, test in skf.split(df_hiddenstates, df_hiddenstates["dataset"]):
-        X_train, y_train = retrieve_dataset(df_hiddenstates.iloc[train])
-        X_test, y_test = retrieve_dataset(df_hiddenstates.iloc[test])
-        classes = np.unique(y_train)
-        weights = compute_class_weight('balanced', classes=classes, y=y_train)
-        class_weight = dict(zip(classes, weights))
-        train_folds.append((X_train, y_train))
-        test_folds.append((X_test, y_test))
-        class_weight_folds.append(class_weight)
-    
-    for layer in tqdm.tqdm(range(33), desc="Computing probe..."):
-        # Cross-validate the model
-        average_accuracy, scores = cross_validate_model(train_folds=train_folds,
-                                                        test_folds=test_folds,
-                                                        class_weights_folds=class_weight_folds,
-                                                        layer=layer,
-                                                        n_folds=5)
-        accuracies.append(average_accuracy)
-        logging.info(f'Layer {layer}: Mean CV Accuracy = {average_accuracy:.2f}, Scores = {scores}')
 
+    accuracies_dict = {}
 
-    with open(result_path / "cross_val_accuracies.pkl", "wb") as f:
-        pickle.dump(accuracies, f)
+    for shot in [0, 2, 5]:
+        df_hiddenstates = retrieve_df(train_instances=shot)
+        X, y = retrieve_dataset(df_hiddenstates, args.label)
+        skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=42)
 
-    # Pretty print the accuracies
-    logging.info(f'The accuracy of the logistic regression model at each layers is')
-    accuracies_df = pd.DataFrame(list(accuracies.items()), columns=['Layer', 'Accuracy'])
-    print(accuracies_df.to_string(index=False))
-    
+        train_folds = []
+        test_folds = []
+        class_weight_folds = []
+        for train_index, test_index in skf.split(X, y):
+            X_train, y_train = X[train_index], y[train_index]
+            X_test, y_test = X[test_index], y[test_index]
+            class_weight = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
+            train_folds.append((X_train, y_train))
+            test_folds.append((X_test, y_test))
+            class_weight_folds.append(dict(zip(np.unique(y_train), class_weight)))
+
+        results = Parallel(n_jobs=-1)(delayed(perform_cross_validation)(train_folds, test_folds, class_weight_folds, layer)
+                                     for layer in range(33))
+        results.sort()  # Sort results by layer as they may not be in order due to parallel processing
+        accuracies = [acc for _, acc, _ in results]
+        accuracies_dict[shot] = accuracies
+        for layer, acc, scores in results:
+            logging.info(f'Layer {layer}: Mean CV Accuracy = {acc:.2f}, Scores = {scores}')
+
+    df = pd.DataFrame(accuracies_dict)
+    df.to_pickle(result_path / f"cross_val_accuracies_{args.label}.pkl")
+
 if __name__ == "__main__":
     main()
-
-

@@ -4,6 +4,7 @@ from metrics.query import DataFrameQuery
 from metrics.intrinisic_dimension import IntrinsicDimension
 from metrics.clustering import LabelClustering, PointClustering
 from metrics.overlap import PointOverlap, LabelOverlap
+from metrics.cka import CenteredKernelAlignement
 from common.tensor_storage import TensorStorage
 #from sklearn.feature_selection import mutual_info_regression MISSIN?
 from dadapy.data import Data
@@ -79,6 +80,9 @@ class HiddenStates():
     label_overlap = LabelOverlap(df = self.df, tensor_storage = self.tensor_storage, variations = self.variations)
     return label_overlap.main(label=label)
  
+  def cka(self) -> pd.DataFrame:
+    ck_align = CenteredKernelAlignement(df = self.df, tensor_storage = self.tensor_storage, variations = self.variations)
+    return ck_align.main()
   
   
  
