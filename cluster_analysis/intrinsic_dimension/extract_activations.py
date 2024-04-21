@@ -254,7 +254,7 @@ class extract_activations:
         self.hidden_size += num_current_tokens
         return seq_len
 
-    @torch.no_grad()
+    @torch.inference_mode()
     def extract(self, dataloader, tokenizer):
         start = time.time()
         is_last_batch = False
