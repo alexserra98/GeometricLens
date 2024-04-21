@@ -161,7 +161,7 @@ class MMLU_Dataset:
         if self.num_few_shots > 0 and self.num_few_shots <= 5:
             few_shot_dataset = load_dataset("cais/mmlu", "all", split="dev")
         elif self.num_few_shots > 5:
-            few_shot_dataset = load_dataset("cais/mmlu", "all", split="dev+val")
+            few_shot_dataset = load_dataset("cais/mmlu", "all", split="dev+validation")
 
         encode_function = partial(
             self.construct_prompt,

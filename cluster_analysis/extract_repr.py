@@ -241,7 +241,6 @@ def main():
     max_seq_len = model.config.max_position_embeddings
     if args.max_seq_len is not None:
         max_seq_len = args.max_seq_len
-
     accelerator.print(max_seq_len)
 
     # useless in this case:
@@ -259,7 +258,7 @@ def main():
         num_processes=args.preprocessing_num_workers,
         num_samples=args.num_samples,
     ).construct_dataset()
-    
+
     accelerator.print("num few shots:", args.num_few_shots)
     accelerator.print("max_seq_len:", len(longest_seq["input_ids"][0]))
 
@@ -285,7 +284,7 @@ def main():
     # just few forward passes with the longest sequences
     accelerator.print("testing longest seq fints into memory..")
     sys.stdout.flush()
-    
+
     is_memory_enough(
         model, longest_seq, args.micro_batch_size, pad_token_id, max_seq_len, world_size
     )
