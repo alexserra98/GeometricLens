@@ -279,6 +279,7 @@ def main():
     print_memory_consumed(accelerator.process_index)
     model = accelerator.prepare(model)
     accelerator.print("model put to gpus")
+    
     print_memory_consumed(accelerator.process_index)
 
     # just few forward passes with the longest sequences
