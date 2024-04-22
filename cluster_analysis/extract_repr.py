@@ -167,6 +167,11 @@ def parse_args():
         type=str,
         default="bf16",
     )
+    parser.add_argument(
+        "--split",
+        type=str,
+        default="test",
+    )
     args = parser.parse_args()
     return args
 
@@ -258,6 +263,7 @@ def main():
         subject=None,
         num_processes=args.preprocessing_num_workers,
         num_samples=args.num_samples,
+        split=args.split,
     ).construct_dataset()
 
     accelerator.print("num few shots:", args.num_few_shots)
@@ -312,6 +318,10 @@ def main():
     accelerator.print("num_total_samples", nsamples)
 
     dirpath = args.out_dir + f"/{model_name}/{args.num_few_shots}shot"
+
+    if args.split != "test":
+        dirpath = args.out_dir + f"/validation/{model_name}/{args.num_few_shots}shot"
+
     compute_id(
         accelerator=accelerator,
         model=model,
