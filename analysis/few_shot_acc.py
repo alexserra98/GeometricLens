@@ -14,39 +14,67 @@ models = [
     "llama-2-13b-chat",
     "llama-2-70b",
     "llama-2-70b-chat",
+    "llama-3-8b",
+    "llama-3-8b-chat",
 ]
 
 
 accuracy = {}
 constrained = {}
-for model in models:
+colors = []
+for i, model in enumerate(models):
+    tmp = {}
+    constr_tmp = {}
     for shot in range(6):
         try:
             with open(
                 f"{base_dir}/{model}/{shot}shot/statistics_target.pkl", "rb"
             ) as f:
                 stats = pickle.load(f)
-                accuracy[f"{model[8:]}-{shot}"] = stats["accuracy"]
-                constrained[f"{model[8:]}-{shot}"] = stats["constrained_accuracy"]
+                tmp[f"{shot}"] = stats["accuracy"]
+                constr_tmp[f"{shot}"] = stats["constrained_accuracy"]
         except:
             print(f"{model} {shot} not found")
 
+    accuracy[f"{model}"] = tmp
+    constrained[f"{model}"] = constr_tmp
 
-len(accuracy)
-x = np.arange(len(accuracy))
-y = list(accuracy.values())
-y_constrained = list(constrained.values())
-xticklabels = list(accuracy.keys())
-xticks = x
 
-fig = plt.figure(figsize=(7, 4))
+accuracy
+# len(accuracy)
+# x = np.arange(len(accuracy))
+# y = list(accuracy.values())
+# y_constrained = list(constrained.values())
+# xticklabels = list(accuracy.keys())
+# xticks = x
+
+x = []
+y = []
+xticklabels = []
+xticks = []
+count = 0
+for model, shots in accuracy.items():
+    y.append(list(shots.values()))
+    xticklabels.extend([f"{model[6:]}-{shot}" for shot in shots.keys()])
+    x_tmp = count + np.arange(len(shots.keys()))
+    x.append(x_tmp)
+    xticks.extend(list(x_tmp))
+    count += len(shots.keys())
+
+colors = [f"C{i}" for i in range(10)]
+sns.set_style(style="whitegrid")
+fig = plt.figure(figsize=(9.5, 4))
 ax = fig.add_subplot()
-sns.lineplot(ax=ax, x=x, y=y, marker="o", linestyle="None", label="exact match")
-sns.lineplot(
-    ax=ax, x=x, y=y_constrained, marker="o", linestyle="None", label="constrained"
-)
+for i, model in enumerate(models):
+    ax.scatter(x[i], y[i], marker="o", linestyle="None", label=model, color=colors[i])
 ax.set_xticks(xticks)
-ax.set_xticklabels(xticklabels, rotation=60)
+ax.set_xticklabels(xticklabels, rotation=60, fontsize=9)
+ax.legend(fontsize=9)
+
+# sns.lineplot(
+#     ax=ax, x=x, y=y_constrained, marker="o", linestyle="None", label="constrained"
+# )
+
 ax.set_ylabel("accuracy", fontsize=13)
 ax.set_title("MMLU few shot accuracies")
 plt.tight_layout()
