@@ -229,7 +229,7 @@ def main():
     model_name = args.model_name
     if args.checkpoint_dir is not None:
         model_name_tmp = args.checkpoint_dir.split("/")[-1]
-        if model_name_tmp.startswith("llama-2"):
+        if model_name_tmp.startswith("llama-2") or model_name_tmp.startswith("llama-3"):
             model_name = model_name_tmp
 
     # **************************************************************************************
@@ -250,6 +250,7 @@ def main():
 
     # useless in this case:
     pad_token_id = tokenizer.pad_token_id
+    accelerator.print("pad_token_id", pad_token_id)
     n_layer = model.config.num_hidden_layers
     accelerator.print("model loaded. \n\n")
     sys.stdout.flush()
@@ -284,6 +285,7 @@ def main():
     print_memory_consumed(accelerator.process_index)
     model = accelerator.prepare(model)
     accelerator.print("model put to gpus")
+    
     print_memory_consumed(accelerator.process_index)
 
     # just few forward passes with the longest sequences
