@@ -16,6 +16,8 @@ models = [
     "llama-2-70b-chat",
     "llama-3-8b",
     "llama-3-8b-chat",
+    "llama-3-70b",
+    "llama-3-70b-chat",
 ]
 
 
@@ -65,15 +67,17 @@ colors = [f"C{i}" for i in range(10)]
 sns.set_style(style="whitegrid")
 fig = plt.figure(figsize=(9.5, 4))
 ax = fig.add_subplot()
+ax.axvspan(-2, 26, color="C0", alpha=0.08, label="Llama 2")
+ax.axvspan(26, 46, color="C1", alpha=0.08, label="Llama 3")
 for i, model in enumerate(models):
-    ax.scatter(x[i], y[i], marker="o", linestyle="None", label=model, color=colors[i])
+    ax.scatter(x[i], y[i], marker="o", linestyle="None", color=colors[i])
 ax.set_xticks(xticks)
 ax.set_xticklabels(xticklabels, rotation=60, fontsize=9)
-ax.legend(fontsize=9)
 
-# sns.lineplot(
-#     ax=ax, x=x, y=y_constrained, marker="o", linestyle="None", label="constrained"
-# )
+ax.set_ylim(0.22, 0.83)
+ax.set_xlim(-1, 42)
+ax.axhline(0.25, label="random baseline", color="black", linewidth="0.8")
+ax.legend(fontsize=11)
 
 ax.set_ylabel("accuracy", fontsize=13)
 ax.set_title("MMLU few shot accuracies")

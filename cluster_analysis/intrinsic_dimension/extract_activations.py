@@ -10,6 +10,36 @@ rng = np.random.default_rng(42)
 # ***************************************************
 
 
+def get_target_layers_llama(model, n_layer, option="norm1", every=1, world_size=1):
+    map_names = dict(
+        norm1=".input_layernorm",
+        norm2=".post_attention_layernorm",
+        res2="",
+    )
+    suffix = map_names[option]
+    names = [name for name, _ in model.named_modules()]
+
+    prefix = "module."
+    middle = ""
+    # accelerate does not cast to bf16 a DDP model yet
+    if world_size > 0:
+        prefix = "_fsdp_wrapped_module."
+        if map_names[option] != "":
+            middle = "._fsdp_wrapped_module"
+
+    target_layers = {
+        i: f"{prefix}model.layers.{i}{middle}{suffix}" for i in range(0, n_layer, every)
+    }
+
+    target_layers[n_layer] = f"{prefix}model.norm"
+    target_layers[n_layer + 1] = f"{prefix}lm_head"
+
+    for target_layer in target_layers.values():
+        assert target_layer in names, (target_layer, names)
+
+    return target_layers
+
+
 class extract_activations:
     def __init__(
         self,
@@ -42,6 +72,8 @@ class extract_activations:
         self.global_batch_size = self.world_size * self.micro_batch_size
         self.hidden_size = 0
 
+        # to remove the hooks
+        self.handles = {}
         print("rank: nsamples", self.rank, self.nsamples)
         print("rank: nbatches", self.rank, self.nbatches)
         sys.stdout.flush()
@@ -69,7 +101,7 @@ class extract_activations:
     def init_hooks(self, target_layers):
         for name, module in self.model.named_modules():
             if name in target_layers:
-                module.register_forward_hook(
+                self.handles["name"] = module.register_forward_hook(
                     self._get_hook(name, self.hidden_states_tmp)
                 )
 
@@ -334,5 +366,8 @@ class extract_activations:
         self.predictions = torch.tensor(self.predictions)
         self.constrained_predictions = torch.tensor(self.constrained_predictions)
         self.targets = torch.tensor(self.targets)
-        # self.logits = torch.cat(logit_list, dim=0)
-        # self.input_ids = batch_list
+
+    def remove_hooks(self):
+        # remove all hooks
+        for handle in self.handles.values():
+            handle.remove()

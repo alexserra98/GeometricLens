@@ -36,7 +36,7 @@ rsync_remote_to_local() {
 remote_host="ddoimo@195.14.102.215"
 remote_base_path="/u/area/ddoimo/ddoimo/open/geometric_lens/repo/results/mmlu"
 local_base_path="./results/mmlu"
-model_list=("llama-2-7b" "llama-2-7b-chat" "llama-2-13b" "llama-2-13b-chat" "llama-2-70b" "llama-2-70b-chat" "llama-3-8b" "llama-3-8b-chat")
+model_list=("llama-2-7b" "llama-2-7b-chat" "llama-2-13b" "llama-2-13b-chat" "llama-2-70b" "llama-2-70b-chat" "llama-3-8b" "llama-3-8b-chat" "llama-3-70b" "llama-3-70b-chat")
 
 
 
