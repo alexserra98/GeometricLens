@@ -119,7 +119,9 @@ class TensorStorageManager:
         query_dict = query.query
         #TODO - Adapt path to query
         #import pdb; pdb.set_trace()
-        storage_path = Path(f"/orfeo/cephfs/scratch/area/ddoimo/open/geometric_lens/repo/results/mmlu/llama-2-7b/{query_dict['train_instances']}shot")
+        adapted_name = query_dict["model_name"][11:]
+        adapted_name = adapted_name[:3]
+        storage_path = Path(f"/orfeo/cephfs/scratch/area/ddoimo/open/geometric_lens/repo/results/mmlu/{adapted_name}/{query_dict['train_instances']}shot")
         files = os.listdir(storage_path)
 
         # Filter files with the specific pattern and range check
@@ -140,11 +142,16 @@ class TensorStorageManager:
         #retrieve statistics
         with open(Path(storage_path,"statistics_target.pkl"), "rb") as f:
             stat_target = pickle.load(f)
-
+            
+        df = pd.DataFrame(stat_target)
+        df = df.rename(columns={"subjects":"dataset", "predictions":"std_pred","answers":"letter_gold", "contrained_predictions":"only_ref_pred",})
+        df["train_instances"] = query_dict["train_instances"]
+        df["model_name"] = query_dict["model_name"] #"meta-llama-Llama-2-7b-hf"
+        df["method"] = "last"
         
-        df = pd.read_pickle("/orfeo/scratch/dssc/zenocosini/mmlu_result/transposed_dataset/df.pkl")
+        #df = pd.read_pickle("/orfeo/scratch/dssc/zenocosini/mmlu_result/transposed_dataset/df.pkl")
 
-        return stacked_tensor.float().numpy(), logits.float().numpy(), stat_target
+        return stacked_tensor.float().numpy(), logits.float().numpy(), df
    
     def retrieve_tensor(self, query, criteria):
         # Decision logic to choose the storage

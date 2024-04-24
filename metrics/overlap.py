@@ -1,5 +1,8 @@
 from metrics.hidden_states_metrics import HiddenStatesMetrics
-from .utils import  hidden_states_collapse, exact_match, angular_distance
+from .utils import hidden_states_collapse, \
+                   exact_match, \
+                   angular_distance, \
+                   TensorStorageManager
 from metrics.query import DataFrameQuery
 from common.globals_vars import _NUM_PROC
 
@@ -11,7 +14,6 @@ from sklearn.metrics.cluster import adjusted_rand_score, adjusted_mutual_info_sc
 import tqdm
 import pandas as pd
 import numpy as np
-import warnings
 import time
 from functools import partial
 from joblib import Parallel, delayed
@@ -207,18 +209,29 @@ class LabelOverlap(HiddenStatesMetrics):
         #The last token is always the same, thus its first layer activation (embedding) is always the same
         iter_list=[0.05,0.10,0.20,0.50]
         rows = []
-        
+        models = ["meta-llama-Llama-2-7b-hf", 
+                  "meta-llama-Llama-2-7b-chat-hf", 
+                  "meta-llama-Llama-2-13b-hf",  
+                  "meta-llama-Llama-2-13b-chat-hf",
+                  "meta-llama-Llama-2-70b-hf",
+                  "meta-llama-Llama-2-70b-chat-hf",
+                  "meta-llama-Llama-3-8b-hf",
+                  "meta-llama-Llama-3-8b-chat-hf",
+                  "meta-llama-Llama-3-70b-hf",
+                  "meta-llama-Llama-3-70b-chat-hf",]
         for class_fraction in tqdm.tqdm(iter_list, desc = "Computing overlap"):
-            for model in self.df["model_name"].unique().tolist():
-                if "13" in model:
-                    continue 
+            for model in models:#self.df["model_name"].unique().tolist():
+                tsm =  TensorStorageManager() 
                 for method in ["last"]: #self.df["method"].unique().tolist():
                     for train_instances in ["0","2","5"]:#self.df["train_instances"].unique().tolist():
+                        if "chat" in model and train_instances != "0":
+                            continue
                         query = DataFrameQuery({"method":method,
                                                 "model_name":model,
                                                 "train_instances": train_instances}) 
                                     
-                        hidden_states, logits, hidden_states_df= hidden_states_collapse(self.df,query, self.tensor_storage)
+                        # hidden_states, logits, hidden_states_df= hidden_states_collapse(self.df,query, self.tensor_storage)
+                        hidden_states,_, hidden_states_df= tsm.retrieve_tensor(query, self.storage_logic)
                         row = [model, method, train_instances, class_fraction]
                         label_per_row = self.constructing_labels(hidden_states_df, hidden_states)
                     
@@ -256,6 +269,11 @@ class LabelOverlap(HiddenStatesMetrics):
         with Parallel(n_jobs=_NUM_PROC) as parallel:
             results = parallel(delayed(process_layer)(num_layer) for num_layer in range(hidden_states.shape[1]))
         end_time = time.time()
+        
+        #results = []
+        #for layer in range(number_of_layers):
+        #    results.append(process_layer(layer))
+        
         print(f"Label overlap over batch of data took: {end_time-start_time}")
         overlaps = list(results)
 
