@@ -21,6 +21,7 @@ import os
 from pathlib import Path
 import os
 import re
+import pickle
 
 @dataclass
 class RunMeta():
@@ -134,12 +135,16 @@ class TensorStorageManager:
         # Stack all tensors along a new dimension
         stacked_tensor = torch.stack(tensors[:-1])
         stacked_tensor = rearrange(stacked_tensor, 'l n d -> n l d')
-        logits = torch.tensor(tensors[-1])
+        logits = tensors[-1]
+
+        #retrieve statistics
+        with open(Path(storage_path,"statistics_target.pkl"), "rb") as f:
+            stat_target = pickle.load(f)
 
         
         df = pd.read_pickle("/orfeo/scratch/dssc/zenocosini/mmlu_result/transposed_dataset/df.pkl")
 
-        return stacked_tensor.float().numpy(), logits.float().numpy(), df
+        return stacked_tensor.float().numpy(), logits.float().numpy(), stat_target
    
     def retrieve_tensor(self, query, criteria):
         # Decision logic to choose the storage
