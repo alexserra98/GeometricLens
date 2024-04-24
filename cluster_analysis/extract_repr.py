@@ -167,6 +167,11 @@ def parse_args():
         type=str,
         default="bf16",
     )
+    parser.add_argument(
+        "--split",
+        type=str,
+        default="test",
+    )
     args = parser.parse_args()
     return args
 
@@ -224,7 +229,7 @@ def main():
     model_name = args.model_name
     if args.checkpoint_dir is not None:
         model_name_tmp = args.checkpoint_dir.split("/")[-1]
-        if model_name_tmp.startswith("llama-2"):
+        if model_name_tmp.startswith("llama-2") or model_name_tmp.startswith("llama-3"):
             model_name = model_name_tmp
 
     # **************************************************************************************
@@ -241,11 +246,11 @@ def main():
     max_seq_len = model.config.max_position_embeddings
     if args.max_seq_len is not None:
         max_seq_len = args.max_seq_len
-
     accelerator.print(max_seq_len)
 
     # useless in this case:
     pad_token_id = tokenizer.pad_token_id
+    accelerator.print("pad_token_id", pad_token_id)
     n_layer = model.config.num_hidden_layers
     accelerator.print("model loaded. \n\n")
     sys.stdout.flush()
@@ -258,8 +263,9 @@ def main():
         subject=None,
         num_processes=args.preprocessing_num_workers,
         num_samples=args.num_samples,
+        split=args.split,
     ).construct_dataset()
-    
+
     accelerator.print("num few shots:", args.num_few_shots)
     accelerator.print("max_seq_len:", len(longest_seq["input_ids"][0]))
 
@@ -279,12 +285,13 @@ def main():
     print_memory_consumed(accelerator.process_index)
     model = accelerator.prepare(model)
     accelerator.print("model put to gpus")
+    
     print_memory_consumed(accelerator.process_index)
 
     # just few forward passes with the longest sequences
     accelerator.print("testing longest seq fints into memory..")
     sys.stdout.flush()
-    
+
     is_memory_enough(
         model, longest_seq, args.micro_batch_size, pad_token_id, max_seq_len, world_size
     )
@@ -311,6 +318,10 @@ def main():
     accelerator.print("num_total_samples", nsamples)
 
     dirpath = args.out_dir + f"/{model_name}/{args.num_few_shots}shot"
+
+    if args.split != "test":
+        dirpath = args.out_dir + f"/validation/{model_name}/{args.num_few_shots}shot"
+
     compute_id(
         accelerator=accelerator,
         model=model,

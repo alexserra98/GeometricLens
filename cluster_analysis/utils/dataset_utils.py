@@ -41,6 +41,7 @@ class MMLU_Dataset:
         subject=None,
         num_processes=1,
         num_samples=None,
+        split="test",
     ):
 
         self.dataset = "mmlu"
@@ -56,6 +57,7 @@ class MMLU_Dataset:
         self.num_processes = num_processes
         self.num_samples = num_samples
         self.accelerator = accelerator
+        self.split = split
 
     def format_subject(self, subject):
         l = subject.split("_")
@@ -149,7 +151,7 @@ class MMLU_Dataset:
         """
         # removed trust remote code
         self.accelerator.print("loading dataset")
-        split = "test"
+        split = self.split
         if self.num_samples is not None:
             split = f"test[:{self.num_samples}]"
         if self.subject is not None:
@@ -161,7 +163,8 @@ class MMLU_Dataset:
         if self.num_few_shots > 0 and self.num_few_shots <= 5:
             few_shot_dataset = load_dataset("cais/mmlu", "all", split="dev")
         elif self.num_few_shots > 5:
-            few_shot_dataset = load_dataset("cais/mmlu", "all", split="dev+val")
+            assert self.split != "validation"
+            few_shot_dataset = load_dataset("cais/mmlu", "all", split="dev+validation")
 
         encode_function = partial(
             self.construct_prompt,
