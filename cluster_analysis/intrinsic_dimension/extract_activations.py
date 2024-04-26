@@ -296,6 +296,7 @@ class extract_activations:
         is_last_batch = False
         choices = ["A", "B", "C", "D"]
 
+        inputs = []
         self.predictions = []
         self.constrained_predictions = []
         self.targets = []
@@ -318,6 +319,8 @@ class extract_activations:
             targets = data["labels"].to("cuda")
 
             outputs = self.model(batch)
+            assert batch.shape[0] == 1
+            inputs.append(batch.detach().cpu())
 
             if self.world_size > 1:
                 seq_len = self._gather_and_update_fsdp(mask, is_last_batch)
@@ -367,6 +370,7 @@ class extract_activations:
                     )
                     sys.stdout.flush()
 
+        self.hidden_states["inputs"] = torch.cat(inputs)
         self.predictions = torch.tensor(self.predictions)
         self.constrained_predictions = torch.tensor(self.constrained_predictions)
         self.targets = torch.tensor(self.targets)
