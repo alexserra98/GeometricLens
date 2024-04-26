@@ -21,6 +21,18 @@ models = [
 ]
 
 
+with open(f"{base_dir}/{models[0]}/0shot/statistics_target.pkl", "rb") as f:
+    stats = pickle.load(f)
+
+num = []
+for subject in np.unique(stats["subjects"]):
+    mask = subject == np.array(stats["subjects"])
+    print(subject, np.sum(mask))
+    num.append(np.sum(mask))
+
+np.sum(num)
+mask
+
 accuracy = {}
 constrained = {}
 colors = []
