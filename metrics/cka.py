@@ -33,7 +33,7 @@ class CenteredKernelAlignement(HiddenStatesMetrics):
         if self.variations["cka"]=="rbf":
             iter_list = [0.1, 1, 10]
         else:
-            iter_list = 1
+            iter_list = [1]
         for k in tqdm.tqdm(iter_list, desc = "Computing overlaps k"):
             for couples in self.pair_names(self.df["model_name"].unique().tolist()):
                 if '13' in couples[0]:
@@ -64,17 +64,16 @@ class CenteredKernelAlignement(HiddenStatesMetrics):
                             assert row_i[1]["id_instance"].replace("chat-","")[:-1] == row_j[1]["id_instance"].replace("chat-","")[:-1], "The two runs must have the same instances"
 
                         #import pdb; pdb.set_trace()
-                        if self.variations["point_overlap"] == "cosine" or self.variations["point_overlap"] == "norm" or self.variations["point_overlap"] == "shared_answers":
-                            df_i["exact_match"] = df_i.apply(lambda r: exact_match(r["std_pred"], r["letter_gold"]), axis=1)
-                            df_j["exact_match"] = df_j.apply(lambda r: exact_match(r["std_pred"], r["letter_gold"]), axis=1)
-                            # find the index of rows that have "exact_match" True in both df_i and df_j
-                            indices_i = df_i[df_i["exact_match"] == True].index
-                            indices_j = df_j[df_j["exact_match"] == True].index
-                            # find the intersection of the two sets of indices
-                            indices = indices_i.intersection(indices_j)
-                            hidden_states_i = hidden_states_i[indices]
-                            hidden_states_j = hidden_states_j[indices]
-                    
+                        df_i["exact_match"] = df_i.apply(lambda r: exact_match(r["std_pred"], r["letter_gold"]), axis=1)
+                        df_j["exact_match"] = df_j.apply(lambda r: exact_match(r["std_pred"], r["letter_gold"]), axis=1)
+                        # find the index of rows that have "exact_match" True in both df_i and df_j
+                        indices_i = df_i[df_i["exact_match"] == True].index
+                        indices_j = df_j[df_j["exact_match"] == True].index
+                        # find the intersection of the two sets of indices
+                        indices = indices_i.intersection(indices_j)
+                        hidden_states_i = hidden_states_i[indices]
+                        hidden_states_j = hidden_states_j[indices]
+                
                         id_instance_i = list(map(lambda k: k[:64],df_i["id_instance"].tolist()))
                         id_instance_j = list(map(lambda k: k[:64],df_j["id_instance"].tolist()))
                     
@@ -138,10 +137,11 @@ class CenteredKernelAlignement(HiddenStatesMetrics):
         number_of_layers = data_i.shape[1]
         process_layer = partial(self.process_layer, data_i = data_i, data_j = data_j, k=k) 
         with Parallel(n_jobs=_NUM_PROC) as parallel:
-            results = parallel(delayed(process_layer)(layer) for layer in range(number_of_layers))
+            results = parallel(delayed(process_layer)(layer) for layer in range(1,number_of_layers))
         #results = []
-        #for layer in range(number_of_layers):
+        #for layer in range(4,number_of_layers):
         #    results.append(process_layer(layer))
+        
         overlaps = list(results)
         
         return np.stack(overlaps)
@@ -152,6 +152,8 @@ class CenteredKernelAlignement(HiddenStatesMetrics):
         """
         data_i = data_i[:,layer,:]
         data_j = data_j[:,layer,:]
+        data_i = data_i/np.linalg.norm(data_i,axis=1,keepdims=True)
+        data_j = data_j/np.linalg.norm(data_j,axis=1,keepdims=True)
         
         if self.variations["cka"]=="rbf":
             data = Data(data_i)
@@ -165,6 +167,6 @@ class CenteredKernelAlignement(HiddenStatesMetrics):
             # CKA from features
             cka_out = feature_space_linear_cka(data_i, data_j)
         
-        return cka
+        return cka_out
     
     

@@ -1,7 +1,0 @@
-{
-    "metrics": ["point_overlap","subject_overlap"], 
-    "dataset_folder": "mmlu_result",
-    "variations": "{\"intrinsic_dimension\": \"None\", \"point_overlap\": \"norm\", \"label_overlap\": \"cosine\"}"
-}
-
-

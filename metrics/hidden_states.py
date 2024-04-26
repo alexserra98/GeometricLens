@@ -1,4 +1,3 @@
-
 from .utils import  exact_match, quasi_exact_match, hidden_states_collapse
 from metrics.query import DataFrameQuery
 from metrics.intrinisic_dimension import IntrinsicDimension
@@ -18,13 +17,17 @@ import numpy as np
 import pandas as pd
   
 class HiddenStates():
-  def __init__(self,hidden_states: pd.DataFrame, hidden_states_path: Path, variations:dict = None):
+  def __init__(self,hidden_states: pd.DataFrame, 
+               hidden_states_path: Path, 
+               variations:dict = None):
     self.df = hidden_states
     self.tensor_storage = TensorStorage(hidden_states_path)
     self.variations = variations
  
   def intrinsic_dim(self) -> pd.DataFrame:
-    intrinsic_dim = IntrinsicDimension(df = self.df, tensor_storage = self.tensor_storage, variations=self.variations)
+    intrinsic_dim = IntrinsicDimension(df = self.df, 
+                                       tensor_storage = self.tensor_storage, 
+                                       variations=self.variations)
     return intrinsic_dim.main()
       
   def shot_metrics(self,metrics_list=None) -> Dict[str, Dict[str, float]]:
@@ -63,25 +66,37 @@ class HiddenStates():
     if "variation" in kwargs:
       variation = kwargs["variation"]
     if variation:
-      label_clustering = LabelClustering(df = self.df, tensor_storage = self.tensor_storage, variation = variation)
+      label_clustering = LabelClustering(df = self.df, 
+                                         tensor_storage = self.tensor_storage, 
+                                         variation = variation)
     else:
-      label_clustering = LabelClustering(df = self.df, tensor_storage = self.tensor_storage)
+      label_clustering = LabelClustering(df = self.df, 
+                                         tensor_storage = self.tensor_storage)
     return label_clustering.main(label=label)
   
   def point_overlap(self) -> pd.DataFrame:
-    point_overlap = PointOverlap(df = self.df, tensor_storage = self.tensor_storage, variations = self.variations)
+    point_overlap = PointOverlap(df = self.df, 
+                                 tensor_storage = self.tensor_storage, 
+                                 variations = self.variations)
     return point_overlap.main()
   
   def point_cluster(self) -> pd.DataFrame:
-    point_cluster = PointClustering(df = self.df, tensor_storage = self.tensor_storage, variations = self.variations)
+    point_cluster = PointClustering(df = self.df, 
+                                    tensor_storage = self.tensor_storage, 
+                                    variations = self.variations)
     return point_cluster.main()
   
   def label_overlap(self, label:str) -> pd.DataFrame:
-    label_overlap = LabelOverlap(df = self.df, tensor_storage = self.tensor_storage, variations = self.variations)
+    label_overlap = LabelOverlap(df = self.df, 
+                                 tensor_storage = self.tensor_storage, 
+                                 variations = self.variations, 
+                                 storage_logic = "npy")
     return label_overlap.main(label=label)
  
   def cka(self) -> pd.DataFrame:
-    ck_align = CenteredKernelAlignement(df = self.df, tensor_storage = self.tensor_storage, variations = self.variations)
+    ck_align = CenteredKernelAlignement(df = self.df, 
+                                        tensor_storage = self.tensor_storage, 
+                                        variations = self.variations)
     return ck_align.main()
   
   
