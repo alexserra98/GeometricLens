@@ -31,6 +31,7 @@ def get_target_layers_llama(model, n_layer, option="norm1", every=1, world_size=
         i: f"{prefix}model.layers.{i}{middle}{suffix}" for i in range(0, n_layer, every)
     }
 
+    target_layers[-1] = f"{prefix}model.embed_tokens"
     target_layers[n_layer] = f"{prefix}model.norm"
     target_layers[n_layer + 1] = f"{prefix}lm_head"
 
@@ -115,7 +116,7 @@ class extract_activations:
 
             def hook_fn(module, input, output):
                 if isinstance(input, tuple):
-                    hidden_states[name] =output[0].cpu()
+                    hidden_states[name] = output[0].cpu()
                 else:
                     hidden_states[name] = output.cpu()
 
