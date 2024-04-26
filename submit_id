@@ -26,7 +26,7 @@ export PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"
 torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
        	--nnodes=1  --nproc-per-node=1 \
     cluster_analysis/extract_repr.py \
-    --checkpoint_dir  "/u/area/ddoimo/ddoimo/llama/llama_v3/models_hf/llama-3-8b-chat" \
+    --checkpoint_dir  "/u/area/ddoimo/ddoimo/llama/llama_v3/models_hf/llama-3-8b" \
     --use_slow_tokenizer \
     --preprocessing_num_workers 16 \
     --micro_batch_size 1 \
@@ -40,5 +40,4 @@ torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
     --max_seq_len 4096 \
     --out_filename "" \
     --split "validation"
-
 
