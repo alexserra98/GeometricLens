@@ -370,7 +370,7 @@ class extract_activations:
                     )
                     sys.stdout.flush()
 
-        self.hidden_states["inputs"] = torch.cat(inputs)
+        # self.hidden_states["inputs"] = torch.cat(inputs)
         self.predictions = torch.tensor(self.predictions)
         self.constrained_predictions = torch.tensor(self.constrained_predictions)
         self.targets = torch.tensor(self.targets)
