@@ -18,8 +18,8 @@ def get_embdims(model, dataloader, target_layers):
 
     def get_hook(name, embdims):
         def hook_fn(module, input, output):
-            embdims[name] = output.shape[-1]
-            dtypes[name] = output.dtype
+            embdims[name] = input.shape[-1]
+            dtypes[name] = input.dtype
 
         return hook_fn
 
