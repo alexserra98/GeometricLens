@@ -320,7 +320,8 @@ class extract_activations:
 
             outputs = self.model(batch)
             assert batch.shape[0] == 1
-            inputs.append(batch.detach().cpu())
+            batch = batch.detach().cpu()
+            inputs.extend([torch.tensor([b]) for b in batch[0]])
 
             if self.world_size > 1:
                 seq_len = self._gather_and_update_fsdp(mask, is_last_batch)
