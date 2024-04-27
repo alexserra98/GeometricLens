@@ -38,7 +38,6 @@ torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
     --remove_duplicates \
     --use_last_token \
     --max_seq_len 4096 \
-    --out_filename "hook_output" \
     --split "validation"
 
 
