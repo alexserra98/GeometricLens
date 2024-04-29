@@ -234,11 +234,20 @@ def main():
 
     # **************************************************************************************
     model = get_model(
+        accelerator=accelerator,
         model_name_or_path=args.checkpoint_dir,
         precision=torch.bfloat16,
         low_cpu_mem_usage=args.low_cpu_mem_usage,
-        accelerator=accelerator,
     )
+
+    if args.finetuned_path:
+        from peft import PeftModel
+
+        accelerator.print("loading pretrained peft models")
+        model = PeftModel.from_pretrained(model, args.finetuned_path)
+        model.print_trainable_parameters()
+
+    # ***************************************************************************************
 
     tokenizer = get_tokenizer(
         tokenizer_path=args.tokenizer_dir, model_path=args.checkpoint_dir
@@ -285,7 +294,7 @@ def main():
     print_memory_consumed(accelerator.process_index)
     model = accelerator.prepare(model)
     accelerator.print("model put to gpus")
-    
+
     print_memory_consumed(accelerator.process_index)
 
     # just few forward passes with the longest sequences
