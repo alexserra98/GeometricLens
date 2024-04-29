@@ -320,17 +320,21 @@ def main():
     elif model_name.startswith("mistral"):
         pass
 
-    elif model_name.startswith("pythia"):
-        pass
-
     nsamples = len(dataloader.dataset)
     accelerator.print("num_total_samples", nsamples)
 
-    dirpath = args.out_dir + f"/{model_name}/{args.num_few_shots}shot"
+    prefix = ""
+    postfix = f"{args.num_few_shots}shot"
+
+    if args.finetuned_path:
+        step = args.finetuned_path.split("/")[1]
+        prefix = "finetuned"
+        postfix = f"{step}"
 
     if args.split != "test":
-        dirpath = args.out_dir + f"/validation/{model_name}/{args.num_few_shots}shot"
+        prefix += "/validation"
 
+    dirpath = args.out_dir + f"{prefix}/{model_name}/{postfix}"
     compute_id(
         accelerator=accelerator,
         model=model,
