@@ -172,7 +172,13 @@ def parse_args():
         type=str,
         default="test",
     )
+    parser.add_argument(
+        "--finetuned_path",
+        type=str,
+        default=None,
+    )
     args = parser.parse_args()
+    
     return args
 
 
