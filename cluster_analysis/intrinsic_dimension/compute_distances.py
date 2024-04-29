@@ -18,8 +18,12 @@ def get_embdims(model, dataloader, target_layers):
 
     def get_hook(name, embdims):
         def hook_fn(module, input, output):
-            embdims[name] = output.shape[-1]
-            dtypes[name] = output.dtype
+            try:
+                embdims[name] = output.shape[-1]
+                dtypes[name] = output.dtype
+            except:
+                embdims[name] = output[0].shape[-1]
+                dtypes[name] = output[0].dtype
 
         return hook_fn
 
@@ -108,7 +112,8 @@ def compute_id(
         act_dict = extr_act.hidden_states
         if save_repr:
             for i, (layer, act) in enumerate(act_dict.items()):
-                torch.save(act, f"{dirpath}/l{target_layer_labels[i]}{filename}.pt")
+                # torch.save(act, f"{dirpath}/l{target_layer_labels[i]}{filename}.pt")
+                torch.save(act, f"{dirpath}/{layer}{filename}.pt")
 
         predictions = extr_act.predictions  # tokens
         constrained_predictions = extr_act.constrained_predictions  # tokens
