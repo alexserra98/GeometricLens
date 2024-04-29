@@ -41,12 +41,13 @@ class Pipeline():
                   "meta-llama/Llama-3-70b-hf",]
         rows = []
         for model in models:
-            for shot in [0,2,5]:
+            for shot in [0,5]:
                 dict_query = {"method":"last",
                               "model_name": model,
                               "train_instances": shot}
                 hidden_states, hidden_states_stat, repeated_indices = self.preprocess(dict_query)
-                for layer in [0,5]:
+                for layer in [3,7,20,33]:
+                    print(f'Iteration with model:{model}, shot:{shot}, layer:{layer}')
                     # compute clustering
                     data = Data(hidden_states[:,layer,:])
                     data.compute_distances(maxk=1000)

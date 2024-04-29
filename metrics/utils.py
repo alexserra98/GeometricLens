@@ -119,8 +119,8 @@ class TensorStorageManager:
         query_dict = query.query
         #TODO - Adapt path to query
         #import pdb; pdb.set_trace()
-        adapted_name = query_dict["model_name"][11:]
-        adapted_name = adapted_name[:3]
+        adapted_name = query_dict["model_name"][11:].lower()
+        adapted_name = adapted_name[:-3]
         storage_path = Path(f"/orfeo/cephfs/scratch/area/ddoimo/open/geometric_lens/repo/results/mmlu/{adapted_name}/{query_dict['train_instances']}shot")
         files = os.listdir(storage_path)
 
@@ -143,6 +143,12 @@ class TensorStorageManager:
         with open(Path(storage_path,"statistics_target.pkl"), "rb") as f:
             stat_target = pickle.load(f)
             
+        for key in stat_target.keys():
+            if isinstance(stat_target[key],float):
+                continue
+            stat_target[key] = stat_target[key][:14039] 
+        
+        #import pdb; pdb.set_trace()    
         df = pd.DataFrame(stat_target)
         df = df.rename(columns={"subjects":"dataset", "predictions":"std_pred","answers":"letter_gold", "contrained_predictions":"only_ref_pred",})
         df["train_instances"] = query_dict["train_instances"]
@@ -151,7 +157,7 @@ class TensorStorageManager:
         
         #df = pd.read_pickle("/orfeo/scratch/dssc/zenocosini/mmlu_result/transposed_dataset/df.pkl")
 
-        return stacked_tensor.float().numpy(), logits.float().numpy(), df
+        return stacked_tensor.float().numpy()[:14039], logits.float().numpy()[:14039], df
    
     def retrieve_tensor(self, query, criteria):
         # Decision logic to choose the storage
