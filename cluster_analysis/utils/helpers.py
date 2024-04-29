@@ -3,7 +3,9 @@ import torch
 from .dataloader_utils import get_dataloader
 
 
-def get_target_layers_llama(model, n_layer, option="norm1", every=1, world_size=1):
+def get_target_layers_llama(
+    model, n_layer, option="norm1", every=1, world_size=1, finetuned=False
+):
     map_names = dict(
         norm1=".input_layernorm",
         norm2=".post_attention_layernorm",
@@ -19,11 +21,13 @@ def get_target_layers_llama(model, n_layer, option="norm1", every=1, world_size=
         prefix = "_fsdp_wrapped_module."
         if map_names[option] != "":
             middle = "._fsdp_wrapped_module"
+    if finetuned:
+        prefix += "base_model.model."
 
     target_layers = {
         i: f"{prefix}model.layers.{i}{middle}{suffix}" for i in range(0, n_layer, every)
     }
-    
+
     target_layers[n_layer] = f"{prefix}model.norm"
     target_layers[n_layer + 1] = f"{prefix}lm_head"
 

@@ -245,10 +245,11 @@ def main():
         precision=torch.bfloat16,
         low_cpu_mem_usage=args.low_cpu_mem_usage,
     )
-
+    is_finetuned = False
     if args.finetuned_path:
         from peft import PeftModel
 
+        is_finetuned = True
         accelerator.print("loading pretrained peft models")
         model = PeftModel.from_pretrained(model, args.finetuned_path)
         model.print_trainable_parameters()
@@ -321,6 +322,7 @@ def main():
             option=args.target_layer,
             every=args.layer_interval,
             world_size=accelerator.num_processes,
+            finetuned=is_finetuned,
         )
 
     elif model_name.startswith("mistral"):
