@@ -224,6 +224,8 @@ class LabelOverlap(HiddenStatesMetrics):
                 tsm =  TensorStorageManager() 
                 for method in ["last"]: #self.df["method"].unique().tolist():
                     for train_instances in ["0","2","5"]:#self.df["train_instances"].unique().tolist():
+                        if "70" in model and train_instances=="5":
+                            train_instances = "4" 
                         if "chat" in model and train_instances != "0":
                             continue
                         query = DataFrameQuery({"method":method,
@@ -238,13 +240,17 @@ class LabelOverlap(HiddenStatesMetrics):
                         overlap = self.parallel_compute(hidden_states, label_per_row, class_fraction=class_fraction) 
                         row.append(overlap)
                         rows.append(row)
-                        
+                df_temp = pd.DataFrame(rows, columns = ["model",
+                                                        "method",
+                                                        "train_instances",
+                                                        "class_fraction",
+                                                        "overlap"]) 
+                df_temp.to_pickle("checkpoint.pkl")                
         df = pd.DataFrame(rows, columns = ["model",
                                         "method",
                                         "train_instances",
                                         "class_fraction",
                                         "overlap"]) 
-
         return df
 
     def constructing_labels(self, hidden_states_df: pd.DataFrame, hidden_states: np.ndarray) -> np.ndarray:
@@ -268,12 +274,12 @@ class LabelOverlap(HiddenStatesMetrics):
         # print(f"Is Variation: {self.variations['overlap']} active? {self.variations['overlap'] == 'norm'}")
         with Parallel(n_jobs=_NUM_PROC) as parallel:
             results = parallel(delayed(process_layer)(num_layer) for num_layer in range(hidden_states.shape[1]))
-        end_time = time.time()
         
         #results = []
         #for layer in range(number_of_layers):
         #    results.append(process_layer(layer))
         
+        end_time = time.time()
         print(f"Label overlap over batch of data took: {end_time-start_time}")
         overlaps = list(results)
 
