@@ -1,0 +1,32 @@
+#!/bin/bash
+#SBATCH --partition=DGX
+##SBATCH --nodelist=dgx001
+#SBATCH --account=lade
+#SBATCH --nodes=1
+#SBATCH --time=4:00:00            
+#SBATCH --ntasks-per-node=1       
+#SBATCH --cpus-per-task=16           
+#SBATCH --mem=50G                
+#SBATCH --job-name=test
+#SBATCH --gres=gpu:0
+
+
+#source /etc/profile.d/modules.sh
+#module use /opt/nvidia/hpc_sdk/modulefiles/
+#module load nvhpc
+
+source /u/area/ddoimo/anaconda3/bin/activate ./env_amd
+
+#source /u/area/ddoimo/anaconda3/bin/activate /u/area/ddoimo/ddoimo/open/open-instruct/env_amd
+
+export OMP_NUM_THREADS=16
+
+export PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"
+
+
+model_name=llama-2-7b
+
+python diego/analysis/compute_overlap.py \
+    --finetuned_mode dev \
+    --model llama-2-7b \
+    --results_path ./results
