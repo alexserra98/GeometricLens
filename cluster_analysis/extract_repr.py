@@ -335,8 +335,8 @@ def main():
     postfix = f"{args.num_few_shots}shot"
 
     if args.finetuned_path:
-        step = args.finetuned_path.split("/")[1]
-        prefix = "finetuned"
+        step = args.finetuned_path.split("/")[-1]
+        prefix = "/finetuned"
         postfix = f"{step}"
 
     if args.split != "test":
