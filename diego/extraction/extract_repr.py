@@ -264,9 +264,9 @@ def main():
 
         is_finetuned = True
         accelerator.print("loading pretrained peft models")
-        if args.ckpt_epoch:
-            epoch_ckpt = f"epoch_{args.ckpt_epoch}"
-        finetune_details = f"finetuned_{args.finetuned_mode}/evaluated_{args.split}/{model_name}/{args.finetuned_epochs}epochs/{epoch_ckpt}"
+        epoch_ckpt = f"epoch_{args.ckpt_epoch}"
+        finetune_details = f"{model_name}/{args.finetuned_mode}/{args.finetuned_epochs}epochs/{epoch_ckpt}"
+
         path = f"{args.finetuned_path}/{finetune_details}"
         model = PeftModel.from_pretrained(model, path)
         model.print_trainable_parameters()
@@ -348,17 +348,13 @@ def main():
     nsamples = len(dataloader.dataset)
     accelerator.print("num_total_samples", nsamples)
 
-    prefix = ""
-    postfix = f"{model_name}/{args.num_few_shots}shot"
+    if args.split != "test":
+        inner_path = f"evaluated_{args.split}/{model_name}/{args.num_few_shots}shot"
 
     if args.finetuned_path:
-        prefix = "finetuned"
-        postfix = f"{finetune_details}"
+        inner_path = f"finetuned_{args.finetuned_mode}/evaluated_{args.split}/{model_name}/{args.finetuned_epochs}epochs/{epoch_ckpt}"
 
-    if args.split != "test":
-        prefix += "/validation"
-
-    dirpath = args.out_dir + f"/{prefix}/{postfix}"
+    dirpath = args.out_dir + f"/{inner_path}"
     compute_id(
         accelerator=accelerator,
         model=model,
