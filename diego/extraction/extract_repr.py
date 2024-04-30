@@ -188,9 +188,8 @@ def parse_args():
         default=None,
     )
     parser.add_argument(
-        "--use_final_ckpt",
-        action="store_true",
-        default=None,
+        "--ckpt_epoch",
+        type=int,
     )
     args = parser.parse_args()
     return args
@@ -265,8 +264,8 @@ def main():
 
         is_finetuned = True
         accelerator.print("loading pretrained peft models")
-        if args.use_final_ckpt:
-            epoch_ckpt = f"epoch_{args.finetuned_epochs}"
+        if args.ckpt_epoch:
+            epoch_ckpt = f"epoch_{args.ckpt_epoch}"
         finetune_details = f"{model_name}/{args.finetuned_mode}/{args.finetuned_epochs}epochs/{epoch_ckpt}"
         path = f"{args.finetuned_path}/{finetune_details}"
         model = PeftModel.from_pretrained(model, path)
@@ -359,7 +358,7 @@ def main():
     if args.split != "test":
         prefix += "/validation"
 
-    dirpath = args.out_dir + f"{prefix}/{postfix}"
+    dirpath = args.out_dir + f"/{prefix}/{postfix}"
     compute_id(
         accelerator=accelerator,
         model=model,

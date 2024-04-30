@@ -44,4 +44,4 @@ torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
     --finetuned_path  "/u/area/ddoimo/ddoimo/finetuning_llm/open-instruct/results" \
     --finetuned_mode "dev" \
     --finetuned_epochs 4 \
-    --use_final_ckpt \
+    --ckpt_epoch \
