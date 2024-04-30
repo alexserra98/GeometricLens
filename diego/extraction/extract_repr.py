@@ -264,8 +264,7 @@ def main():
 
         is_finetuned = True
         accelerator.print("loading pretrained peft models")
-        if args.ckpt_epoch:
-            epoch_ckpt = f"epoch_{args.ckpt_epoch}"
+        epoch_ckpt = f"epoch_{args.ckpt_epoch}"
         finetune_details = f"{model_name}/{args.finetuned_mode}/{args.finetuned_epochs}epochs/{epoch_ckpt}"
         path = f"{args.finetuned_path}/{finetune_details}"
         model = PeftModel.from_pretrained(model, path)
