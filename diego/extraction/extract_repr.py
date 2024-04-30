@@ -187,7 +187,11 @@ def parse_args():
         type=str,
         default=None,
     )
-
+    parser.add_argument(
+        "--use_final_ckpt",
+        action="store_true",
+        default=None,
+    )
     args = parser.parse_args()
     return args
 
