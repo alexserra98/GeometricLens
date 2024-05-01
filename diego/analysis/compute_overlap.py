@@ -93,6 +93,7 @@ for epoch in [0, 4]:
                     finetuned_, axis=0, return_index=True, return_inverse=True
                 )
 
+                # keep only not overlapping data
                 indices = np.intersect1d(base_idx, finetuned_idx)
 
                 maxk = 100

@@ -7,11 +7,10 @@ from collections import Counter
 import matplotlib.pyplot as plt
 import scipy as sp
 
-dirpath = "/home/diego/Documents/area_science/ricerca/open/geometric_lens/repo/analysis/results/mmlu/llama-3-8b/5shot"
+
+dirpath = "./results/mmlu/llama-3-8b/5shot"
 x = torch.load(f"{dirpath}/l6_target.pt")
 
-
-torch.unique(x, dim=1)
 
 with open(f"{dirpath}/statistics_target.pkl", "rb") as f:
     stats = pickle.load(f)
@@ -24,7 +23,7 @@ d = Data(coordinates=X)
 d.return_id_scaling_gride(range_max=100)
 d.compute_density_PAk()
 
-cluster_assignment = d.compute_clustering_ADP(Z=1)
+cluster_assignment = d.compute_clustering_ADP(Z=1.6)
 
 
 np.sum(np.array([len(ind) for ind in d.cluster_indices]) > 30)
