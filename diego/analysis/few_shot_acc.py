@@ -24,6 +24,21 @@ models = [
 with open(f"{base_dir}/{models[0]}/0shot/statistics_target.pkl", "rb") as f:
     stats = pickle.load(f)
 
+from sklearn.metrics import adjusted_rand_score, adjusted_mutual_info_score
+
+
+subj_to_int = {sub: i for i, sub in enumerate(np.unique(stats["subjects"]))}
+
+ans_to_int = {sub: i for i, sub in enumerate(np.unique(stats["answers"]))}
+
+subjects = [subj_to_int[sub] for sub in stats["subjects"]]
+letters = [ans_to_int[sub] for sub in stats["answers"]]
+
+
+adjusted_rand_score(subjects, letters)
+adjusted_mutual_info_score(subjects, letters)
+
+
 num = []
 for subject in np.unique(stats["subjects"]):
     mask = subject == np.array(stats["subjects"])

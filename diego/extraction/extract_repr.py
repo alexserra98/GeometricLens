@@ -172,6 +172,25 @@ def parse_args():
         type=str,
         default="test",
     )
+    parser.add_argument(
+        "--finetuned_path",
+        type=str,
+        default=None,
+    )
+    parser.add_argument(
+        "--finetuned_mode",
+        type=str,
+        default=None,
+    )
+    parser.add_argument(
+        "--finetuned_epochs",
+        type=str,
+        default=None,
+    )
+    parser.add_argument(
+        "--ckpt_epoch",
+        type=int,
+    )
     args = parser.parse_args()
     return args
 
@@ -234,11 +253,25 @@ def main():
 
     # **************************************************************************************
     model = get_model(
+        accelerator=accelerator,
         model_name_or_path=args.checkpoint_dir,
         precision=torch.bfloat16,
         low_cpu_mem_usage=args.low_cpu_mem_usage,
-        accelerator=accelerator,
     )
+    is_finetuned = False
+    if args.finetuned_path:
+        from peft import PeftModel
+
+        is_finetuned = True
+        accelerator.print("loading pretrained peft models")
+        epoch_ckpt = f"epoch_{args.ckpt_epoch}"
+        finetune_details = f"{model_name}/{args.finetuned_mode}/{args.finetuned_epochs}epochs/{epoch_ckpt}"
+
+        path = f"{args.finetuned_path}/{finetune_details}"
+        model = PeftModel.from_pretrained(model, path)
+        model.print_trainable_parameters()
+
+    # ***************************************************************************************
 
     tokenizer = get_tokenizer(
         tokenizer_path=args.tokenizer_dir, model_path=args.checkpoint_dir
@@ -285,7 +318,7 @@ def main():
     print_memory_consumed(accelerator.process_index)
     model = accelerator.prepare(model)
     accelerator.print("model put to gpus")
-    
+
     print_memory_consumed(accelerator.process_index)
 
     # just few forward passes with the longest sequences
@@ -306,22 +339,22 @@ def main():
             option=args.target_layer,
             every=args.layer_interval,
             world_size=accelerator.num_processes,
+            finetuned=is_finetuned,
         )
 
     elif model_name.startswith("mistral"):
         pass
 
-    elif model_name.startswith("pythia"):
-        pass
-
     nsamples = len(dataloader.dataset)
     accelerator.print("num_total_samples", nsamples)
 
-    dirpath = args.out_dir + f"/{model_name}/{args.num_few_shots}shot"
-
     if args.split != "test":
-        dirpath = args.out_dir + f"/validation/{model_name}/{args.num_few_shots}shot"
+        inner_path = f"evaluated_{args.split}/{model_name}/{args.num_few_shots}shot"
 
+    if args.finetuned_path:
+        inner_path = f"finetuned_{args.finetuned_mode}/evaluated_{args.split}/{model_name}/{args.finetuned_epochs}epochs/{epoch_ckpt}"
+
+    dirpath = args.out_dir + f"/{inner_path}"
     compute_id(
         accelerator=accelerator,
         model=model,

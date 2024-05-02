@@ -298,10 +298,6 @@ class extract_activations:
             logits, targets = self.all_gather_logits(outputs.logits, targets, seq_len)
             logits, targets = logits.cpu(), targets.cpu()
 
-            # if i < 100:
-            #     logit_list.append(logits.cpu()[-2:-1])
-            #     batch_list.append(batch.cpu())
-
             if self.rank == 0:
                 logits_targets = logits[:, candidate_token_ids]
                 constrained_prediction_batch = candidate_token_ids[

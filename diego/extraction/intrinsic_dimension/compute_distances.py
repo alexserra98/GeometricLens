@@ -112,8 +112,8 @@ def compute_id(
         act_dict = extr_act.hidden_states
         if save_repr:
             for i, (layer, act) in enumerate(act_dict.items()):
-                # torch.save(act, f"{dirpath}/l{target_layer_labels[i]}{filename}.pt")
-                torch.save(act, f"{dirpath}/{layer}{filename}.pt")
+                torch.save(act, f"{dirpath}/l{target_layer_labels[i]}{filename}.pt")
+                # torch.save(act, f"{dirpath}/{layer}{filename}.pt")
 
         predictions = extr_act.predictions  # tokens
         constrained_predictions = extr_act.constrained_predictions  # tokens
@@ -148,8 +148,6 @@ def compute_id(
             "contrained_predictions": constrained_predictions,
             "accuracy": acc_pred,
             "constrained_accuracy": acc_constrained,
-            # "logits": extr_act.logits,
-            # "input_ids": extr_act.input_ids,
         }
 
         with open(f"{dirpath}/statistics{filename}.pkl", "wb") as f:
