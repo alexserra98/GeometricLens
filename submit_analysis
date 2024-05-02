@@ -25,7 +25,9 @@ export PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"
 
 
 python diego/analysis/compute_overlap.py \
-    --finetuned_mode dev \
     --model llama-3-8b \
+    --finetuned_mode dev_val_balanced \
     --results_path diego/analysis/results \
-    --epochs 10  
+    --epochs 4 --ckpt_epoch 4 \
+    --eval_dataset "test" --balanced \
+    --shot_mode "0shot"
