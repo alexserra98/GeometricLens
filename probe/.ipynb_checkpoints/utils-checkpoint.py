@@ -1,4 +1,4 @@
-from metrics.utils import hidden_states_collapse, TensorStorageManager
+from metrics.utils import hidden_states_collapse
 from metrics.query import DataFrameQuery
 from common.tensor_storage import TensorStorage
 from common.metadata_db import MetadataDB
@@ -30,21 +30,16 @@ def set_dataframes(db) -> pd.DataFrame:
     df.drop_duplicates(subset = ["id_instance"],inplace = True, ignore_index = True) # why there are duplicates???
     return df
 
-def retrieve_df(label,model, method="last", train_instances=0):
+def retrieve_df():
     metadata_db = MetadataDB(_PATH / "metadata.db")
     metadata_df = set_dataframes(metadata_db)
 
-    dict_query = { "method":method,
-                   "model_name":model,
-                   "train_instances": train_instances}
+    dict_query = { "method":"last",
+                   "model_name":"meta-llama/Llama-2-7b-hf",
+                   "train_instances": 0}
     query = DataFrameQuery(dict_query)
-    tsm = TensorStorageManager()
-    X,_, df = tsm.retrieve_tensor(query, "npy")
-    if label == "subject":
-        y = np.asarray(df['dataset'].tolist())
-    elif label == "letter":
-        y = np.asarray(df['only_ref_pred'].tolist())
-    return X, y
+    df_hiddenstates = query.apply_query(metadata_df)
+    return df_hiddenstates
 
 def stratified_split(df_hiddenstates):
     # Splitting the dataset into train and test sets for each subject
@@ -62,4 +57,9 @@ def stratified_split(df_hiddenstates):
 
     return train_df, test_df
 
- 
+def retrieve_dataset(df):
+    # Train set
+    X, _, result_df = hidden_states_collapse(df_hiddenstates=df,tensor_storage=_TENSOR_STORAGE)
+    y = np.asarray(df['only_ref_pred'].tolist())
+    return X, y
+    

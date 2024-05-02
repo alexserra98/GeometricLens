@@ -1,7 +1,5 @@
 from metrics.hidden_states_metrics import HiddenStatesMetrics
-from .utils import hidden_states_collapse, \
-                   exact_match, \
-                   TensorStorageManager
+from .utils import hidden_states_collapse, HiddenPrints, exact_match, quasi_exact_match, TensorStorageManager
 from metrics.query import DataFrameQuery
 from common.globals_vars import _NUM_PROC
 
@@ -20,6 +18,8 @@ class IntrinsicDimension(HiddenStatesMetrics):
            
         for model in tqdm.tqdm(self.df["model_name"].unique().tolist()):
             tsm =  TensorStorageManager()  
+            if "13" in model:
+                continue
             for method in ["last"]: #self.df["method"].unique().tolist():
                 for train_instances in self.df["train_instances"].unique().tolist():#["0","2","5"]:
                     for match in ["correct", "incorrect", "all"]:
@@ -40,7 +40,6 @@ class IntrinsicDimension(HiddenStatesMetrics):
                             df = self.df[self.df.apply(lambda r: exact_match(r["std_pred"], r["letter_gold"]), axis=1)]
                             #hidden_states,_, _= hidden_states_collapse(df,query, self.tensor_storage)
                             hidden_states,_, _= tsm.retrieve_tensor(query, self.storage_logic)
-                            #import pdb; pdb.set_trace()
                         elif match == "incorrect":
                             df = self.df[self.df.apply(lambda r: not exact_match(r["std_pred"], r["letter_gold"]), axis=1)]
                             #hidden_states,_, _= hidden_states_collapse(df,query, self.tensor_storage)
@@ -49,7 +48,7 @@ class IntrinsicDimension(HiddenStatesMetrics):
                             df = self.df
                             #import pdb;pdb.set_trace()
                             #hidden_states,_, _= hidden_states_collapse(df,query, self.tensor_storage)
-                            hidden_states,_, _= tsm.retrieve_tensor(query, self.storage_logic)
+                            hidden_states,_, _= tsm(query, self.storage_logic)
                             #random_integers = np.random.randint(1, 14001, size=2500)
                             #hidden_states = hidden_states[random_integers]
                         id_per_layer_gride, id_per_layer_lpca, id_per_layer_danco = self.parallel_compute(hidden_states)
