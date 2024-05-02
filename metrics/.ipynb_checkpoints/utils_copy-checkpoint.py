@@ -134,7 +134,7 @@ class TensorStorageManager:
                               f"{adapted_name[:-3]}/epoch_2_2904")
         else:
             storage_path=Path(f"/orfeo/cephfs/scratch/area/ddoimo/open/"\
-                              f"geometric_lens/repo/results/mmlu/"\
+                              f"geometric_lens/repo/results/mmlu/{folder}/"\
                               f"{adapted_name}/{query_dict['train_instances']}shot")
         files = os.listdir(storage_path)
 
@@ -321,7 +321,7 @@ def angular_distance(mat):
     """
     dot_product = mat @ mat.T
     norm_vector = np.linalg.norm(mat, axis=1)
-    stacked_vector = np.tile(norm_vector, (mat.shape[0], 1))
+    stacked_vector = np.tile(norm_vector, (100, 1))
     norm_product = stacked_vector.T*stacked_vector
 
     cosine_similarity = dot_product / norm_product

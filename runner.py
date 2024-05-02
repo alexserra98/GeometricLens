@@ -105,7 +105,6 @@ def main():
             job_name="metrics",
             output="metrics",
         )
-    
 
     script_name = "generated_script.sh"
     create_bash_script(script_name, sbatch_args, config_path)

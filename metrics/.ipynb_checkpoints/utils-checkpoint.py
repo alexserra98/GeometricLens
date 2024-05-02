@@ -121,21 +121,7 @@ class TensorStorageManager:
         #import pdb; pdb.set_trace()
         adapted_name = query_dict["model_name"][11:].lower()
         adapted_name = adapted_name[:-3]
-        if "ft" in  adapted_name:
-            folder = "finetuned/dev_val"
-        elif "llama-3" in adapted_name:
-            folder = "llama3"
-        elif "llama-2" in adapted_name:
-            folder = "llama2"
-
-        if "ft" in adapted_name:
-            storage_path=Path(f"/orfeo/cephfs/scratch/area/ddoimo/open/"\
-                              f"geometric_lens/repo/results/{folder}/"\
-                              f"{adapted_name[:-3]}/epoch_2_2904")
-        else:
-            storage_path=Path(f"/orfeo/cephfs/scratch/area/ddoimo/open/"\
-                              f"geometric_lens/repo/results/mmlu/"\
-                              f"{adapted_name}/{query_dict['train_instances']}shot")
+        storage_path = Path(f"/orfeo/cephfs/scratch/area/ddoimo/open/geometric_lens/repo/results/mmlu/{adapted_name}/{query_dict['train_instances']}shot")
         files = os.listdir(storage_path)
 
         # Filter files with the specific pattern and range check
@@ -321,7 +307,7 @@ def angular_distance(mat):
     """
     dot_product = mat @ mat.T
     norm_vector = np.linalg.norm(mat, axis=1)
-    stacked_vector = np.tile(norm_vector, (mat.shape[0], 1))
+    stacked_vector = np.tile(norm_vector, (100, 1))
     norm_product = stacked_vector.T*stacked_vector
 
     cosine_similarity = dot_product / norm_product
