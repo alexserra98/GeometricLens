@@ -52,21 +52,21 @@ def parse_args():
     )
     parser.add_argument(
         "--epochs",
-        type=int,
+        type=str,
     )
     parser.add_argument(
         "--ckpt_epoch",
-        type=int,
+        type=str,
     )
     parser.add_argument(
         "--shot_mode",
-        type=int,
+        type=str,
     )
     parser.add_argument(
         "--eval_dataset",
         type=str,
     )
-    parser.add_argument("--balance", action="store_true")
+    parser.add_argument("--balanced", action="store_true")
     args = parser.parse_args()
     return args
 
@@ -82,14 +82,15 @@ print(f"processing epochs: {args.epochs}")
 print(f"processing epoch_ckpt: {args.ckpt_epoch}")
 print(f"processing shots: {args.shot_mode}")
 print(f"processing daset: {args.eval_dataset}")
-print(f"is balanced?: {args.balance}")
+print(f"is balanced?: {args.balanced}")
 sys.stdout.flush()
 
 
 dataset_mask = None
-if args.balance:
+if args.balanced:
     assert args.eval_dataset == "test"
-    dataset_mask = np.load("test_mask.npy")
+    mask_dir = "/orfeo/cephfs/scratch/area/ddoimo/open/geometric_lens/repo"
+    dataset_mask = np.load(f"{mask_dir}/test_mask.npy")
 
 
 if args.finetuned_mode == "dev_val_balanced":
