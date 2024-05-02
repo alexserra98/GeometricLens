@@ -21,6 +21,7 @@ from collections import Counter
 
 _PATH = Path("/orfeo/scratch/dssc/zenocosini/mmlu_result/")
 
+_PATH_RESULT = Path("/orfeo/cephfs/home/dssc/zenocosini/helm_suite/MCQA_Benchmark/metrics/cluster_cartoon")
 class Pipeline():
     def __init__(self):
         self.df = None
@@ -34,17 +35,14 @@ class Pipeline():
             
     def compute(self):
         z = 0.05
-        models = ["meta-llama/Llama-2-7b-hf",
-                  "meta-llama/Llama-2-13b-hf",
-                  "meta-llama/Llama-2-70b-hf",
-                  "meta-llama/Llama-3-8b-hf",
-                  "meta-llama/Llama-3-70b-hf",]
+        models = ["meta-llama/Llama-3-8b-hf"]
         rows = []
         for model in models:
             for shot in [0,5]:
                 dict_query = {"method":"last",
                               "model_name": model,
                               "train_instances": shot}
+                print(model)
                 hidden_states, hidden_states_stat, repeated_indices = self.preprocess(dict_query)
                 for layer in [3,7,20,33]:
                     print(f'Iteration with model:{model}, shot:{shot}, layer:{layer}')
@@ -79,6 +77,7 @@ class Pipeline():
                                            "distance_matrix", 
                                            "cluster_counts"])
         self.df = df
+        self.df.to_pickle(_PATH_RESULT / "df_3_8.pkl")
                     
     def plot(self):
         for index, row in self.df.iterrows():

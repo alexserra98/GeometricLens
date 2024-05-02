@@ -26,7 +26,7 @@ def main():
 
     dataframes = []
     for model in models:
-        for shot in [0]:#[0, 2, 5]:
+        for shot in [0, 2, 5]:
             if "70" in model and shot == 5 and "chat" not in model:
                 shot = 4
             elif "70" in model and "chat" in model and shot == 5:
@@ -35,15 +35,14 @@ def main():
             df.to_pickle(base_dir / f"df_{shot}.pkl")
             dataframes.append(df)
 
-        print(f'Iteration model: {model}') 
-        df_combined = pd.concat(dataframes)
-        variations = {"intrinsic_dimension": "None", "point_overlap": "cosine", "label_overlap": "balanced_letter", "cka": "rbf"}
-        label_overlap = LabelOverlap(
-            df=df_combined, tensor_storage=None, variations=variations, storage_logic="npy"
-        )
-        result = label_overlap.main(label="only_ref_pred")
-        result_path = base_dir / "result" / f"{model.split('/')[1]}_letter_overlap.pkl"
-        result.to_pickle(result_path)
+    df_combined = pd.concat(dataframes)
+    variations = {"intrinsic_dimension": "None", "point_overlap": "cosine", "label_overlap": "balanced_letter", "cka": "rbf"}
+    label_overlap = LabelOverlap(
+        df=df_combined, tensor_storage=None, variations=variations, storage_logic="npy"
+    )
+    result = label_overlap.main(label="only_ref_pred")
+    result_path = base_dir / "result" / f"{model.split('/')[1]}_letter_overlap.pkl"
+    result.to_pickle(result_path)
 
 
 if __name__ == "__main__":

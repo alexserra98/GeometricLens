@@ -1,65 +1,74 @@
 from metrics.hidden_states_metrics import HiddenStatesMetrics
-from .utils import hidden_states_collapse, \
-                   exact_match, \
+from .utils import exact_match, \
                    TensorStorageManager
 from metrics.query import DataFrameQuery
-from common.globals_vars import _NUM_PROC
+from common.globals_vars import _NUM_PROC, _OUTPUT_DIR
 
 from dadapy.data import Data
 
 import tqdm
 import pandas as pd
 import numpy as np
+from path import Path
 from joblib import Parallel, delayed
 from functools import partial
+import logging
 
 class IntrinsicDimension(HiddenStatesMetrics):
    
     def main(self) -> pd.DataFrame:
+        module_logger = logging.getLogger('my_app.id')
+        module_logger.info("Computing ID")
+
         rows = []
-           
-        for model in tqdm.tqdm(self.df["model_name"].unique().tolist()):
-            tsm =  TensorStorageManager()  
-            for method in ["last"]: #self.df["method"].unique().tolist():
-                for train_instances in self.df["train_instances"].unique().tolist():#["0","2","5"]:
-                    for match in ["correct", "incorrect", "all"]:
-                        
-                        if not self.variations or not self.variations.get("intrisic_dimension"):
-                            query = DataFrameQuery({"method":method,
-                                                "model_name":model, 
-                                                "train_instances": train_instances})
-                        elif self.variations["intrinsic_dimension"] == "misc":
-                            query = DataFrameQuery({"method":method,
-                                                "model_name":model, 
-                                                "dataset": 'mmlu:miscellaneous',
-                                                "train_instances": train_instances})
-                        else:
-                            raise ValueError("Unknown variation. It must be either None or 'norm'")
-                                        
-                        if match == "correct":
-                            df = self.df[self.df.apply(lambda r: exact_match(r["std_pred"], r["letter_gold"]), axis=1)]
-                            #hidden_states,_, _= hidden_states_collapse(df,query, self.tensor_storage)
-                            hidden_states,_, _= tsm.retrieve_tensor(query, self.storage_logic)
-                            #import pdb; pdb.set_trace()
-                        elif match == "incorrect":
-                            df = self.df[self.df.apply(lambda r: not exact_match(r["std_pred"], r["letter_gold"]), axis=1)]
-                            #hidden_states,_, _= hidden_states_collapse(df,query, self.tensor_storage)
-                            hidden_states,_, _= tsm.retrieve_tensor(query, self.storage_logic)
-                        else:
-                            df = self.df
-                            #import pdb;pdb.set_trace()
-                            #hidden_states,_, _= hidden_states_collapse(df,query, self.tensor_storage)
-                            hidden_states,_, _= tsm.retrieve_tensor(query, self.storage_logic)
-                            #random_integers = np.random.randint(1, 14001, size=2500)
-                            #hidden_states = hidden_states[random_integers]
-                        id_per_layer_gride, id_per_layer_lpca, id_per_layer_danco = self.parallel_compute(hidden_states)
-                        rows.append([model, 
-                                    method,
-                                    match,
-                                    train_instances,
-                                    id_per_layer_gride,
-                                    id_per_layer_lpca,
-                                    id_per_layer_danco])
+
+        # Directory to save checkpoints
+        check_point_dir = Path(_OUTPUT_DIR, "checkpoints")
+        check_point_dir.mkdir(exist_ok=True, parents=True)
+
+        tsm =  TensorStorageManager()  
+        for query_dict in tqdm.tqdm(self.queries, desc="Processing queries:"):
+            for match in ["correct", "incorrect", "all"]:
+                if not self.variations or not self.variations.get("intrisic_dimension"):
+                    query = DataFrameQuery(query_dict)
+                elif self.variations["intrinsic_dimension"] == "misc":
+                    query_dict["dataset"] = "mmlu:miscellaneous"
+                    query = DataFrameQuery(query_dict)
+                else:
+                    raise ValueError("Unknown variation. It must be either None or 'norm'")
+                                
+                hidden_states,_, hidden_states_df= tsm.retrieve_tensor(query, self.storage_logic)
+
+                if match == "correct":
+                    hidden_states_df = hidden_states_df[self.df.apply(lambda r: exact_match(r["std_pred"], r["letter_gold"]), axis=1)]
+                    hidden_states = hidden_states[hidden_states_df.index]
+                elif match == "incorrect":
+                    hidden_states_df = hidden_states_df[self.df.apply(lambda r: not exact_match(r["std_pred"], r["letter_gold"]), axis=1)]
+                    hidden_states = hidden_states[hidden_states_df.index]
+                
+                try:
+                    id_per_layer_gride, id_per_layer_lpca, id_per_layer_danco = self.parallel_compute(hidden_states)
+                except Exception as e:
+                    module_logger.error(f"Error computing ID for {query_dict} with match {match}. Error: {e}")
+                    continue
+
+                rows.append([query_dict["model"], 
+                             query_dict["method"],
+                             match,
+                             query_dict["shot"],
+                             id_per_layer_gride,
+                             id_per_layer_lpca,
+                             id_per_layer_danco])
+        # Save checkpoint
+        df_temp = pd.DataFrame(rows,columns=["model",
+                                                "method",
+                                                "match",  
+                                                "train_instances",
+                                                "id_per_layer_gride",
+                                                "id_per_layer_lpca",
+                                                "id_per_layer_danco"])
+        
+        df_temp.to_pickle(check_point_dir / f"checkpoint_id.pkl")
         
         return pd.DataFrame(rows, columns = ["model",
                                              "method",
@@ -91,7 +100,8 @@ class IntrinsicDimension(HiddenStatesMetrics):
     
         with Parallel(n_jobs=_NUM_PROC) as parallel:
             
-            id_per_layer_gride = parallel(delayed(process_layer)(i) for i in range(1,num_layers))
+            id_per_layer_gride = parallel(delayed(process_layer)(i) 
+                                          for i in tqdm.tqdm(range(num_layers, desc="Processing layers:")))
             #id_per_layer_lpca = parallel(delayed(process_layer)(i, hidden_states, "lpca") for i in range(1, num_layers)) 
             #id_per_layer_danco = parallel(delayed(process_layer)(i, hidden_states, "DANco") for i in range(1, num_layers))
         id_per_layer_gride.insert(0,np.ones(id_per_layer_gride[-1].shape[0]))
