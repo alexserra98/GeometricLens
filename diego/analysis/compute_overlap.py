@@ -89,7 +89,7 @@ sys.stdout.flush()
 dataset_mask = None
 if args.balanced:
     assert args.eval_dataset == "test"
-    mask_dir = "/orfeo/cephfs/scratch/area/ddoimo/open/geometric_lens/repo"
+    mask_dir = "/orfeo/cephfs/scratch/area/ddoimo/open/geometric_lens/repo/diego/analysis"
     dataset_mask = np.load(f"{mask_dir}/test_mask.npy")
 
 
@@ -130,9 +130,9 @@ for layer in range(1, 34):
         subjects = subjects[dataset_mask]
         # check that all the subjects have the same frequency
         frequences = Counter(subjects).values()
-        assert len(np.unique(list(frequences))) == 1
+        assert len(np.unique(list(frequences))) == 1 
         # check that the frequency is 100
-        assert np.unique(list(frequences))[0] == 100
+        assert np.unique(list(frequences))[0] == 100,  (np.unique(list(frequences))[0],  frequences)
 
     # remove identical points
     base_unique, base_idx, base_inverse = np.unique(
