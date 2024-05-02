@@ -61,7 +61,7 @@ subjects = np.array(dataset["subject"])
 mask = []
 for sub in np.unique(subjects):
     ind = np.where(sub == subjects)[0]
-    chosen = np.random.choice(ind, 8, replace=False)
+    chosen = np.random.choice(ind, 100, replace=False)
     mask.extend(list(np.sort(chosen)))
 np.save("test_mask.npy", np.array(mask))
 
@@ -81,5 +81,3 @@ ax.legend()
 ax.set_xticks(np.arange(len(y_val)))
 ax.set_xticklabels(dataset_val.keys(), rotation=90)
 gs.tight_layout(fig)
-
-15 * 57
