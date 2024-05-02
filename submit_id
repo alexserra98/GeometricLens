@@ -46,4 +46,4 @@ torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
     --finetuned_mode "dev_val_balanced" \
     --split "test" \
     --finetuned_epochs 4 \
-    --ckpt_epoch 0  \
+    --ckpt_epoch 1  \
