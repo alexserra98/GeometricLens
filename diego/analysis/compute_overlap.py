@@ -59,10 +59,6 @@ def parse_args():
         type=str,
     )
     parser.add_argument(
-        "--shot_mode",
-        type=str,
-    )
-    parser.add_argument(
         "--eval_dataset",
         type=str,
     )
@@ -80,7 +76,6 @@ base_dir = "/orfeo/cephfs/scratch/area/ddoimo/open/geometric_lens/repo/results"
 print(f"processing model: {args.model}")
 print(f"processing epochs: {args.epochs}")
 print(f"processing epoch_ckpt: {args.ckpt_epoch}")
-print(f"processing shots: {args.shot_mode}")
 print(f"processing daset: {args.eval_dataset}")
 print(f"is balanced?: {args.balanced}")
 sys.stdout.flush()
@@ -102,102 +97,103 @@ if args.finetuned_mode == "dev_val_balanced":
 overlaps = defaultdict(list)
 overlaps_subjects = defaultdict(list)
 
-# layer 0 is all overlapped
-for layer in range(1, 34):
-    print(f"processing layer {layer}")
-    sys.stdout.flush()
+for shot_mode in ["Oshot", "5shot"]:
+    # layer 0 is all overlapped
+    for layer in range(1, 34):
+        print(f"processing {shot_mode} layer {layer}")
+        sys.stdout.flush()
 
-    # ************************************
+        # ************************************
 
-    pretrained_path = f"{base_dir}/mmlu/{args.model}/{args.shot_mode}"
-    base_repr = torch.load(f"{pretrained_path}/l{layer}_target.pt")
-    base_repr = base_repr.to(torch.float64).numpy()
+        pretrained_path = f"{base_dir}/mmlu/{args.model}/{shot_mode}"
+        base_repr = torch.load(f"{pretrained_path}/l{layer}_target.pt")
+        base_repr = base_repr.to(torch.float64).numpy()
 
-    finetuned_path = f"{base_dir}/finetuned_{args.finetuned_mode}/evaluated_{args.eval_dataset}/{args.model}/{args.epochs}epochs/epoch_{args.ckpt_epoch}"
-    finetuned_repr = torch.load(f"{finetuned_path}/l{layer}_target.pt")
-    finetuned_repr = finetuned_repr.to(torch.float64).numpy()
+        finetuned_path = f"{base_dir}/finetuned_{args.finetuned_mode}/evaluated_{args.eval_dataset}/{args.model}/{args.epochs}epochs/epoch_{args.ckpt_epoch}"
+        finetuned_repr = torch.load(f"{finetuned_path}/l{layer}_target.pt")
+        finetuned_repr = finetuned_repr.to(torch.float64).numpy()
 
-    with open(f"{finetuned_path}/statistics_target.pkl", "rb") as f:
-        stats = pickle.load(f)
-    subjects = np.array(stats["subjects"])
+        with open(f"{finetuned_path}/statistics_target.pkl", "rb") as f:
+            stats = pickle.load(f)
+        subjects = np.array(stats["subjects"])
 
-    # balance the test set if asked
-    is_balanced = ""
-    if dataset_mask is not None:
-        is_balanced = "_balanced"
-        base_repr = base_repr[dataset_mask]
-        finetuned_repr = finetuned_repr[dataset_mask]
-        subjects = subjects[dataset_mask]
-        # check that all the subjects have the same frequency
-        frequences = Counter(subjects).values()
-        assert len(np.unique(list(frequences))) == 1
-        # check that the frequency is 100
-        assert np.unique(list(frequences))[0] == 100
+        # balance the test set if asked
+        is_balanced = ""
+        if dataset_mask is not None:
+            is_balanced = "_balanced"
+            base_repr = base_repr[dataset_mask]
+            finetuned_repr = finetuned_repr[dataset_mask]
+            subjects = subjects[dataset_mask]
+            # check that all the subjects have the same frequency
+            frequences = Counter(subjects).values()
+            assert len(np.unique(list(frequences))) == 1
+            # check that the frequency is 100
+            assert np.unique(list(frequences))[0] == 100
 
-    # remove identical points
-    base_unique, base_idx, base_inverse = np.unique(
-        base_repr, axis=0, return_index=True, return_inverse=True
-    )
-    finetuned_unique, finetuned_idx, finetuned_inverse = np.unique(
-        finetuned_repr, axis=0, return_index=True, return_inverse=True
-    )
-    indices = np.intersect1d(base_idx, finetuned_idx)
-    indices = np.sort(indices)
+        # remove identical points
+        base_unique, base_idx, base_inverse = np.unique(
+            base_repr, axis=0, return_index=True, return_inverse=True
+        )
+        finetuned_unique, finetuned_idx, finetuned_inverse = np.unique(
+            finetuned_repr, axis=0, return_index=True, return_inverse=True
+        )
+        indices = np.intersect1d(base_idx, finetuned_idx)
+        indices = np.sort(indices)
 
-    base_repr = base_repr[indices]
-    finetuned_repr = finetuned_repr[indices]
-    subjects = subjects[indices]
+        base_repr = base_repr[indices]
+        finetuned_repr = finetuned_repr[indices]
+        subjects = subjects[indices]
 
-    # ***********************************************************************
+        # ***********************************************************************
 
-    maxk = 100
-    assert indices.shape[0] > maxk, (indices.shape[0], maxk)
-    distances_base, dist_index_base, mus, _ = compute_distances(
-        X=base_repr,
-        n_neighbors=maxk + 1,
-        n_jobs=1,
-        working_memory=2048,
-        range_scaling=maxk + 2,
-        argsort=False,
-    )
-
-    distances_finetuned, dist_index_finetuned, mus, _ = compute_distances(
-        X=finetuned_repr,
-        n_neighbors=maxk + 1,
-        n_jobs=1,
-        working_memory=2048,
-        range_scaling=maxk + 2,
-        argsort=False,
-    )
-
-    for k in [30, 100]:
-        overlaps[f"k_{k}"].append(
-            return_data_overlap(
-                indices_base=dist_index_base,
-                indices_other=dist_index_finetuned,
-                k=k,
-                subjects=None,
-            )
+        maxk = 100
+        assert indices.shape[0] > maxk, (indices.shape[0], maxk)
+        distances_base, dist_index_base, mus, _ = compute_distances(
+            X=base_repr,
+            n_neighbors=maxk + 1,
+            n_jobs=1,
+            working_memory=2048,
+            range_scaling=maxk + 2,
+            argsort=False,
         )
 
-    ov_dict = return_data_overlap(
-        indices_base=dist_index_base,
-        indices_other=dist_index_finetuned,
-        k=30,
-        subjects=subjects,
-    )
+        distances_finetuned, dist_index_finetuned, mus, _ = compute_distances(
+            X=finetuned_repr,
+            n_neighbors=maxk + 1,
+            n_jobs=1,
+            working_memory=2048,
+            range_scaling=maxk + 2,
+            argsort=False,
+        )
 
-    for subject in np.unique(subjects):
-        overlaps_subjects[subject].append(ov_dict[subject])
+        for k in [30, 100]:
+            overlaps[f"k_{k}"].append(
+                return_data_overlap(
+                    indices_base=dist_index_base,
+                    indices_other=dist_index_finetuned,
+                    k=k,
+                    subjects=None,
+                )
+            )
 
-with open(
-    f"{args.results_path}/overlaps_{args.model}_finetuned_{args.finetuned_mode}_eval_{args.eval_dataset}{is_balanced}_epoch{args.epochs}_{args.ckpt_epoch}_{args.shot_mode}.pkl",
-    "wb",
-) as f:
-    pickle.dump(overlaps, f, protocol=pickle.HIGHEST_PROTOCOL)
+        ov_dict = return_data_overlap(
+            indices_base=dist_index_base,
+            indices_other=dist_index_finetuned,
+            k=30,
+            subjects=subjects,
+        )
 
-with open(
-    f"{args.results_path}/overlaps_{args.model}_finetuned_{args.finetuned_mode}_eval_{args.eval_dataset}{is_balanced}_epoch{args.epochs}_{args.ckpt_epoch}_{args.shot_mode}_subjects_k30.pkl",
-    "wb",
-) as f:
-    pickle.dump(overlaps_subjects, f, protocol=pickle.HIGHEST_PROTOCOL)
+        for subject in np.unique(subjects):
+            overlaps_subjects[subject].append(ov_dict[subject])
+
+    with open(
+        f"{args.results_path}/overlaps_{args.model}_finetuned_{args.finetuned_mode}_eval_{args.eval_dataset}{is_balanced}_epoch{args.epochs}_{args.ckpt_epoch}_{shot_mode}.pkl",
+        "wb",
+    ) as f:
+        pickle.dump(overlaps, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+    with open(
+        f"{args.results_path}/overlaps_{args.model}_finetuned_{args.finetuned_mode}_eval_{args.eval_dataset}{is_balanced}_epoch{args.epochs}_{args.ckpt_epoch}_{shot_mode}_subjects_k30.pkl",
+        "wb",
+    ) as f:
+        pickle.dump(overlaps_subjects, f, protocol=pickle.HIGHEST_PROTOCOL)
