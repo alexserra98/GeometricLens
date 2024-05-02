@@ -20,6 +20,7 @@ def main():
     base_dir = Path("/orfeo/scratch/dssc/zenocosini/mmlu_result/transposed_dataset")
     models = [
         "meta-llama/Llama-3-8b-chat-hf",
+        "meta-llama/Llama-3-70b-chat-hf",
     ]
     method = "last"
 

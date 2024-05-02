@@ -49,6 +49,12 @@ def parse_args():
         default="./results",
         help="Where to store the final model.",
     )
+    parser.add_argument(
+        "--epochs",
+        type=int,
+        default=4,
+        help="Where to store the final model.",
+    )
     args = parser.parse_args()
     return args
 
@@ -57,7 +63,14 @@ args = parse_args()
 os.makedirs(args.results_path, exist_ok=True)
 
 base_dir = "/orfeo/cephfs/scratch/area/ddoimo/open/geometric_lens/repo/results"
-for epoch in [0, 4]:
+
+
+print(f"processing  model {args.model}")
+print(f"processing  {args.epochs}")
+sys.stdout.flush()
+
+
+for epoch in [args.epochs]:
     print(f"processing epoch {epoch}")
     sys.stdout.flush()
 
@@ -71,10 +84,16 @@ for epoch in [0, 4]:
             eval_options = ["test"]
 
         for evaluation_mode in eval_options:
+            print(f"processing {evaluation_mode}")
+            sys.stdout.flush()
+
             overlaps = defaultdict(list)
             overlaps_subjects = defaultdict(list)
-
-            for layer in range(34):
+            
+            #layer 0 is all overlapped
+            for layer in range(1, 34):
+                print(f"processing layer {layer}")
+                sys.stdout.flush()
                 # ************************************
                 pretrained_path = f"{base_dir}/mmlu/{args.model}/{mode}"
                 base = torch.load(f"{pretrained_path}/l{layer}_target.pt")
@@ -85,7 +104,7 @@ for epoch in [0, 4]:
                 )
                 # **********************************
 
-                finetuned_path = f"{base_dir}/finetuned_{args.finetuned_mode}/evaluated_{evaluation_mode}/{args.model}/{epoch}epochs/epoch_{epoch}"
+                finetuned_path = f"{base_dir}/finetuned_{args.finetuned_mode}/evaluated_{evaluation_mode}/{args.model}/{args.epochs}epochs/epoch_{epoch}"
                 finetuned = torch.load(f"{finetuned_path}/l{layer}_target.pt")
 
                 finetuned_ = finetuned.to(torch.float64).numpy()
@@ -97,6 +116,7 @@ for epoch in [0, 4]:
                 indices = np.intersect1d(base_idx, finetuned_idx)
 
                 maxk = 100
+                assert indices.shape[0] > maxk, (indices.shape[0], maxk)
                 distances_base, dist_index_base, mus, _ = compute_distances(
                     X=base_[indices],
                     n_neighbors=maxk + 1,
@@ -140,13 +160,13 @@ for epoch in [0, 4]:
                     overlaps_subjects[subject].append(tmp[subject])
 
             with open(
-                f"{args.results_path}/overlaps_{args.model}_finetuned_{args.finetuned_mode}_eval_{evaluation_mode}_epoch{epoch}_{mode}.pkl",
+                f"{args.results_path}/overlaps_{args.model}_finetuned_{args.finetuned_mode}_eval_{evaluation_mode}_epoch{args.epochs}_{epoch}_{mode}.pkl",
                 "wb",
             ) as f:
                 pickle.dump(overlaps, f, protocol=pickle.HIGHEST_PROTOCOL)
 
             with open(
-                f"{args.results_path}/overlaps_{args.model}_finetuned_{args.finetuned_mode}_eval_{evaluation_mode}_epoch{epoch}_{mode}_subjects_k30.pkl",
+                f"{args.results_path}/overlaps_{args.model}_finetuned_{args.finetuned_mode}_eval_{evaluation_mode}_epoch{args.epochs}_{epoch}_{mode}_subjects_k30.pkl",
                 "wb",
             ) as f:
                 pickle.dump(overlaps_subjects, f, protocol=pickle.HIGHEST_PROTOCOL)
