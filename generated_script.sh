@@ -15,5 +15,5 @@ eval "$(conda shell.bash hook)"
 conda activate mcqa
 export PYTHONPATH=/u/dssc/zenocosini/helm_suite/MCQA_Benchmark
 export CUDA_VISIBLE_DEVICES=0,1,2,3
-python metrics_computer.py --conf-path config/config_metrics.json
+python metrics_computer_light.py --conf-path config/config_full_metrics.json
 echo "Running job: metrics"

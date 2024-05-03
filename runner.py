@@ -36,6 +36,8 @@ def create_bash_script(script_name, arguments, config_path):
             script_file.write(f"python inference.py --conf-path {config_path}\n")
         elif arguments.job_type == "metrics":
             script_file.write(f"python metrics_computer.py --conf-path {config_path}\n")
+        elif arguments.job_type == "metrics_light":
+            script_file.write(f"python metrics_computer_light.py --conf-path {config_path}\n")
 
         # Example command to run
         script_file.write(f'echo "Running job: {arguments.job_name}"\n')
@@ -96,6 +98,18 @@ def main():
     elif job_type == "metrics":
         sbatch_args = SbatchArgs(
             job_type="metrics",
+            partition="THIN",
+            nodes=1,
+            ntasks_per_node=1,
+            cpus_per_task=8,
+            mem="600G",
+            time="2-00:00:00",
+            job_name="metrics",
+            output="metrics",
+        )
+    elif job_type == "metrics_light":
+        sbatch_args = SbatchArgs(
+            job_type="metrics_light",
             partition="THIN",
             nodes=1,
             ntasks_per_node=1,

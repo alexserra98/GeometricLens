@@ -15,8 +15,9 @@ eval "$(conda shell.bash hook)"
 conda activate mcqa
 export PYTHONPATH=/u/dssc/zenocosini/helm_suite/MCQA_Benchmark
 #python probe/linear_probe_log.py --label letter
-python probe/linear_probe_log.py --label subject
+#python probe/linear_probe_log.py --label subject
+python metrics_computer_light.py --conf-path config/config_small_metrics_1.json
 
-#python label_overlap_computer.py 
+#python label_overlap_computer.py
 #python id_computer.py
 echo "Running job: metrics"

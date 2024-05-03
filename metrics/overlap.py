@@ -14,10 +14,11 @@ import tqdm
 import pandas as pd
 import numpy as np
 import time
-from path import Path
+from pathlib import Path
 from functools import partial
 from joblib import Parallel, delayed
 import logging
+import pdb
 
 
 class PointOverlap(HiddenStatesMetrics):
@@ -33,9 +34,9 @@ class PointOverlap(HiddenStatesMetrics):
         """
         module_logger = logging.getLogger("my_app.point_overlap")
         module_logger.info("Computing point overlap")
-        
+
         iter_list = [5, 10, 100, 500, 1000]
-        
+
         # Directory to save checkpoints
         check_point_dir = Path(_OUTPUT_DIR, "checkpoints")
         check_point_dir.mkdir(exist_ok=True, parents=True)
@@ -71,7 +72,7 @@ class PointOverlap(HiddenStatesMetrics):
                                 "train_instances": shot_i,
                             }
                         )
-                        
+
                         query_j = DataFrameQuery(
                             {
                                 "method": method,
@@ -81,13 +82,16 @@ class PointOverlap(HiddenStatesMetrics):
                         )
 
                         # Hidden states to compare
-                        hidden_states_i, _, df_i = tsm.retrieve_tensor(query_i, self.storage_logic)
-                        hidden_states_j, _, df_j = tsm.retrieve_tensor(query_j, self.storage_logic)
+                        hidden_states_i, _, df_i = tsm.retrieve_tensor(
+                            query_i, self.storage_logic
+                        )
+                        hidden_states_j, _, df_j = tsm.retrieve_tensor(
+                            query_j, self.storage_logic
+                        )
 
                         df_i.reset_index(inplace=True)
                         df_j.reset_index(inplace=True)
 
-                        
                         if (
                             self.variations["point_overlap"] == "cosine"
                             or self.variations["point_overlap"] == "norm"
@@ -110,9 +114,13 @@ class PointOverlap(HiddenStatesMetrics):
                             hidden_states_j = hidden_states_j[indices]
 
                         try:
-                            overlap = self.parallel_compute(hidden_states_i, hidden_states_j, k)
+                            overlap = self.parallel_compute(
+                                hidden_states_i, hidden_states_j, k
+                            )
                         except Exception as e:
-                            module_logger.error(f"Error computing overlap for {couples} with k {k}. Error: {e}")
+                            module_logger.error(
+                                f"Error computing overlap for {couples} with k {k}. Error: {e}"
+                            )
                             raise e
                         rows.append(
                             [
@@ -175,9 +183,8 @@ class PointOverlap(HiddenStatesMetrics):
             pairs.append((base_name, chat_name))
         return pairs
 
-    def parallel_compute(self, 
-                         data_i: np.ndarray, 
-                         data_j: np.ndarray, k: int
+    def parallel_compute(
+        self, data_i: np.ndarray, data_j: np.ndarray, k: int
     ) -> np.ndarray:
         """
         Compute the overlap between two runs
@@ -196,12 +203,15 @@ class PointOverlap(HiddenStatesMetrics):
             data_i.shape[1] == data_j.shape[1]
         ), "The two runs must have the same number of layers"
         number_of_layers = data_i.shape[1]
-        
+
         # Parallel version
         process_layer = partial(self.process_layer, data_i=data_i, data_j=data_j, k=k)
         with Parallel(n_jobs=_NUM_PROC) as parallel:
             results = parallel(
-                delayed(process_layer)(layer) for layer in tqdm.tqdm(range(number_of_layers, desc="Processing layers:"))
+                delayed(process_layer)(layer)
+                for layer in tqdm.tqdm(
+                    range(number_of_layers, desc="Processing layers:")
+                )
             )
 
         # Sequential version
@@ -243,6 +253,7 @@ class LabelOverlap(HiddenStatesMetrics):
         ----------
         Dict[layer: List[Array(num_layers, num_layers)]]
         """
+
         module_logger = logging.getLogger("my_app.label_overlap")
         module_logger.info(f"Computing label overlap with label {label}")
         self.label = label
@@ -254,13 +265,13 @@ class LabelOverlap(HiddenStatesMetrics):
 
         check_point_dir = Path(_OUTPUT_DIR, "checkpoints")
         check_point_dir.mkdir(exist_ok=True, parents=True)
-        
+
         tsm = TensorStorageManager()
-        for class_fraction in range(iter_list):
-            for query_dict,n in tqdm.tqdm(enumerate(self.queries), desc="Processing queries:"):
-                
+        for class_fraction in iter_list:
+            for n, query_dict in tqdm.tqdm(
+                enumerate(self.queries), desc="Processing queries"
+            ):
                 module_logger.debug(f"Processing query {query_dict}")
-                
                 query = DataFrameQuery(query_dict)
                 hidden_states, _, hidden_states_df = tsm.retrieve_tensor(
                     query, self.storage_logic
@@ -273,7 +284,12 @@ class LabelOverlap(HiddenStatesMetrics):
                     hidden_states = hidden_states[hidden_states_df["index"]]
                     hidden_states_df.reset_index(inplace=True)
 
-                row = [query_dict["model"], query_dict["method"], query_dict["shot"], query_dict["class_fraction"]]
+                row = [
+                    query_dict["model_name"],
+                    query_dict["method"],
+                    query_dict["train_instances"],
+                    class_fraction,
+                ]
                 label_per_row = self.constructing_labels(
                     hidden_states_df, hidden_states
                 )
@@ -283,9 +299,11 @@ class LabelOverlap(HiddenStatesMetrics):
                         hidden_states, label_per_row, class_fraction=class_fraction
                     )
                 except Exception as e:
-                    module_logger.error(f"Error computing overlap for {query_dict} with class_fraction {class_fraction}. Error: {e}")
+                    module_logger.error(
+                        f"Error computing overlap for {query_dict} with class_fraction {class_fraction}. Error: {e}"
+                    )
                     raise e
-                
+
                 row.append(overlap)
                 rows.append(row)
                 if n % 3 == 0:
@@ -306,9 +324,8 @@ class LabelOverlap(HiddenStatesMetrics):
         )
         return df
 
-    def constructing_labels(self, 
-                            hidden_states_df: pd.DataFrame, 
-                            hidden_states: np.ndarray
+    def constructing_labels(
+        self, hidden_states_df: pd.DataFrame, hidden_states: np.ndarray
     ) -> np.ndarray:
         labels_literals = hidden_states_df[self.label].unique()
         labels_literals.sort()
@@ -322,10 +339,8 @@ class LabelOverlap(HiddenStatesMetrics):
 
         return label_per_row
 
-    def parallel_compute(self, 
-                         hidden_states: np.ndarray, 
-                         labels: np.array, 
-                         class_fraction: float
+    def parallel_compute(
+        self, hidden_states: np.ndarray, labels: np.array, class_fraction: float
     ) -> np.ndarray:
         overlaps = []
         if class_fraction is None:
@@ -342,12 +357,14 @@ class LabelOverlap(HiddenStatesMetrics):
         with Parallel(n_jobs=_NUM_PROC) as parallel:
             results = parallel(
                 delayed(process_layer)(num_layer)
-                for num_layer in tqdm.tqdm(range(hidden_states.shape[1]), desc="Processing layers:")
+                for num_layer in tqdm.tqdm(
+                    range(hidden_states.shape[1]), desc="Processing layers"
+                )
             )
 
         # Sequential version
         # results = []
-        # for layer in range(number_of_layers):
+        # for layer in range(hidden_states.shape[1]):
         #    results.append(process_layer(layer))
 
         end_time = time.time()
@@ -367,7 +384,6 @@ class LabelOverlap(HiddenStatesMetrics):
             )
         else:
             hidden_states = hidden_states[:, num_layer, :]
-
         maxk = int(np.bincount(labels).max() * class_fraction)
 
         data = Data(hidden_states, maxk=maxk)
@@ -415,47 +431,42 @@ def balance_by_label_within_groups(df, group_field, label_field):
     return balanced_df.reset_index(drop=True), index
 
 
-
-
-
-
-
 # for row_i, row_j in zip(df_i.iterrows(), df_j.iterrows()):
-                        #    assert (
-                        #        row_i[1]["id_instance"].replace("chat-", "")[:-1]
-                        #        == row_j[1]["id_instance"].replace("chat-", "")[:-1]
-                        #    ), "The two runs must have the same instances"
+#    assert (
+#        row_i[1]["id_instance"].replace("chat-", "")[:-1]
+#        == row_j[1]["id_instance"].replace("chat-", "")[:-1]
+#    ), "The two runs must have the same instances"
 
-                        # import pdb; pdb.set_trace()
+# import pdb; pdb.set_trace()
 
 # id_instance_i = list(map(lambda k: k[:64],df_i["id_instance"].tolist()))
-                        # id_instance_j = list(map(lambda k: k[:64],df_j["id_instance"].tolist()))
-                        #
-                        # if id_instance_i != id_instance_j:
-                        #    id_instance_i = sorted(id_instance_i)
-                        #    id_instance_j = sorted(id_instance_j)
-                        #    print(f'{couples}--{shot}--{k}')
-                        #    assert id_instance_i == id_instance_j, "The two runs must have the same instances"
+# id_instance_j = list(map(lambda k: k[:64],df_j["id_instance"].tolist()))
+#
+# if id_instance_i != id_instance_j:
+#    id_instance_i = sorted(id_instance_i)
+#    id_instance_j = sorted(id_instance_j)
+#    print(f'{couples}--{shot}--{k}')
+#    assert id_instance_i == id_instance_j, "The two runs must have the same instances"
 
-                        # id_instance_i = list(
-                        #    map(lambda k: k[:64], df_i["id_instance"].tolist())
-                        # )
-                        # id_instance_j = list(
-                        #    map(lambda k: k[:64], df_j["id_instance"].tolist())
-                        # )
-                        ## import pdb; pdb.set_trace()
-                        # if id_instance_i != id_instance_j:
-                        #    indices = [
-                        #        id_instance_j.index(id_instance_i[k])
-                        #        for k in range(len(id_instance_i))
-                        #    ]
-                        #    hidden_states_i = hidden_states_i[np.array(indices)]
-                        # df_i.reset_index(inplace=True)
-                        # df_j.reset_indiex(inplace=True):q
+# id_instance_i = list(
+#    map(lambda k: k[:64], df_i["id_instance"].tolist())
+# )
+# id_instance_j = list(
+#    map(lambda k: k[:64], df_j["id_instance"].tolist())
+# )
+## import pdb; pdb.set_trace()
+# if id_instance_i != id_instance_j:
+#    indices = [
+#        id_instance_j.index(id_instance_i[k])
+#        for k in range(len(id_instance_i))
+#    ]
+#    hidden_states_i = hidden_states_i[np.array(indices)]
+# df_i.reset_index(inplace=True)
+# df_j.reset_indiex(inplace=True):q
 
-                        # df_i = df_i.where(df_j.only_ref_pred == df_i.only_ref_pred)
-                        # df_j = df_j.where(df_j.only_ref_pred == df_i.only_ref_pred)
-                        # df_i.dropna(inplace=True)
-                        # df_j.dropna(inplace=True)
-                        # hidden_states_i, _, df_i = hidden_states_collapse(df_i,query_i, self.tensor_storage)
-                        # hidden_states_j, _, df_j = hidden_states_collapse(df_j,query_j, self.tensor_storage)
+# df_i = df_i.where(df_j.only_ref_pred == df_i.only_ref_pred)
+# df_j = df_j.where(df_j.only_ref_pred == df_i.only_ref_pred)
+# df_i.dropna(inplace=True)
+# df_j.dropna(inplace=True)
+# hidden_states_i, _, df_i = hidden_states_collapse(df_i,query_i, self.tensor_storage)
+# hidden_states_j, _, df_j = hidden_states_collapse(df_j,query_j, self.tensor_storage)
