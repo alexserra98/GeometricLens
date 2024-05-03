@@ -12,4 +12,4 @@ torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
     --preprocessing_num_workers 16 \
     --model_name 'llama' \
     --precision "no" \
-    --out_dir './results'
+    --out_dir './results_tmp'
