@@ -113,21 +113,20 @@ class LinearProbe(HiddenStatesMetrics):
             class_weights_folds=class_weights_folds,
             n_folds=n_folds,
         )
-
-        # Parallel version
-        with Parallel(n_jobs=_NUM_PROC) as parallel:
-            results = parallel(
-                delayed(process_layer)(num_layer)
-                for num_layer in tqdm.tqdm(
-                    range(train_folds[0][0].shape[1]), desc="Processing layers"
+        number_of_layers = train_folds[0][0].shape[1]
+        if self.parallel:
+            with Parallel(n_jobs=_NUM_PROC) as parallel:
+                results = parallel(
+                    delayed(process_layer)(num_layer)
+                    for num_layer in tqdm.tqdm(
+                        range(number_of_layers), desc="Processing layers"
+                    )
                 )
-            )
-
-        # Sequential version
-        # results = []
-        # for layer in range(number_of_layers):
-        #    results.append(process_layer(layer))
-
+        else:
+            results = []
+            for layer in range(number_of_layers):
+                results.append(process_layer(layer))
+        
         end_time = time.time()
         print(f"Label overlap over batch of data took: {end_time-start_time}")
         accuracies = list(results)

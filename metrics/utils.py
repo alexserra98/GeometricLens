@@ -146,20 +146,22 @@ class TensorStorageManager:
             adapted_name = query_dict["model_name"][11:].lower()
             adapted_name = adapted_name[:-3]
             if "ft" in  adapted_name:
-                folder = "finetuned/dev_val"
-            elif "llama-3" in adapted_name:
-                folder = "llama3"
-            elif "llama-2" in adapted_name:
-                folder = "llama2"
-
-            if "ft" in adapted_name:
+                folder = "finetuned_dev_val_balanced/evaluated_test"
+                # storage_path=Path(f"/orfeo/cephfs/scratch/area/ddoimo/open/"\
+                #                 f"geometric_lens/repo/results/{folder}/"\
+                #                 f"{adapted_name[:-3]}/epoch_2_2904")
+                
                 storage_path=Path(f"/orfeo/cephfs/scratch/area/ddoimo/open/"\
-                                f"geometric_lens/repo/results/{folder}/"\
-                                f"{adapted_name[:-3]}/epoch_2_2904")
+                                  f"geometric_lens/repo/results/{folder}/"\
+                                  f"{adapted_name[:-3]}/10epochs/epoch_10")
+            
             else:
+                
                 storage_path=Path(f"/orfeo/cephfs/scratch/area/ddoimo/open/"\
-                                f"geometric_lens/repo/results/mmlu/"\
-                                f"{adapted_name}/{query_dict['train_instances']}shot")
+                                  f"geometric_lens/repo/results/mmlu/"\
+                                  f"{adapted_name}/{query_dict['train_instances']}shot")
+            
+            # If the path does not exist, the program wont' crash but raise an error
             if not storage_path.exists() or not storage_path.is_dir():
                 raise DataNotFoundError(f"Storage path does not exist: {storage_path}")
             
@@ -181,7 +183,6 @@ class TensorStorageManager:
             logits = tensors[-1]
 
             #retrieve statistics
-
             with open(Path(storage_path,"statistics_target.pkl"), "rb") as f:
                 stat_target = pickle.load(f)
             
@@ -192,7 +193,10 @@ class TensorStorageManager:
                 stat_target[key] = stat_target[key][:14039] 
             
             df = pd.DataFrame(stat_target)
-            df = df.rename(columns={"subjects":"dataset", "predictions":"std_pred","answers":"letter_gold", "contrained_predictions":"only_ref_pred",})
+            df = df.rename(columns={"subjects":"dataset", 
+                                    "predictions":"std_pred",
+                                    "answers":"letter_gold", 
+                                    "contrained_predictions":"only_ref_pred",})
             df["train_instances"] = query_dict["train_instances"]
             df["model_name"] = query_dict["model_name"] #"meta-llama-Llama-2-7b-hf"
             df["method"] = "last"

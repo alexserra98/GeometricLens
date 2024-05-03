@@ -179,3 +179,5 @@ cython_debug/
 scratch/
 output_test_result/
 config/
+
+*.png

@@ -132,20 +132,18 @@ class IntrinsicDimension(HiddenStatesMetrics):
             self.process_layer, hidden_states=hidden_states, algorithm="gride"
         )
 
-        with Parallel(n_jobs=_NUM_PROC) as parallel:
-           id_per_layer_gride = parallel(
-               delayed(process_layer)(i)
-               for i in tqdm.tqdm(range(1,num_layers), desc="Processing layers")
-           )
-           # id_per_layer_lpca = parallel(delayed(process_layer)(i, hidden_states, "lpca") for i in range(1, num_layers))
-           # id_per_layer_danco = parallel(delayed(process_layer)(i, hidden_states, "DANco") for i in range(1, num_layers))
-
-        # Sequential version
-        #id_per_layer_gride = []
-
-        #for layer in range(1, hidden_states.shape[1]):
-        #    id_per_layer_gride.append(process_layer(layer))
-        ##
+        if self.parallel:
+            with Parallel(n_jobs=_NUM_PROC) as parallel:
+                id_per_layer_gride = parallel(
+                    delayed(process_layer)(i)
+                    for i in tqdm.tqdm(range(1, num_layers), desc="Processing layers")
+                )
+                # id_per_layer_lpca = parallel(delayed(process_layer)(i, hidden_states, "lpca") for i in range(1, num_layers))
+                # id_per_layer_danco = parallel(delayed(process_layer)(i, hidden_states, "DANco") for i in range(1, num_layers))
+        else:
+            # Sequential version
+            for layer in range(1, num_layers):
+                id_per_layer_gride.append(process_layer(layer))
         id_per_layer_gride.insert(0, np.ones(id_per_layer_gride[-1].shape[0]))
         return np.stack(id_per_layer_gride), id_per_layer_lpca, id_per_layer_danco
 
