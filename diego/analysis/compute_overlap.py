@@ -54,7 +54,7 @@ def parse_args():
     )
     parser.add_argument(
         "--epochs",
-        type=str,
+        type=int,
     )
     parser.add_argument(
         "--eval_dataset",
