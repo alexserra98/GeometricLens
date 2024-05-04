@@ -52,6 +52,10 @@ class PointOverlap(HiddenStatesMetrics):
             ("meta-llama-Llama-2-7b-hf", "meta-llama-Llama-2-7b-hf"),
             ("meta-llama-Llama-2-7b-hf", "meta-llama-Llama-2-7b-chat-hf"),
         ]
+        couples_list = [
+            ("meta-llama-Llama-3-8b-hf", "meta-llama-Llama-3-8b-hf"),
+            ("meta-llama-Llama-3-8b-hf", "meta-llama-Llama-3-8b-ft-hf"),
+        ]
         tsm = TensorStorageManager()
         for k in tqdm.tqdm(iter_list, desc="Computing overlaps k"):
             for couples in couples_list:

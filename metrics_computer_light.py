@@ -9,15 +9,16 @@ import argparse
 import importlib
 import logging
 from logging_utils.logging_config import setup_logging
-
 import pdb
 import datetime
+import os
+
 now = datetime.datetime.now()
 
 def set_log_name():
-    job_name = os.getenv('SLURM_JOB_NAME')
+    job_name = os.getenv('SLURM_JOB_ID')
     if job_name:
-        return job_name
+        return f"metrics_{job_name}"
     else: 
         return f"metrics_{now.hour}{now.minute}{now.second}"
 
@@ -49,6 +50,8 @@ def create_queries(models):
             if "70" in model and shot == 5 and "chat" not in model:
                 shot = 4
             elif "70" in model and "chat" in model and shot == 5:
+                continue
+            elif "ft" in model and shot != 0:
                 continue
             queries.append(
                 {"method": "last", "model_name": model, "train_instances": shot}
