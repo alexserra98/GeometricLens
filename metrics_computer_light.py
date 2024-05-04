@@ -12,7 +12,6 @@ from logging_utils.logging_config import setup_logging
 import pdb
 import datetime
 import os
-
 now = datetime.datetime.now()
 
 def set_log_name():
@@ -108,6 +107,9 @@ def main():
     logger.info(
         f"Metrics computer started\nModels:{models}\nMetrics:{metrics}\nVariations:{variations}"
     )
+    # save result in a temporary directory to avoid overwriting
+    _TMP_RESULT_DIR = Path(_OUTPUT_DIR_TRANSPOSED / set_log_name()).mkdir(parents=True, exist_ok=True)
+
 
     # models = [
     #    "meta-llama-Llama-2-7b-hf",
@@ -155,12 +157,12 @@ def main():
                     result = metric_instance.main(label=label_iter)
 
                     result_path = (
-                        _OUTPUT_DIR_TRANSPOSED / "result" / f"{metric}_{label_iter}.pkl"
+                        _TMP_RESULT_DIR / f"{metric}_{label_iter}.pkl"
                     )
                     result.to_pickle(result_path)
             else:
                 result = metric_instance.main()
-                result_path = _OUTPUT_DIR_TRANSPOSED / "result" / f"{metric}.pkl"
+                result_path = _TMP_RESULT_DIR / f"{metric}.pkl"
                 result.to_pickle(result_path)
 
             logging.info(f"Metric {metric} computed successfully")
