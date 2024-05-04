@@ -60,6 +60,7 @@ def parse_args():
         "--eval_dataset",
         type=str,
     )
+    parser.add_argument("--ckpt", type=int, default=None)
     parser.add_argument("--balanced", action="store_true")
     args = parser.parse_args()
     return args
@@ -90,8 +91,14 @@ if args.eval_dataset == "test":
 ov_repr = defaultdict(list)
 clusters = defaultdict(list)
 
+
+if args.ckpt is not None:
+    ckpts = [args.ckpt]
+else:
+    ckpts = list(range(args.epochs))
+
 for shot_mode in ["Oshot", "5shot"]:
-    for epoch in range(args.epochs):
+    for epoch in ckpts:
         # layer 0 is all overlapped
         for layer in range(1, 34):
             print(f"processing {shot_mode} epoch {epoch} layer {layer}")
