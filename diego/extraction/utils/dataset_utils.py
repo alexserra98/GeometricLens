@@ -8,6 +8,9 @@ import numpy as np
 import sys
 
 
+STEM = {}
+
+
 disable_progress_bar()
 
 

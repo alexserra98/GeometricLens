@@ -43,30 +43,40 @@ def get_composition(cluster_indices, index_to_subject, subject_relevance):
 # *******************************************************************************************************
 
 
-# we need to take just 100 samples per class (for simplicity)
-mask = np.load("test_mask.npy")
-
-nshots = "0shot"
-
+# mask = np.load("test_mask.npy")
+nshots = "5shot"
 
 base_dir = "/home/diego/Documents/area_science/ricerca/open/geometric_lens/repo/results"
 dirpath = f"{base_dir}/mmlu/llama-3-8b/{nshots}"
 
-
 # dirpath = f"{base_dir}/finetuned_dev/evaluated_test/llama-3-8b/4epochs/epoch_4"
 
-dirpath = f"{base_dir}/finetuned/llama-3-8b/epoch_2"
+# dirpath = f"{base_dir}/finetuned/llama-3-8b/epoch_2"
 
 with open(f"{dirpath}/statistics_target.pkl", "rb") as f:
     stats = pickle.load(f)
 
+
+# we need to take just 100 samples per class (for simplicity)
+nsamples_per_subject = 80
+
+subjects = np.array(stats["subjects"])
+mask = []
+for sub in np.unique(subjects):
+    ind = np.where(sub == subjects)[0]
+    chosen = np.random.choice(ind, nsamples_per_subject, replace=False)
+    mask.extend(list(np.sort(chosen)))
+np.array(mask)
+
 frequences = Counter(np.array(stats["subjects"])[mask]).values()
 assert len(np.unique(list(frequences))) == 1
-assert np.unique(list(frequences))[0] == 100
+assert np.unique(list(frequences))[0] == nsamples_per_subject, np.unique(
+    list(frequences)
+)[0]
 
 
 subjects = np.array(stats["subjects"])[mask]
-gtl = np.repeat(np.arange(57), 100)
+gtl = np.repeat(np.arange(57), nsamples_per_subject)
 X = torch.load(f"{dirpath}/l6_target.pt")
 X = X.to(torch.float64).numpy()[mask]
 
@@ -92,15 +102,10 @@ d = Data(coordinates=X_sub)
 # d.return_id_scaling_gride(range_max=100)
 d.compute_density_PAk()
 # d.compute_density_kNN(k=20)
-cluster_assignment = d.compute_clustering_ADP(Z=0.5, halo=False)
+cluster_assignment = d.compute_clustering_ADP(Z=1, halo=False)
 
 
 adjusted_rand_score(gtl, cluster_assignment)
-
-
-print()
-
-
 # **************************************************************
 
 
@@ -192,18 +197,18 @@ for i, (clust, subjects) in enumerate(clust_approx_subjects.items()):
     labels.append(name.strip()[:-1])
 
 # ****************************************************
-fig = plt.figure()
-ax = fig.add_subplot()
-ax.plot(np.sort(list(Counter(cluster_assignment).values())), marker=".")
-ax.set_ylabel("cluster size", fontsize=11)
-ax.set_xlabel("clusters", fontsize=11)
-ax.set_yscale("log")
-plt.savefig("./plots/cluster_population_llama3_layer6_5shot_z1_0shot.png")
+# fig = plt.figure()
+# ax = fig.add_subplot()
+# ax.plot(np.sort(list(Counter(cluster_assignment).values())), marker=".")
+# ax.set_ylabel("cluster size", fontsize=11)
+# ax.set_xlabel("clusters", fontsize=11)
+# ax.set_yscale("log")
+# plt.savefig("./plots/cluster_population_llama3_layer6_5shot_z1_0shot.png")
 
 
 thr = 20  # color threshold
 
-fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(15, 5))  # create figure & 1 axis
+fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(15, 7))  # create figure & 1 axis
 # truncate_mode: 'lastp', 'level', None
 # labels = lab
 dn = sp.cluster.hierarchy.dendrogram(
