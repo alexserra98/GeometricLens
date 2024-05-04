@@ -260,8 +260,6 @@ def main():
     )
     is_finetuned = False
     if args.finetuned_path:
-        assert args.finetuned_mode in ["dev", "dev_val_balanced"]
-        assert int(args.finetuned_epochs) in [4, 10]
 
         from peft import PeftModel
 

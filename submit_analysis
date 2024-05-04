@@ -29,4 +29,4 @@ python diego/analysis/compute_overlap.py \
     --finetuned_mode test_balanced \
     --results_path diego/analysis/results \
     --epochs 4 \
-    --eval_dataset "test" \
+    --eval_dataset "test" --ckpt 4 \

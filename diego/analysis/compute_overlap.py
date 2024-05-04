@@ -74,9 +74,7 @@ base_dir = "/orfeo/cephfs/scratch/area/ddoimo/open/geometric_lens/repo/results"
 
 print(f"processing model: {args.model}")
 print(f"processing epochs: {args.epochs}")
-print(f"processing epoch_ckpt: {args.ckpt_epoch}")
 print(f"processing daset: {args.eval_dataset}")
-print(f"is balanced?: {args.balanced}")
 sys.stdout.flush()
 
 if args.eval_dataset == "test":
@@ -97,7 +95,7 @@ if args.ckpt is not None:
 else:
     ckpts = list(range(args.epochs))
 
-for shot_mode in ["Oshot", "5shot"]:
+for shot_mode in ["0shot", "5shot"]:
     for epoch in ckpts:
         # layer 0 is all overlapped
         for layer in range(1, 34):
