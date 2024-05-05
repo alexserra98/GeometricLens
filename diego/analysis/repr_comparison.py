@@ -229,14 +229,14 @@ for epoch in ckpts:
             for subject in np.unique(subjects):
                 ov_repr[f"ep{epoch}_{subject}_k30"].append(ov_repr_tmp[subject])
 
-with open(
-    f"{args.results_path}/overlaps_{args.model}_finetuned_{args.finetuned_mode}_eval_{args.eval_dataset}{is_balanced}_epoch{args.epochs}_{args.num_shots}.pkl",
-    "wb",
-) as f:
-    pickle.dump(ov_repr, f, protocol=pickle.HIGHEST_PROTOCOL)
+    with open(
+        f"{args.results_path}/overlaps_{args.model}_finetuned_{args.finetuned_mode}_eval_{args.eval_dataset}{is_balanced}_epoch{args.epochs}_{args.num_shots}.pkl",
+        "wb",
+    ) as f:
+        pickle.dump(ov_repr, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-with open(
-    f"{args.results_path}/cluster_comparison_{args.model}_finetuned_{args.finetuned_mode}_eval_{args.eval_dataset}{is_balanced}_epoch{args.epochs}_{args.num_shots}.pkl",
-    "wb",
-) as f:
-    pickle.dump(cluster_comparison, f, protocol=pickle.HIGHEST_PROTOCOL)
+    with open(
+        f"{args.results_path}/cluster_comparison_{args.model}_finetuned_{args.finetuned_mode}_eval_{args.eval_dataset}{is_balanced}_epoch{args.epochs}_{args.num_shots}.pkl",
+        "wb",
+    ) as f:
+        pickle.dump(cluster_comparison, f, protocol=pickle.HIGHEST_PROTOCOL)
