@@ -22,7 +22,7 @@ def return_data_overlap(indices_base, indices_other, k=30, subjects=None):
         ndata, k, indices_base.astype(int), indices_other.astype(int)
     )
 
-    overlaps = overlaps_full
+    overlaps = np.mean(overlaps_full)
     if subjects is not None:
         overlaps = {}
         for subject in np.unique(subjects):
@@ -92,15 +92,14 @@ if args.eval_dataset == "test":
 
 # ****************************************************************************************
 
-ov_repr = defaultdict(list)
-clusters = defaultdict(list)
-
 
 if args.ckpt is not None:
     ckpts = [args.ckpt]
 else:
     ckpts = np.arange(args.epochs + 1)
 
+ov_repr = defaultdict(list)
+cluster_comparison = defaultdict(list)
 
 for epoch in ckpts:
     # layer 0 is all overlapped
@@ -165,12 +164,6 @@ for epoch in ckpts:
                 argsort=False,
             )
 
-            d = data.Data(distances=(distances_base, dist_index_base))
-            ids, _, _ = d.return_id_scaling_gride(range_max=100)
-            d.set_id(ids[3])
-            d.compute_density_kNN(k=2**4)
-            assignment_base = d.compute_clustering_ADP(Z=1.6)
-
             distances_finetuned, dist_index_finetuned, mus, _ = compute_distances(
                 X=finetuned_repr,
                 n_neighbors=maxk + 1,
@@ -180,19 +173,41 @@ for epoch in ckpts:
                 argsort=False,
             )
 
-            d = data.Data(distances=(distances_base, dist_index_base))
-            ids, _, _ = d.return_id_scaling_gride(range_max=100)
-            d.set_id(ids[3])
-            d.compute_density_kNN(k=2**4)
-            assignment_finetuned = d.compute_clustering_ADP(Z=1.6)
+            for halo in [True, False]:
+                is_halo = ""
+                if halo:
+                    is_halo = "-halo"
+                for z in [0.5, 1, 1.6, 2.1]:
 
-            clusters[f"ep{epoch}-ami"].append(
-                adjusted_mutual_info_score(assignment_base, assignment_finetuned)
-            )
+                    d = data.Data(distances=(distances_base, dist_index_base))
+                    ids, _, _ = d.return_id_scaling_gride(range_max=100)
+                    d.set_id(ids[3])
+                    d.compute_density_kNN(k=16)
+                    assignment_base = d.compute_clustering_ADP(Z=z, halo=halo)
 
-            clusters[f"ep{epoch}-ari"].append(
-                adjusted_rand_score(assignment_base, assignment_finetuned)
-            )
+                    d = data.Data(distances=(distances_base, dist_index_base))
+                    ids, _, _ = d.return_id_scaling_gride(range_max=100)
+                    d.set_id(ids[3])
+                    d.compute_density_kNN(k=16)
+                    assignment_finetuned = d.compute_clustering_ADP(Z=z, halo=halo)
+
+                    mask = np.ones(len(assignment_finetuned), dtype=bool)
+                    if halo:
+                        is_core1 = assignment_base != -1
+                        is_core2 = assignment_finetuned != -1
+                        mask = np.logical_and(is_core1, is_core2)
+
+                    cluster_comparison[f"ami-ep{epoch}-z{z}{is_halo}"].append(
+                        adjusted_mutual_info_score(
+                            assignment_base[mask], assignment_finetuned[mask]
+                        )
+                    )
+
+                    cluster_comparison[f"ari-ep{epoch}-z{z}{is_halo}"].append(
+                        adjusted_rand_score(
+                            assignment_base[mask], assignment_finetuned[mask]
+                        )
+                    )
 
             for k in [30, 100, 300]:
                 ov_repr[f"ep{epoch}_k{k}"].append(
@@ -221,7 +236,7 @@ with open(
     pickle.dump(ov_repr, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 with open(
-    f"{args.results_path}/clusters_{args.model}_finetuned_{args.finetuned_mode}_eval_{args.eval_dataset}{is_balanced}_epoch{args.epochs}_{args.num_shots}.pkl",
+    f"{args.results_path}/cluster_comparison_{args.model}_finetuned_{args.finetuned_mode}_eval_{args.eval_dataset}{is_balanced}_epoch{args.epochs}_{args.num_shots}.pkl",
     "wb",
 ) as f:
-    pickle.dump(clusters, f, protocol=pickle.HIGHEST_PROTOCOL)
+    pickle.dump(cluster_comparison, f, protocol=pickle.HIGHEST_PROTOCOL)
