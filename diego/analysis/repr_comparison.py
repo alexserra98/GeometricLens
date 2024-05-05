@@ -186,7 +186,7 @@ for epoch in ckpts[::-1]:
                     d.compute_density_kNN(k=16)
                     assignment_base = d.compute_clustering_ADP(Z=z, halo=halo)
 
-                    d = data.Data(distances=(distances_base, dist_index_base))
+                    d = data.Data(distances=(distances_finetuned, dist_index_finetuned))
                     ids, _, _ = d.return_id_scaling_gride(range_max=100)
                     d.set_id(ids[3])
                     d.compute_density_kNN(k=16)
