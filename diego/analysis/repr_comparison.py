@@ -54,7 +54,7 @@ def parse_args():
     )
     parser.add_argument(
         "--epochs",
-        type=str,
+        type=int,
     )
     parser.add_argument(
         "--eval_dataset",
@@ -78,7 +78,6 @@ base_dir = "/orfeo/cephfs/scratch/area/ddoimo/open/geometric_lens/repo/results"
 
 print(f"processing model: {args.model}")
 print(f"processing epochs: {args.epochs}")
-print(f"processing epoch_ckpt: {args.ckpt_epoch}")
 print(f"processing daset: {args.eval_dataset}")
 print(f"num_shots: {args.num_shots}")
 sys.stdout.flush()
@@ -93,15 +92,17 @@ if args.eval_dataset == "test":
 # ****************************************************************************************
 
 
+cpt = ""
 if args.ckpt is not None:
     ckpts = [args.ckpt]
+    cpt = "_cpt{args.ckpt}"
 else:
     ckpts = np.arange(args.epochs + 1)
 
 ov_repr = defaultdict(list)
 cluster_comparison = defaultdict(list)
 
-for epoch in ckpts:
+for epoch in ckpts[::-1]:
     # layer 0 is all overlapped
     for layer in range(1, 34):
         print(f"processing {args.num_shots} epoch {epoch} layer {layer}")
@@ -109,7 +110,7 @@ for epoch in ckpts:
 
         # ************************************
 
-        pretrained_path = f"{base_dir}/mmlu/{args.model}/{args.num_shots}"
+        pretrained_path = f"{base_dir}/mmlu/{args.model}/{args.num_shots}shot"
         base_repr = torch.load(f"{pretrained_path}/l{layer}_target.pt")
         base_repr = base_repr.to(torch.float64).numpy()
 
