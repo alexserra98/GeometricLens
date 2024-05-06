@@ -193,6 +193,7 @@ def parse_args():
     )
     parser.add_argument("--dummy", action="store_true")
     parser.add_argument("--gibberish", action="store_true")
+    parser.add_argument("--random_subject", action="store_true")
     args = parser.parse_args()
     return args
 
@@ -291,6 +292,9 @@ def main():
     accelerator.print("model loaded. \n\n")
     sys.stdout.flush()
 
+    if args.random_subject:
+        args.num_few_shots = 5
+
     dataset, longest_seq = MMLU_Dataset(
         tokenizer=tokenizer,
         max_seq_len=max_seq_len,
@@ -302,6 +306,7 @@ def main():
         split=args.split,
         dummy=args.dummy,
         gibberish=args.gibberish,
+        random_subject=args.random_subject,
     ).construct_dataset()
 
     accelerator.print("num few shots:", args.num_few_shots)
@@ -358,6 +363,8 @@ def main():
         inner_path = f"evaluated_{args.split}/dummy/{model_name}/5shot"
     elif args.gibberish:
         inner_path = f"evaluated_{args.split}/gibberish/{model_name}/5shot"
+    elif args.random_subject:
+        inner_path = f"evaluated_{args.split}/random_subject/{model_name}/{args.num_few_shots}shot"
     elif args.finetuned_path:
         inner_path = f"finetuned_{args.finetuned_mode}/evaluated_{args.split}/{model_name}/{args.finetuned_epochs}epochs/{epoch_ckpt}"
 
