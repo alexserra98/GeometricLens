@@ -29,6 +29,7 @@ class MetricName(Enum):
     LABEL_OVERLAP = ("metrics.overlap", "LabelOverlap")
     POINT_OVERLAP = ("metrics.overlap", "PointOverlap")
     PROBE = ("metrics.probe", "LinearProbe")
+    CLUSTERING = ("metrics.clustering", "LabelClustering")
 
 
 def metric_function(name):
@@ -111,31 +112,6 @@ def main():
     _TMP_RESULT_DIR = Path(_OUTPUT_DIR_TRANSPOSED) / set_log_name()
     _TMP_RESULT_DIR.mkdir(parents=True, exist_ok=True)
 
-
-    # models = [
-    #    "meta-llama-Llama-2-7b-hf",
-    #    "meta-llama-Llama-2-7b-chat-hf",
-    #    "meta-llama-Llama-2-13b-hf",
-    #    "meta-llama-Llama-2-13b-chat-hf",
-    #    "meta-llama-Llama-2-70b-hf",
-    #    "meta-llama-Llama-2-70b-chat-hf",
-    #    "meta-llama-Llama-3-8b-hf",
-    #    "meta-llama-Llama-3-8b-chat-hf",
-    #    "meta-llama-Llama-3-70b-hf",
-    #    "meta-llama-Llama-3-70b-chat-hf",
-    #    "meta-llama-Llama-3-8b-ft-hf",
-    # ]
-
-    ## List of variations to apply
-    # variations = {
-    #    "intrinsic_dimension": "None",
-    #    "point_overlap": "cosine",
-    #    "label_overlap": "balanced_letter",
-    #    "cka": "rbf",
-    # }
-
-    # List of metrics to compute
-    # metrics = ["intrinsic_dimension", "probe", "label_overlap"]
     for metric in metrics:
         metric_class = metric_function(metric)
 
