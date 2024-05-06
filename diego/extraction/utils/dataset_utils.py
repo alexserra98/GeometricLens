@@ -6,6 +6,8 @@ import numpy as np
 
 # from dataset_utils.utils import MMLU_Dataset
 import sys
+import random
+import json
 
 
 # def format_subject(subject):
@@ -54,9 +56,61 @@ import sys
 #         )
 
 
-# print(prompt)
-# my_prompt
-# print(my_prompt)
+#
+
+# with open("./subjects", "w") as f:
+#     for subject in np.unique(dataset["subject"]):
+#         f.write(f"'{subject}',\n")
+
+
+# area_to_subjects = {"stem": [], "not_stem": []}
+
+# area_to_subjects["stem"] = [
+#     "abstract_algebra",
+#     "anatomy",
+#     "astronomy",
+#     "college_biology",
+#     "college_chemistry",
+#     "college_computer_science",
+#     "college_mathematics",
+#     "college_physics",
+#     "computer_security",
+#     "conceptual_physics",
+#     "electrical_engineering",
+#     "elementary_mathematics",
+#     "high_school_biology",
+#     "high_school_chemistry",
+#     "high_school_computer_science",
+#     "high_school_mathematics",
+#     "high_school_physics",
+#     "high_school_statistics",
+#     "machine_learning",
+# ]
+
+# dataset = load_dataset("cais/mmlu", "all", split="dev")
+# for subject in np.unique(dataset["subject"]):
+#     if subject not in area_to_subjects["stem"]:
+#         area_to_subjects["not_stem"].append(subject)
+
+# with open("./asset/mmlu_macro_areas.json", "w") as f:
+#     json.dump(area_to_subjects, f)
+
+
+j
+with open("./asset/mmlu_macro_areas.json", "r") as f:
+    area_to_subjects = json.load(f)
+
+subject_list = []
+for value in area_to_subjects.values():
+    subject_list.extend(value)
+
+subject_to_area = {}
+for subject in np.unique(subject_list):
+    if subject in area_to_subjects["stem"]:
+
+        subject_to_area[subject] = "stem"
+    else:
+        subject_to_area[subject] = "not_stem"
 
 
 def filter_out_long_sequences(tokenized_dataset, max_seq_len):
@@ -92,6 +146,7 @@ class MMLU_Dataset:
         split="test",
         gibberish=False,
         dummy=False,
+        random_subject=False,
     ):
 
         self.dataset = "mmlu"
@@ -110,6 +165,7 @@ class MMLU_Dataset:
         self.split = split
         self.gibberish = gibberish
         self.dummy = dummy
+        self.random_subject = random_subject
 
         self.dummy_examples = self.construct_gibberish_questions(
             path="diego/extraction/utils/asset/dummy.txt"
@@ -151,6 +207,16 @@ class MMLU_Dataset:
             prompt += f" {self.answers[answer]}\n\n"
         return prompt
 
+    def sample_subject(self, subject):
+        # all_areas  = ["stem", "humanities", "other", "social_sciences"]
+        all_areas = ["stem", "non_stem"]
+        current_area = subject_to_area[subject]
+        all_areas.pop(current_area)
+        assert current_area not in all_areas
+        few_shot_area = random.choice(all_areas)
+        few_shot_subject = random.choice(area_to_subjects[few_shot_area])
+        return few_shot_subject
+
     # prompt contruction.buils to operate on list of inputs.
     def construct_prompt(self, batch, tokenizer, dev_set, max_seq_len, num_few_shots):
         prompts = []
@@ -164,8 +230,12 @@ class MMLU_Dataset:
         if num_few_shots > 0:
             local_dev_set = {}
             for subject in set(subjects):
+                prompt_subject = subject
+                if self.random_subject:
+                    prompt_subject = self.sample_subject(subject)
+
                 local_dev_set[subject] = dev_set.filter(
-                    lambda dev_example: dev_example["subject"] == subject,
+                    lambda dev_example: dev_example["subject"] == prompt_subject,
                 )
 
         for i, question in enumerate(questions):
