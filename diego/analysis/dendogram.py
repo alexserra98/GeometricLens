@@ -44,17 +44,33 @@ def get_composition(cluster_indices, index_to_subject, subject_relevance):
 
 base_dir = "/home/diego/Documents/area_science/ricerca/open/geometric_lens/repo/results"
 
-# mask = np.load("test_mask.npy")
-nshots = "0shot"
-dirpath = f"{base_dir}/mmlu/llama-3-8b/{nshots}"
+dirpath = f"{base_dir}/mmlu/llama-2-7b-shuffled"
 
+
+dist = np.load(f"{dirpath}/distances-6.npy")
+indices = np.load(f"{dirpath}/dist_indices-6.npy")
+gtl = np.load(f"{dirpath}/subjects-labels.pkl.npy")
+
+d = Data(distances=(dist, indices), maxk=300)
+
+
+with open(f"{dirpath}/subjects-map", "rb") as f:
+    stats = pickle.load(f)
+
+index_to_subject = {val: key[5:] for key, val in stats.items()}
+
+
+mask = np.load("test_mask.npy")
+nshots = "5shot"
+dirpath = f"{base_dir}/mmlu/llama-3-8b/{nshots}"
 
 # finetuned_model
 # dirpath = f"{base_dir}/finetuned_dev/evaluated_test/llama-3-8b/4epochs/epoch_4"
 
-# dirpath = (
-#     f"{base_dir}/finetuned_test_balanced/evaluated_test/llama-3-8b/4epochs/epoch_4"
-# )
+dirpath = (
+    f"{base_dir}/finetuned_test_balanced/evaluated_test/llama-3-8b/4epochs/epoch_4"
+)
+
 
 with open(f"{dirpath}/statistics_target.pkl", "rb") as f:
     stats = pickle.load(f)
@@ -98,6 +114,7 @@ for i in range(len(gtl)):
     else:
         index_to_subject[gtl[i]] = subjects[i]
 
+
 # ************************************************************************
 
 # Z = 1.6 was just fine
@@ -107,14 +124,14 @@ d.set_id(ids[3])
 # d.return_id_scaling_gride(range_max=100)
 # d.compute_density_PAk()
 d.compute_density_kNN(k=16)
-cluster_assignment = d.compute_clustering_ADP(Z=1, halo=True)
+cluster_assignment = d.compute_clustering_ADP(Z=1)
 
 is_core = cluster_assignment != -1
 
 
 adjusted_rand_score(gtl[is_core], cluster_assignment[is_core])
 
-adjusted_mutual_info_score(gtl[is_core], cluster_assignment[is_core])
+# adjusted_mutual_info_score(gtl[is_core], cluster_assignment[is_core])
 
 # **************************************************************
 

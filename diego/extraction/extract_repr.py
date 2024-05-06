@@ -191,6 +191,8 @@ def parse_args():
         "--ckpt_epoch",
         type=int,
     )
+    parser.add_argument("--dummy", action="store_true")
+    parser.add_argument("--gibberish", action="store_true")
     args = parser.parse_args()
     return args
 
@@ -298,6 +300,8 @@ def main():
         num_processes=args.preprocessing_num_workers,
         num_samples=args.num_samples,
         split=args.split,
+        dummy=args.dummy,
+        gibberish=args.gibberish,
     ).construct_dataset()
 
     accelerator.print("num few shots:", args.num_few_shots)
@@ -349,10 +353,12 @@ def main():
     nsamples = len(dataloader.dataset)
     accelerator.print("num_total_samples", nsamples)
 
-    if args.split != "test":
-        inner_path = f"evaluated_{args.split}/{model_name}/{args.num_few_shots}shot"
-
-    if args.finetuned_path:
+    inner_path = f"evaluated_{args.split}/{model_name}/{args.num_few_shots}shot"
+    if args.dummy:
+        f"evaluated_{args.split}/dummy/{model_name}/5shot"
+    elif args.gibberish:
+        f"evaluated_{args.split}/gibberish/{model_name}/5shot"
+    elif args.finetuned_path:
         inner_path = f"finetuned_{args.finetuned_mode}/evaluated_{args.split}/{model_name}/{args.finetuned_epochs}epochs/{epoch_ckpt}"
 
     dirpath = args.out_dir + f"/{inner_path}"
