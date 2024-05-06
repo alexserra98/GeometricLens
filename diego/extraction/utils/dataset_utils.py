@@ -96,7 +96,6 @@ import json
 #     json.dump(area_to_subjects, f)
 
 
-j
 with open("diego/extraction/utils/asset/mmlu_macro_areas.json", "r") as f:
     area_to_subjects = json.load(f)
 
