@@ -97,7 +97,7 @@ import json
 
 
 j
-with open("./asset/mmlu_macro_areas.json", "r") as f:
+with open("diego/extraction/utils/asset/mmlu_macro_areas.json", "r") as f:
     area_to_subjects = json.load(f)
 
 subject_list = []
