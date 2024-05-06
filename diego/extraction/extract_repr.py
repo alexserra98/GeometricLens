@@ -355,9 +355,9 @@ def main():
 
     inner_path = f"evaluated_{args.split}/{model_name}/{args.num_few_shots}shot"
     if args.dummy:
-        f"evaluated_{args.split}/dummy/{model_name}/5shot"
+        inner_path = f"evaluated_{args.split}/dummy/{model_name}/5shot"
     elif args.gibberish:
-        f"evaluated_{args.split}/gibberish/{model_name}/5shot"
+        inner_path = f"evaluated_{args.split}/gibberish/{model_name}/5shot"
     elif args.finetuned_path:
         inner_path = f"finetuned_{args.finetuned_mode}/evaluated_{args.split}/{model_name}/{args.finetuned_epochs}epochs/{epoch_ckpt}"
 
