@@ -308,7 +308,7 @@ def main():
         dummy=args.dummy,
         gibberish=args.gibberish,
         random_subject=args.random_subject,
-        wrong_answers=args.wrong_anwers,
+        wrong_answers=args.wrong_answers,
     ).construct_dataset()
 
     accelerator.print("num few shots:", args.num_few_shots)
