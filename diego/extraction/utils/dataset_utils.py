@@ -9,6 +9,7 @@ import sys
 import random
 import json
 
+disable_progress_bar()
 
 # def format_subject(subject):
 #     l = subject.split("_")
@@ -208,11 +209,19 @@ class MMLU_Dataset:
 
     def sample_subject(self, subject):
         # all_areas  = ["stem", "humanities", "other", "social_sciences"]
-        all_areas = ["stem", "non_stem"]
+        all_areas = ["stem", "not_stem"]
         current_area = subject_to_area[subject]
-        all_areas.pop(current_area)
-        assert current_area not in all_areas
-        few_shot_area = random.choice(all_areas)
+
+        if current_area == "stem":
+            few_shot_area = "not_stem"
+        elif current_area == "not_stem":
+            few_shot_area = "stem"
+        else:
+            raise ValueError
+
+        # all_areas.pop(current_area)
+        # assert current_area not in all_areas
+        # few_shot_area = random.choice(all_areas)
         few_shot_subject = random.choice(area_to_subjects[few_shot_area])
         return few_shot_subject
 
