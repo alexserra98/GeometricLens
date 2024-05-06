@@ -191,7 +191,6 @@ for epoch in ckpts[::-1]:
         if dataset_mask is not None:
             is_balanced = "_balanced"
             base_repr = base_repr[dataset_mask]
-            finetuned_repr = finetuned_repr[dataset_mask]
             subjects = subjects[dataset_mask]
             # check that all the subjects have the same frequency
             frequences = Counter(subjects).values()
@@ -202,12 +201,12 @@ for epoch in ckpts[::-1]:
                 frequences,
             )
 
-        subjetcs = np.repeat(np.arange(len(subjetcs)), 100)
+        subjetcs = np.repeat(np.arange(len(subjects)), 100)
         # remove identical points
         base_unique, base_idx, base_inverse = np.unique(
             base_repr, axis=0, return_index=True, return_inverse=True
         )
-        indices = np.sort(indices)
+        indices = np.sort(base_idx)
 
         base_repr = base_repr[indices]
         subjects = subjects[indices]
