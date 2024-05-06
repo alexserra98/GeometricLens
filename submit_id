@@ -42,8 +42,9 @@ torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
     --remove_duplicates \
     --use_last_token \
     --max_seq_len 4096 \
-    --finetuned_path  "/u/area/ddoimo/ddoimo/finetuning_llm/open-instruct/results" \
-    --finetuned_mode "test_balanced" \
     --split "test" \
-    --finetuned_epochs 4 \
-    --ckpt_epoch 3 
+    --dummy
+    # --finetuned_path  "/u/area/ddoimo/ddoimo/finetuning_llm/open-instruct/results" \
+    # --finetuned_mode "test_balanced" \
+    # --finetuned_epochs 4 \
+    # --ckpt_epoch 3 

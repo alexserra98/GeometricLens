@@ -207,8 +207,7 @@ for epoch in ckpts[::-1]:
         base_unique, base_idx, base_inverse = np.unique(
             base_repr, axis=0, return_index=True, return_inverse=True
         )
-        indices = np.sort(indices)
-
+        indices = np.sort(base_idx)
         base_repr = base_repr[indices]
         subjects = subjects[indices]
 
@@ -234,7 +233,7 @@ for epoch in ckpts[::-1]:
                 d = data.Data(distances=(distances_base, dist_index_base))
                 ids, _, _ = d.return_id_scaling_gride(range_max=100)
                 d.set_id(ids[3])
-                intrinsic_dim[f"ids-ep{epoch}"].append(ids)
+                # intrinsic_dim[f"ids-ep{epoch}"].append(ids)
                 d.compute_density_kNN(k=16)
                 assignment = d.compute_clustering_ADP(Z=z, halo=halo)
 

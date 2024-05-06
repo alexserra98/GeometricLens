@@ -8,10 +8,55 @@ import numpy as np
 import sys
 
 
-STEM = {}
+# def format_subject(subject):
+#     l = subject.split("_")
+#     s = ""
+#     for entry in l:
+#         s += " " + entry
+#     return s
 
 
-disable_progress_bar()
+# def construct_question(question, choices, answer, include_answer=False):
+#     answers = np.array(["A", "B", "C", "D"])
+#     # added strip
+#     prompt = f"{question.strip()}\n"
+#     for i, choice in enumerate(choices):
+#         # added strip
+#         prompt += f"{answers[i]}. {choice.strip()}\n"
+#     # added space to final answers
+#     prompt += "Answer:"
+#     if include_answer:
+#         prompt += f" {answers[answer]}\n\n"
+#     return prompt
+
+
+# dev_set = load_dataset("cais/mmlu", "all", split="dev")
+# subjects = np.unique(dev_set["subject"])[3:5]
+
+
+# local_dev_set = {}
+# for subject in subjects:
+#     local_dev_set[subject] = dev_set.filter(
+#         lambda dev_example: dev_example["subject"] == subject,
+#     )
+
+# for i, question in enumerate(subjects):
+#     # prompt = f"The following are multiple choice questions (with answers) about{format_subject(subjects[i])}.\n\n"
+#     prompt = ""
+#     current_subject = subjects[i]
+#     for j in range(5):
+#         shot = local_dev_set[current_subject][j]
+#         prompt += construct_question(
+#             shot["question"],
+#             shot["choices"],
+#             shot["answer"],
+#             include_answer=True,
+#         )
+
+
+# print(prompt)
+# my_prompt
+# print(my_prompt)
 
 
 def filter_out_long_sequences(tokenized_dataset, max_seq_len):
@@ -45,6 +90,8 @@ class MMLU_Dataset:
         num_processes=1,
         num_samples=None,
         split="test",
+        gibberish=False,
+        dummy=False,
     ):
 
         self.dataset = "mmlu"
@@ -61,6 +108,29 @@ class MMLU_Dataset:
         self.num_samples = num_samples
         self.accelerator = accelerator
         self.split = split
+        self.gibberish = gibberish
+        self.dummy = dummy
+
+        self.dummy_examples = self.construct_gibberish_questions(
+            path="diego/extraction/utils/asset/dummy.txt"
+        )
+        self.gibberish_examples = self.construct_gibberish_questions(
+            path="diego/extraction/utils/asset/gibberish.txt"
+        )
+
+    def construct_gibberish_questions(self, path):
+        # for the moment is 5 shot
+        with open(f"{path}", "r", encoding="utf-8") as f:
+            lines = f.readlines()
+
+            lines = [line.replace("\\n", "\n")[:-1] for line in lines]
+
+        prompt = ""
+        for line in lines:
+            prompt += line
+        prompt += "\n"
+
+        return prompt
 
     def format_subject(self, subject):
         l = subject.split("_")
@@ -99,16 +169,26 @@ class MMLU_Dataset:
                 )
 
         for i, question in enumerate(questions):
-            prompt = f"The following are multiple choice questions (with answers) about{self.format_subject(subjects[i])}.\n\n"
-            current_subject = subjects[i]
-            for j in range(num_few_shots):
-                shot = local_dev_set[current_subject][j]
-                prompt += self.construct_question(
-                    shot["question"],
-                    shot["choices"],
-                    shot["answer"],
-                    include_answer=True,
-                )
+            if self.dummy:
+                prompt = "The following are vorpal borogoves (with gyres) about the frumious bandersnatch.\n\n"
+            elif self.gibberish:
+                prompt = "Zorpulika blivikwak bakki (floopz wiz zorps) ombli bla.\n\n"
+            else:
+                prompt = f"The following are multiple choice questions (with answers) about{self.format_subject(subjects[i])}.\n\n"
+            if self.dummy:
+                prompt += self.dummy_examples
+            elif self.gibberish:
+                prompt += self.gibberish_examples
+            else:
+                current_subject = subjects[i]
+                for j in range(num_few_shots):
+                    shot = local_dev_set[current_subject][j]
+                    prompt += self.construct_question(
+                        shot["question"],
+                        shot["choices"],
+                        shot["answer"],
+                        include_answer=True,
+                    )
             question = self.construct_question(
                 questions[i], choices[i], answer_indices[i]
             )
