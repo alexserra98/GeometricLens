@@ -108,7 +108,8 @@ def main():
         f"Metrics computer started\nModels:{models}\nMetrics:{metrics}\nVariations:{variations}"
     )
     # save result in a temporary directory to avoid overwriting
-    _TMP_RESULT_DIR = Path(_OUTPUT_DIR_TRANSPOSED / set_log_name()).mkdir(parents=True, exist_ok=True)
+    _TMP_RESULT_DIR = Path(_OUTPUT_DIR_TRANSPOSED) / set_log_name()
+    _TMP_RESULT_DIR.mkdir(parents=True, exist_ok=True)
 
 
     # models = [
@@ -155,10 +156,7 @@ def main():
                     )
                 for label_iter in labels:
                     result = metric_instance.main(label=label_iter)
-
-                    result_path = (
-                        _TMP_RESULT_DIR / f"{metric}_{label_iter}.pkl"
-                    )
+                    result_path =_TMP_RESULT_DIR / f"{metric}_{label_iter}.pkl"
                     result.to_pickle(result_path)
             else:
                 result = metric_instance.main()

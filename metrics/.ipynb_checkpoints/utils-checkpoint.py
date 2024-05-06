@@ -36,7 +36,27 @@ class Match(Enum):
 class Layer(Enum):
     LAST = "last"
     SUM = "sum"
-    
+
+class DataNotFoundError(Exception):
+    """Exception raised when the requested data is not found in the data source."""
+    def __init__(self, message="Requested data not found in the file system"):
+        # Call the base class constructor with the parameters it needs
+        super().__init__(message)
+        self.message = message
+
+    def __str__(self):
+        return self.message
+
+class UnknownError(Exception):
+    """Exception raised for generic errors during data retrieval or processing."""
+
+    def __init__(self, message="Uknown error occurred while retrieving data"):
+        super().__init__(message)
+        self.message = message
+
+    def __str__(self):
+        return self.message
+
 def softmax(logits):
     # Exponentiate each element
     exp_logits = np.exp(logits - np.max(logits, axis=1, keepdims=True))
@@ -49,13 +69,17 @@ class InstanceHiddenStates():
   hidden_states: Dict[str, np.ndarray]
 
 class TensorStorageManager:
-    def __init__(self, storage_config_h5: TensorStorage = None, storage_config_npy: Path = None):
+    def __init__(self, 
+                 storage_config_h5: TensorStorage = None, 
+                 storage_config_npy: Path = None):
         # Initialization with storage configurations or connections
         self.storage_h5 = storage_config_h5
         self.storage_npy = storage_config_npy
 
 
-    def retrieve_from_storage_h5(self, df_hiddenstates: pd.DataFrame, query: DataFrameQuery = None) -> tuple:
+    def retrieve_from_storage_h5(self, 
+                                 df_hiddenstates: pd.DataFrame, 
+                                 query: DataFrameQuery = None) -> tuple:
         """
         Collect hidden states of all instances and collapse them in one tensor
         using the provided method.
@@ -116,55 +140,91 @@ class TensorStorageManager:
         return hidden_states, logits, df_hiddenstates
         
     def retrieve_from_storage_npy(self, query):
-        query_dict = query.query
-        #TODO - Adapt path to query
-        #import pdb; pdb.set_trace()
-        adapted_name = query_dict["model_name"][11:].lower()
-        adapted_name = adapted_name[:-3]
-        storage_path = Path(f"/orfeo/cephfs/scratch/area/ddoimo/open/geometric_lens/repo/results/mmlu/{adapted_name}/{query_dict['train_instances']}shot")
-        files = os.listdir(storage_path)
 
-        # Filter files with the specific pattern and range check
-        pattern = re.compile(r'l(\d+)_target\.pt')
-        filtered_files = [file for file in files if pattern.match(file)]
-
-        # Sort files based on the number in the filename
-        filtered_files.sort(key=lambda x: int(pattern.match(x).group(1)))
-
-        # Load tensors and add them to a list
-        tensors = [torch.load(os.path.join(storage_path, file)) for file in filtered_files]
-
-        # Stack all tensors along a new dimension
-        stacked_tensor = torch.stack(tensors[:-1])
-        stacked_tensor = rearrange(stacked_tensor, 'l n d -> n l d')
-        logits = tensors[-1]
-
-        #retrieve statistics
-        with open(Path(storage_path,"statistics_target.pkl"), "rb") as f:
-            stat_target = pickle.load(f)
+        try: 
+            query_dict = query.query
+            adapted_name = query_dict["model_name"][11:].lower()
+            adapted_name = adapted_name[:-3]
+            if "ft" in  adapted_name:
+                folder = "finetuned_dev_val_balanced/evaluated_test"
+                # storage_path=Path(f"/orfeo/cephfs/scratch/area/ddoimo/open/"\
+                #                 f"geometric_lens/repo/results/{folder}/"\
+                #                 f"{adapted_name[:-3]}/epoch_2_2904")
+                
+                storage_path=Path(f"/orfeo/cephfs/scratch/area/ddoimo/open/"\
+                                  f"geometric_lens/repo/results/{folder}/"\
+                                  f"{adapted_name[:-3]}/10epochs/epoch_10")
             
-        for key in stat_target.keys():
-            if isinstance(stat_target[key],float):
-                continue
-            stat_target[key] = stat_target[key][:14039] 
-        
-        #import pdb; pdb.set_trace()    
-        df = pd.DataFrame(stat_target)
-        df = df.rename(columns={"subjects":"dataset", "predictions":"std_pred","answers":"letter_gold", "contrained_predictions":"only_ref_pred",})
-        df["train_instances"] = query_dict["train_instances"]
-        df["model_name"] = query_dict["model_name"] #"meta-llama-Llama-2-7b-hf"
-        df["method"] = "last"
-        
-        #df = pd.read_pickle("/orfeo/scratch/dssc/zenocosini/mmlu_result/transposed_dataset/df.pkl")
+            else:
+                
+                storage_path=Path(f"/orfeo/cephfs/scratch/area/ddoimo/open/"\
+                                  f"geometric_lens/repo/results/mmlu/"\
+                                  f"{adapted_name}/{query_dict['train_instances']}shot")
+            
+            # If the path does not exist, the program wont' crash but raise an error
+            if not storage_path.exists() or not storage_path.is_dir():
+                raise DataNotFoundError(f"Storage path does not exist: {storage_path}")
+            
+            files = os.listdir(storage_path)
 
-        return stacked_tensor.float().numpy()[:14039], logits.float().numpy()[:14039], df
-   
+            # Filter files with the specific pattern and range check
+            pattern = re.compile(r'l(\d+)_target\.pt')
+            filtered_files = [file for file in files if pattern.match(file)]
+
+            # Sort files based on the number in the filename
+            filtered_files.sort(key=lambda x: int(pattern.match(x).group(1)))
+
+            # Load tensors and add them to a list
+            tensors = [torch.load(os.path.join(storage_path, file)) for file in filtered_files]
+
+            # Stack all tensors along a new dimension
+            stacked_tensor = torch.stack(tensors[:-1])
+            stacked_tensor = rearrange(stacked_tensor, 'l n d -> n l d')
+            logits = tensors[-1]
+
+            #retrieve statistics
+            with open(Path(storage_path,"statistics_target.pkl"), "rb") as f:
+                stat_target = pickle.load(f)
+            
+            # Cropping tensors because of inconsistency in the data
+            for key in stat_target.keys():
+                if isinstance(stat_target[key],float):
+                    continue
+                stat_target[key] = stat_target[key][:14040] 
+            
+            df = pd.DataFrame(stat_target)
+            df = df.rename(columns={"subjects":"dataset", 
+                                    "predictions":"std_pred",
+                                    "answers":"letter_gold", 
+                                    "contrained_predictions":"only_ref_pred",})
+            df["train_instances"] = query_dict["train_instances"]
+            df["model_name"] = query_dict["model_name"] #"meta-llama-Llama-2-7b-hf"
+            df["method"] = "last"
+        
+        except UnknownError as e:
+            print(e)
+            raise
+        mask = np.load("/orfeo/scratch/dssc/zenocosini/mmlu_result/test_mask_100.npy")
+        
+        return stacked_tensor.float().numpy()[:14040][mask], logits.float().numpy()[:14040][mask], df.iloc[mask]
+        #return stacked_tensor.float().numpy(), logits.float().numpy(), df
+    
     def retrieve_tensor(self, query, criteria):
-        # Decision logic to choose the storage
-        if criteria == 'h5':
-            return self.retrieve_from_storage_h5(query)
-        elif criteria == 'npy':
-            return self.retrieve_from_storage_npy(query)
+        try:
+            # Decision logic to choose the storage
+            if criteria == 'h5':
+                return self.retrieve_from_storage_h5(query)
+            elif criteria == 'npy':
+                return self.retrieve_from_storage_npy(query)
+        except DataNotFoundError as e:
+            # Handle missing data but continue the program
+            print(e)
+            return None
+        except UnknownError as e:
+            # Handle generic error and stop the program
+            print(e)
+            raise  # Re-raise the exception to stop the program
+
         
         
 def hidden_states_collapse( df_hiddenstates: pd.DataFrame(), 
@@ -307,7 +367,7 @@ def angular_distance(mat):
     """
     dot_product = mat @ mat.T
     norm_vector = np.linalg.norm(mat, axis=1)
-    stacked_vector = np.tile(norm_vector, (100, 1))
+    stacked_vector = np.tile(norm_vector, (mat.shape[0], 1))
     norm_product = stacked_vector.T*stacked_vector
 
     cosine_similarity = dot_product / norm_product

@@ -190,7 +190,7 @@ class TensorStorageManager:
             for key in stat_target.keys():
                 if isinstance(stat_target[key],float):
                     continue
-                stat_target[key] = stat_target[key][:14039] 
+                stat_target[key] = stat_target[key][:14040] 
             
             df = pd.DataFrame(stat_target)
             df = df.rename(columns={"subjects":"dataset", 
@@ -204,9 +204,11 @@ class TensorStorageManager:
         except UnknownError as e:
             print(e)
             raise
-
-        return stacked_tensor.float().numpy()[:14039], logits.float().numpy()[:14039], df
-   
+        mask = np.load("/orfeo/scratch/dssc/zenocosini/mmlu_result/test_mask_100.npy")
+        
+        return stacked_tensor.float().numpy()[:14040][mask], logits.float().numpy()[:14040][mask], df.iloc[mask]
+        #return stacked_tensor.float().numpy(), logits.float().numpy(), df
+    
     def retrieve_tensor(self, query, criteria):
         try:
             # Decision logic to choose the storage
