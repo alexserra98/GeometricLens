@@ -130,6 +130,9 @@ def filter_out_long_sequences(tokenized_dataset, max_seq_len):
     return tokenized_dataset
 
 
+arr = np.array(["A", "B", "C", "D"])
+
+
 # prompt builder
 class MMLU_Dataset:
     # num_few_shots = # shots
@@ -147,6 +150,7 @@ class MMLU_Dataset:
         gibberish=False,
         dummy=False,
         random_subject=False,
+        wrong_answers=False,
     ):
 
         self.dataset = "mmlu"
@@ -166,6 +170,7 @@ class MMLU_Dataset:
         self.gibberish = gibberish
         self.dummy = dummy
         self.random_subject = random_subject
+        self.wrong_answers = wrong_answers
 
         self.dummy_examples = self.construct_gibberish_questions(
             path="diego/extraction/utils/asset/dummy.txt"
@@ -204,7 +209,12 @@ class MMLU_Dataset:
         # added space to final answers
         prompt += "Answer:"
         if include_answer:
-            prompt += f" {self.answers[answer]}\n\n"
+            if self.wrong_answers:
+                ans_list = list(self.answers)
+                ans_list.remove(self.answers[answer])
+                prompt += f" {random.choice(ans_list)}\n\n"
+            else:
+                prompt += f" {self.answers[answer]}\n\n"
         return prompt
 
     def sample_subject(self, subject):

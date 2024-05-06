@@ -194,6 +194,7 @@ def parse_args():
     parser.add_argument("--dummy", action="store_true")
     parser.add_argument("--gibberish", action="store_true")
     parser.add_argument("--random_subject", action="store_true")
+    parser.add_argument("--wrong_answers", action="store_true")
     args = parser.parse_args()
     return args
 
@@ -307,6 +308,7 @@ def main():
         dummy=args.dummy,
         gibberish=args.gibberish,
         random_subject=args.random_subject,
+        wrong_answers=args.wrong_anwers,
     ).construct_dataset()
 
     accelerator.print("num few shots:", args.num_few_shots)
@@ -365,6 +367,8 @@ def main():
         inner_path = f"evaluated_{args.split}/gibberish/{model_name}/5shot"
     elif args.random_subject:
         inner_path = f"evaluated_{args.split}/random_subject/{model_name}/{args.num_few_shots}shot"
+    elif args.wrong_answers:
+        inner_path = f"evaluated_{args.split}/wrong_answers/{model_name}/{args.num_few_shots}shot"
     elif args.finetuned_path:
         inner_path = f"finetuned_{args.finetuned_mode}/evaluated_{args.split}/{model_name}/{args.finetuned_epochs}epochs/{epoch_ckpt}"
 
