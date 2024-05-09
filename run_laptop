@@ -13,4 +13,4 @@ torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
     --model_name 'llama' \
     --precision "no" \
     --out_dir './results_tmp' \
-    --random_subject
+    --sample_questions

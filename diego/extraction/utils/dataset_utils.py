@@ -1,4 +1,4 @@
-from datasets import load_dataset
+from datasets import load_dataset, concatenate_datasets
 import torch
 from functools import partial
 from datasets.utils.logging import disable_progress_bar
@@ -9,7 +9,10 @@ import sys
 import random
 import json
 
+
 disable_progress_bar()
+
+rng = np.random.default_rng(42)
 
 # def format_subject(subject):
 #     l = subject.split("_")
@@ -88,13 +91,29 @@ disable_progress_bar()
 #     "machine_learning",
 # ]
 
-# dataset = load_dataset("cais/mmlu", "all", split="dev")
+dataset = load_dataset("cais/mmlu", "all", split="dev")
+
+
+with open("mmlu_declarative.txt", "w") as f:
+    for example in dataset:
+        f.write(f"{example['question']}\n")
+        f.write(f"{example['choices'][example['answer']]}\n\n")
+
+
+dataset["question"]
 # for subject in np.unique(dataset["subject"]):
 #     if subject not in area_to_subjects["stem"]:
 #         area_to_subjects["not_stem"].append(subject)
 
 # with open("./asset/mmlu_macro_areas.json", "w") as f:
 #     json.dump(area_to_subjects, f)
+
+
+few_shot_dataset = load_dataset("cais/mmlu", "all", split="dev+validation")
+
+from collections import Counter
+
+Counter(few_shot_dataset["subject"])
 
 
 with open("diego/extraction/utils/asset/mmlu_macro_areas.json", "r") as f:
@@ -130,9 +149,6 @@ def filter_out_long_sequences(tokenized_dataset, max_seq_len):
     return tokenized_dataset
 
 
-arr = np.array(["A", "B", "C", "D"])
-
-
 # prompt builder
 class MMLU_Dataset:
     # num_few_shots = # shots
@@ -151,6 +167,7 @@ class MMLU_Dataset:
         dummy=False,
         random_subject=False,
         wrong_answers=False,
+        sample_questions=False,
     ):
 
         self.dataset = "mmlu"
@@ -171,13 +188,14 @@ class MMLU_Dataset:
         self.dummy = dummy
         self.random_subject = random_subject
         self.wrong_answers = wrong_answers
+        self.sample_questions = sample_questions
 
-        self.dummy_examples = self.construct_gibberish_questions(
-            path="diego/extraction/utils/asset/dummy.txt"
-        )
-        self.gibberish_examples = self.construct_gibberish_questions(
-            path="diego/extraction/utils/asset/gibberish.txt"
-        )
+        # self.dummy_examples = self.construct_gibberish_questions(
+        #     path="diego/extraction/utils/asset/dummy.txt"
+        # )
+        # self.gibberish_examples = self.construct_gibberish_questions(
+        #     path="diego/extraction/utils/asset/gibberish.txt"
+        # )
 
     def construct_gibberish_questions(self, path):
         # for the moment is 5 shot
@@ -235,6 +253,30 @@ class MMLU_Dataset:
         few_shot_subject = random.choice(area_to_subjects[few_shot_area])
         return few_shot_subject
 
+    def get_few_shot_dataset(
+        self,
+    ):
+        dev_set = load_dataset("cais/mmlu", "all", split="dev")
+
+        val_set = load_dataset("cais/mmlu", "all", split="validation")
+        subjects = np.array(val_set["subject"])
+        mask = []
+        for sub in np.unique(subjects):
+            ind = np.nonzero(sub == subjects)[0]
+            nsamples = min(8, len(ind))
+            chosen = rng.choice(ind, nsamples, replace=False)
+            mask.extend(list(np.sort(chosen)))
+        mask = np.array(mask)
+        val_set_balanced = val_set.select(mask)
+        final = concatenate_datasets([dev_set, val_set_balanced])
+
+        # just double check that all is fine
+        counts = Counter(final["subject"])
+        assert len(np.unique(list(counts.values()))) == 1
+        assert np.unique(list(counts.values()))[0] == 13
+        self.max_prompt_questions = 13
+        return final
+
     # prompt contruction.buils to operate on list of inputs.
     def construct_prompt(self, batch, tokenizer, dev_set, max_seq_len, num_few_shots):
         prompts = []
@@ -257,20 +299,31 @@ class MMLU_Dataset:
                 )
 
         for i, question in enumerate(questions):
+
             if self.dummy:
                 prompt = "The following are vorpal borogoves (with gyres) about the frumious bandersnatch.\n\n"
             elif self.gibberish:
                 prompt = "Zorpulika blivikwak bakki (floopz wiz zorps) ombli bla.\n\n"
             else:
                 prompt = f"The following are multiple choice questions (with answers) about{self.format_subject(subjects[i])}.\n\n"
+
             if self.dummy:
-                prompt += self.dummy_examples
+                prompt += self.construct_gibberish_questions(
+                    path="diego/extraction/utils/asset/dummy.txt"
+                )
             elif self.gibberish:
-                prompt += self.gibberish_examples
+                prompt += self.construct_gibberish_questions(
+                    path="diego/extraction/utils/asset/gibberish.txt"
+                )
             else:
                 current_subject = subjects[i]
-                for j in range(num_few_shots):
-                    shot = local_dev_set[current_subject][j]
+                indices = np.arange(num_few_shots)
+                if self.sample_questions:
+                    indices = rng.choice(
+                        self.max_prompt_questions, num_few_shots, replace=False
+                    )
+                for j in indices:
+                    shot = local_dev_set[current_subject][int(j)]
                     prompt += self.construct_question(
                         shot["question"],
                         shot["choices"],
@@ -331,11 +384,20 @@ class MMLU_Dataset:
             dataset = load_dataset("cais/mmlu", "all", split=split)
 
         few_shot_dataset = None
-        if self.num_few_shots > 0 and self.num_few_shots <= 5:
+        if (
+            self.num_few_shots > 0
+            and self.num_few_shots <= 5
+            and not self.sample_questions
+        ):
             few_shot_dataset = load_dataset("cais/mmlu", "all", split="dev")
-        elif self.num_few_shots > 5:
+        elif self.num_few_shots > 5 or self.sample_questions:
             assert self.split != "validation"
-            few_shot_dataset = load_dataset("cais/mmlu", "all", split="dev+validation")
+            if self.sample_questions:
+                few_shot_dataset = self.get_few_shot_dataset()
+            else:
+                few_shot_dataset = load_dataset(
+                    "cais/mmlu", "all", split="dev+validation"
+                )
 
         encode_function = partial(
             self.construct_prompt,
