@@ -372,7 +372,7 @@ def main():
     elif args.wrong_answers:
         inner_path = f"evaluated_{args.split}/wrong_answers/{model_name}/{args.num_few_shots}shot"
     elif args.sample_questions:
-        inner_path = f"evaluated_{args.split}/questions_sampled/{model_name}/{args.num_few_shots}shot"
+        inner_path = f"evaluated_{args.split}/questions_sampled13/{model_name}/{args.num_few_shots}shot"
     elif args.finetuned_path:
         inner_path = f"finetuned_{args.finetuned_mode}/evaluated_{args.split}/{model_name}/{args.finetuned_epochs}epochs/{epoch_ckpt}"
 

@@ -260,6 +260,7 @@ class MMLU_Dataset:
 
         val_set = load_dataset("cais/mmlu", "all", split="validation")
         subjects = np.array(val_set["subject"])
+
         mask = []
         for sub in np.unique(subjects):
             ind = np.nonzero(sub == subjects)[0]
