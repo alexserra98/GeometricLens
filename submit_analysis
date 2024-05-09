@@ -26,10 +26,10 @@ export PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"
 
 python diego/analysis/repr_analysis.py \
     --model "llama-3-8b" \
-    --finetuned_mode "test_balanced" \
     --results_path "diego/analysis/results" \
     --epochs 4 \
     --eval_dataset "test" \
     --question_sampled \
     --num_shots 5
+    #--finetuned_mode "test_balanced" \
     #--num_shots 0
