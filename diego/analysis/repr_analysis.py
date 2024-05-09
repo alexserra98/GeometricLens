@@ -99,11 +99,7 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description="Finetune a transformers model on a causal language modeling task"
     )
-    parser.add_argument(
-        "--finetuned_mode",
-        type=str,
-        help="The maximum total sequence length (prompt+completion) of each training example.",
-    )
+    parser.add_argument("--finetuned_mode", type=str, default=None)
     parser.add_argument(
         "--model",
         type=str,
@@ -156,12 +152,16 @@ if args.eval_dataset == "test":
 # ****************************************************************************************
 
 
-cpt = ""
-if args.ckpt is not None:
-    ckpts = [args.ckpt]
-    cpt = "_cpt{args.ckpt}"
+if args.fintuned_mode is not None:
+    cpt = ""
+    if args.ckpt is not None:
+        ckpts = [args.ckpt]
+        cpt = "_cpt{args.ckpt}"
+    else:
+        ckpts = np.arange(args.epochs + 1)
 else:
-    ckpts = np.arange(args.epochs + 1)
+    ckpts = [0]
+
 
 overlaps = defaultdict(list)
 clusters = defaultdict(list)
@@ -170,9 +170,12 @@ intrinsic_dim = defaultdict(list)
 for epoch in ckpts[::-1]:
     # layer 0 is all overlapped
     for layer in range(1, 34):
-        print(f"processing {args.num_shots} epoch {epoch} layer {layer}")
-        sys.stdout.flush()
-
+        if args.finetuned_mode is not None:
+            print(f"processing {args.num_shots} epoch {epoch} layer {layer}")
+            sys.stdout.flush()
+        else:
+            print(f"processing {args.num_shots} layer {layer}")
+            sys.stdout.flush()
         # ************************************
         if args.num_shots is not None:
             if args.question_samples:
@@ -184,7 +187,7 @@ for epoch in ckpts[::-1]:
 
         else:
             base_path = f"{base_dir}/finetuned_{args.finetuned_mode}/evaluated_{args.eval_dataset}/{args.model}/{args.epochs}epochs/epoch_{epoch}"
-            name = f"finetuned_{args.finetuned_mode}_eval_{args.eval_dataset}"
+            name = f"finetuned_{args.finetuned_mode}_eval_{args.eval_dataset}_epoch{args.epochs}"
 
         base_repr = torch.load(f"{base_path}/l{layer}_target.pt")
         base_repr = base_repr.to(torch.float64).numpy()
@@ -265,19 +268,19 @@ for epoch in ckpts[::-1]:
             )
 
     with open(
-        f"{args.results_path}/overlap_subject_{args.model}_{name}_epoch{args.epochs}.pkl",
+        f"{args.results_path}/overlap_subject_{args.model}_{name}.pkl",
         "wb",
     ) as f:
         pickle.dump(overlaps, f, protocol=pickle.HIGHEST_PROTOCOL)
 
     with open(
-        f"{args.results_path}/cluster_subjetcs_{args.model}_{name}_epoch{args.epochs}.pkl",
+        f"{args.results_path}/cluster_subjetcs_{args.model}_{name}.pkl",
         "wb",
     ) as f:
         pickle.dump(clusters, f, protocol=pickle.HIGHEST_PROTOCOL)
 
     with open(
-        f"{args.results_path}/ids_{args.model}_{name}_epoch{args.epochs}.pkl",
+        f"{args.results_path}/ids_{args.model}_{name}.pkl",
         "wb",
     ) as f:
         pickle.dump(intrinsic_dim, f, protocol=pickle.HIGHEST_PROTOCOL)
