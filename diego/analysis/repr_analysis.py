@@ -175,7 +175,7 @@ for epoch in ckpts[::-1]:
 
         # ************************************
         if args.num_shots is not None:
-            if args.question_samples:
+            if args.question_sampled:
                 base_path = f"{base_dir}/evaluated_test/questions_sampled/{args.model}/{args.num_shots}shot"
                 name = f"base_question_sampled_{args.num_shots}"
             else:
