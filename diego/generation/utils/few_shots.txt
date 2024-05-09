@@ -1,0 +1,52 @@
+Question: Which of the following is the body cavity that contains the pituitary gland?
+Answer: Cranial.
+Decalrative form: The cranial cavity contains the pituitary gland.
+
+
+Question: In contrast to _______, _______ aim to reward favourable behaviour by companies. The success of such campaigns have been heightened through the use of ___________, which allow campaigns to facilitate the company in achieving _________ .
+Answer: Boycotts, Buycotts, Digital technology, Increased Sales
+Declarative form: In contrast to Boycotts, Buycotts aim to reward favourable behaviour by companies. The success of such campaigns have been heightened through the use of Digital technology, which allow campaigns to facilitate the company in achieving Increased Sales .
+
+
+Question: Why isn't there a planet where the asteroid belt is located?
+Answer: Resonance with Jupiter prevented material from collecting together to form a planet.
+Decalrative form: There is no planet where the asteroid belt is located because the resonace with Jupiter prevented material from collecting together to form a planet. 
+
+Question: This question refers to the following information. 
+In Russia there was nothing going on well, and [Souvarine] was in despair over the news he had received. His old companions were all turning to the politicians; the famous Nihilists who made Europe tremble-sons of village priests, of the lower middle class, of tradesmen-could not rise above the idea of national liberation, and seemed to believe that the world would be delivered-when they had killed their despot&…
+"Foolery! They'll never get out of it with their foolery." Then, lowering his voice still more, in a few bitter words he described his old dream of fraternity. He had renounced his rank and his fortune; he had gone among workmen, only in the hope of seeing at last the foundation of a new society of labour in common. All the sous in his pockets had long gone to the urchins of the settlement; he had been as tender as a brother with the colliers, smiling at their suspicion, winning them over by his quiet workmanlike ways and his dislike of chattering. But decidedly the fusion had not taken place.
+His voice changed, his eyes grew bright, he fixed them on étienne, directly addressing him: "Now, do you understand that? These hatworkers at Marseilles who have won the great lottery prize of a hundred thousand francs have gone off at once and invested it, declaring that they are going to live without doing anything! Yes, that is your idea, all of you French workmen; you want to unearth a treasure in order to devour it alone afterwards in some lazy, selfish corner. You may cry out as much as you like against the rich, you haven't got courage enough to give back to the poor the money that luck brings you. You will never be worthy of happiness as long as you own anything, and your hatred of the bourgeois proceeds solely from an angry desire to be bourgeois yourselves in their place."
+émile Zola, French writer, Germinal, 1885. 
+The passage displays the direct concern for the welfare of the working classes that was typically a part of which movement?
+Answer: Communist
+Declarative form: 
+
+
+Question: Simplify and write the result with a rational denominator: $$\sqrt{\sqrt[3]{\sqrt{\frac{1}{729}}}}$$
+Answer: \frac{\sqrt{3}}{3}
+Declarative form: The simplification of the expression: $$\sqrt{\sqrt[3]{\sqrt{\frac{1}{729}}}}$$ is \frac{\sqrt{3}}{3}
+
+
+Question: Suppose X and Y are random variables with E(X) = 37, var(X) = 5, E(Y) = 62, and var(Y) = 12. What are the expected value and variance of the random variable X + Y?
+Answer: There is insufficient information to answer this question.
+Declarative form: Given that X and Y are random variables with E(X) = 37, var(X) = 5, E(Y) = 62, and var(Y) = 12, there is not enough information to compute the expected value and variance of X+Y.
+
+
+Question: What is produced during photosynthesis?
+Answer: oxygen
+Declarative form: Oxygen is produced during photosynthesis.
+
+
+Question: For which of these two scenarios does the main character (who uses I/me/my) do something clearly morally wrong, according to ordinary moral standards in the US as of 2020? Scenario 1 | I bought an old pick-up truck for work. Scenario 2 | I looked up at the gorgeous waterfall and threw a rock at it.
+Answer: Not wrong, Not wrong
+Declarative form: According to the ordinary moral standards in the US as of 2020, neither buying an old pick-up truck for work nor looking up at the gorgeous waterfall and threw a rock at it is considered morally wrong.
+
+
+Question: How do Defensive Realism and Offensive Realism differ in their explanation of state behaviour?
+Answer: Defensive realists believe states are security maximizers, while Offensive realists believe states to be power maximizers
+Declarative form: Defensive realists believe states are security maximizers, while Offensive realists believe states to be power maximizers
+
+
+Question: Which of the following did the post-war welfare state of 1948 not aim to provide:
+Answer: a minimum wage
+Declarative: The post post-war welfare state of 1948 not aim to provide a minimum wage.

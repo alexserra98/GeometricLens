@@ -123,6 +123,10 @@ def parse_args():
         "--eval_dataset",
         type=str,
     )
+    parser.add_argument(
+        "--question_sampled",
+        action="store_true",
+    )
     parser.add_argument("--num_shots", type=int, default=None)
     parser.add_argument("--ckpt", type=int, default=None)
     parser.add_argument("--balanced", action="store_true")
@@ -170,10 +174,13 @@ for epoch in ckpts[::-1]:
         sys.stdout.flush()
 
         # ************************************
-
         if args.num_shots is not None:
-            base_path = f"{base_dir}/mmlu/{args.model}/{args.num_shots}shot"
-            name = f"base_{args.num_shots}"
+            if args.question_samples:
+                base_path = f"{base_dir}/evaluated_test/questions_sampled/{args.model}/{args.num_shots}shot"
+                name = f"base_question_sampled_{args.num_shots}"
+            else:
+                base_path = f"{base_dir}/mmlu/{args.model}/{args.num_shots}shot"
+                name = f"base_{args.num_shots}"
 
         else:
             base_path = f"{base_dir}/finetuned_{args.finetuned_mode}/evaluated_{args.eval_dataset}/{args.model}/{args.epochs}epochs/epoch_{epoch}"

@@ -30,4 +30,6 @@ python diego/analysis/repr_analysis.py \
     --results_path "diego/analysis/results" \
     --epochs 4 \
     --eval_dataset "test" \
+    --question_sampled \
+    --num_shots 5
     #--num_shots 0
