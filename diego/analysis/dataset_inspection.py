@@ -1,14 +1,42 @@
 import seaborn as sns
 import matplotlib.pyplot as plt
-import pickle
 import numpy as np
-from collections import defaultdict
 from collections import Counter
 from matplotlib.gridspec import GridSpec
 
 from datasets import load_dataset, concatenate_datasets
 
 rng = np.random.default_rng(42)
+
+
+dev_set = load_dataset("cais/mmlu", "all", split="dev")
+
+val_set = load_dataset("cais/mmlu", "all", split="validation")
+subjects = np.array(val_set["subject"])
+mask = []
+for sub in np.unique(subjects):
+    ind = np.nonzero(sub == subjects)[0]
+    nsamples = min(8, len(ind))
+    chosen = rng.choice(ind, nsamples, replace=False)
+    mask.extend(list(np.sort(chosen)))
+mask = np.array(mask)
+val_set_balanced = val_set.select(mask)
+final = concatenate_datasets([dev_set, val_set_balanced])
+
+# just double check that all is fine
+counts = Counter(final["subject"])
+assert len(np.unique(list(counts.values()))) == 1
+assert np.unique(list(counts.values()))[0] == 13
+
+final
+13 * 57
+
+
+with open("mmlu_decalrative.txt", "w") as f:
+    for i, example in enumerate(final):
+        f.write(
+            f"Question {i}: {example['question']}\nAnswer: {example['choices'][example['answer']]}\n\n"
+        )
 
 
 # ***************************************************
