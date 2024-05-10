@@ -24,8 +24,8 @@ export OMP_NUM_THREADS=32
 export PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"
 
 
-model_name=llama-2-7b
-path=llama_v2
+model_name=llama-3-8b
+path=llama_v3
 
 torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
        	--nnodes=1  --nproc-per-node=1 \
@@ -43,7 +43,8 @@ torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
     --max_seq_len 4096 \
     --split "test" \
     --num_few_shots 5 \
-    --declarative
+    --declarative \
+    --prompt_search
     #--sample_questions
     # --finetuned_path  "/u/area/ddoimo/ddoimo/finetuning_llm/open-instruct/results" \
     # --finetuned_mode "test_balanced" \
