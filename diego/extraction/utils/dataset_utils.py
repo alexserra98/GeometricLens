@@ -238,7 +238,9 @@ class MMLU_Dataset:
                 )
             elif self.declarative:
                 current_subject = subjects[i]
-                indices = rng.permutation(num_few_shots)
+                # indices = rng.permutation(num_few_shots)
+
+                indices = np.arange(num_few_shots)
 
                 for j in indices:
                     shot = local_dev_set[current_subject][int(j)]
@@ -271,7 +273,8 @@ class MMLU_Dataset:
                         shot["answer"],
                         include_answer=True,
                     )
-                prompt += "\n\nThe answer to the following question must be one of the options: A B C or D.\n"
+                # prompt += "\n\nThe answer to the following question must be one of the options: A B C or D.\n"
+                prompt += f"The following are multiple choice questions (with answers) about{self.format_subject(subjects[i])}.\n\n"
                 prompt += question
             else:
                 prompt += question
