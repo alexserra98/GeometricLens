@@ -199,7 +199,9 @@ class MMLU_Dataset:
             for subject in set(subjects):
                 prompt_subject = subject
                 if self.declarative:
+
                     local_dev_set[subject] = dev_set[subject]
+
                     if aux_few_shot is not None:
                         local_aux_set[subject] = aux_few_shot.filter(
                             lambda dev_example: dev_example["subject"]
@@ -220,7 +222,7 @@ class MMLU_Dataset:
             elif self.gibberish:
                 prompt = "Zorpulika blivikwak bakki (floopz wiz zorps) ombli bla.\n\n"
             elif self.declarative:
-                prompt = f"The following are facts about {self.format_subject(subjects[i])}.\n\n"
+                prompt = f"The following are {self.num_few_shots} statements about {self.format_subject(subjects[i])}.\n\n"
             else:
                 prompt = f"The following are multiple choice questions (with answers) about{self.format_subject(subjects[i])}.\n\n"
 
@@ -240,7 +242,7 @@ class MMLU_Dataset:
 
                 for j in indices:
                     shot = local_dev_set[current_subject][int(j)]
-                    prompt += f"{shot} "
+                    prompt += f"{shot}\n\n"
             else:
                 current_subject = subjects[i]
                 indices = np.arange(num_few_shots)
@@ -261,7 +263,7 @@ class MMLU_Dataset:
             )
 
             if self.declarative:
-                prompt = prompt.strip()
+                #prompt = prompt.strip()
 
                 if aux_few_shot is not None:
                     shot = local_aux_set[current_subject][0]
@@ -271,7 +273,7 @@ class MMLU_Dataset:
                         shot["answer"],
                         include_answer=True,
                     )
-                prompt += "\n\nAnswer the following question choosing an option within: A B C or D.\n"
+                prompt += "Answer the following question choosing an option within: A B C or D.\n"
                 prompt += question
             else:
                 prompt += question
