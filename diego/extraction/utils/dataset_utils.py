@@ -224,6 +224,8 @@ class MMLU_Dataset:
             else:
                 prompt = f"The following are multiple choice questions (with answers) about{self.format_subject(subjects[i])}.\n\n"
 
+                prompt += "The muon decays with a characteristic lifetime of about \(10^{-6}\) second into an electron, a muon neutrino, and an electron antineutrino, respecting the conservation of lepton number. For a thermodynamic process occurring at constant volume, the increase in the internal energy of an ideal gas is equal to the heat added to the gas. For two Nichrome wires attached at one end, where the longer wire has a length of 2L and the shorter a length of L, if the free end of the longer wire is at 8.0 volts and the shorter at 1.0 volt, the potential at the junction is approximately 2.4 volts. The angular magnification of a refracting telescope, consisting of two converging lenses separated by 100 cm with the eye-piece lens having a focal length of 20 cm, is 4. The angular magnification of a refracting telescope with two converging lenses separated by 100 cm, where the eye-piece lens has a focal length of 20 cm, is 4."
+
             if self.dummy:
                 prompt += self.construct_gibberish_questions(
                     path="diego/extraction/utils/asset/dummy.txt"
