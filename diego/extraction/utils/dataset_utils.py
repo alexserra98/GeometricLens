@@ -252,7 +252,7 @@ class MMLU_Dataset:
                     indices = rng.choice(
                         self.max_prompt_questions, num_few_shots, replace=False
                     )
-                for j in indices:
+                for j in indices[0:1]:
                     shot = local_dev_set[current_subject][int(j)]
                     prompt += self.construct_question(
                         shot["question"],
@@ -265,7 +265,7 @@ class MMLU_Dataset:
             )
 
             if self.declarative:
-                #prompt = prompt.strip()
+                # prompt = prompt.strip()
 
                 if aux_few_shot is not None:
                     shot = local_aux_set[current_subject][0]
