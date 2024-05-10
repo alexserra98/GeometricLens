@@ -1,0 +1,50 @@
+1. Arthropods possess an open circulatory system with a dorsal heart.
+2. Assuming the population is in Hardy-Weinberg equilibrium, the expected proportion of individuals who carry the b allele but are not expected to develop cancer caused by it is 38 out of 400.
+3. The presence of homologous structures like the humerus in the front limb of a human and a bird indicates that humans and birds belong to a clade.
+4. According to the pressure-flow model, photosynthate movement from source to sink is driven by a water-pressure potential gradient.
+5. Centromeres contain DNA sequences required for the segregation of chromosomes in mitosis and meiosis.
+6. The statement that the atomic radii of the lanthanide elements increase across the period from La to Lu is not true.
+7. A 0.217 g sample of HgO reacts with excess iodide ions, and titration of the resulting solution requires 20 mL of 0.10 M HCl to reach the equivalence point.
+8. The number of lines in the EPR spectrum of a solution of 13C-labelled methyl radical (13CH3•) is predicted to be 4.
+9. In the reaction provided, Cl−(aq) behaves as a reducing agent.
+10. The hydrides of group-14 elements are ordered in terms of thermal stability from lowest to highest as follows: PbH4 < SnH4 < GeH4 < SiH4 < CH4.
+11. The embryological origin of the hyoid bone is the second and third pharyngeal arches.
+12. None of the branches of the trigeminal nerve contain somatic motor processes.
+13. The pleura extend into the neck.
+14. In Angle's Class II Div 2 occlusion, there is excess overjet of the upper lateral incisors.
+15. The cranial cavity contains the pituitary gland.
+16. When a 6-sided die is rolled 15 times using Add-1 Smoothing, the probability of side 3 coming up is 1 out of 7.
+17. Random crop and horizontal flip are common image data augmentations for natural images.
+18. Submissions claiming that the method achieves a test error lower than all previous methods should be considered for acceptance if the regularization parameter λ is chosen so as to minimize cross-validation error.
+19. To achieve an 0/1 loss estimate that is less than 1 percent of the true 0/1 loss with a probability of 95%, according to Hoeffding's inequality, the IID test set must have more than 1000 examples.
+20. Having a real-valued input attribute during decision-tree learning with a multiway split for each distinct value often results in a decision tree that performs well on the training set but poorly on a test set.
+21. It would be the same to accelerate a truck on Mars as it is on Earth, assuming there is no friction.
+22. Most short-period comets come from the Kuiper belt, and this is known because short period comets tend to be in the plane of the solar system just like the Kuiper belt.
+23. A telescope with an aperture of 50 cm gathers 10,000 times more light than the pupil of an eye with a diameter of 5 mm.
+24. A planet did not form where the asteroid belt is located because resonance with Jupiter prevented material from collecting together.
+25. Mars is red because its surface is covered with heavily oxidized ("rusted") minerals.
+26. As of 2019, it is true that people tend to be optimistic about their own future but pessimistic about the future of their nation or the world.
+27. As of 2019, about 46% of Americans agree that the state is run for the benefit of all the people.
+28. As of 2015, since 1990, forests have increased in Europe and decreased in Africa and the Americas.
+29. As of 2019, about 38% of Russians say it is very important to have free media in the country without government/state censorship.
+30. As of 2017, 80% of the world’s 1-year-old children have been vaccinated against some disease.
+31. Psychological egoism is a claim about human nature and the ways people are capable of behaving.
+32. According to Moore's "ideal utilitarianism," the right action is the one that brings about the greatest amount of good.
+33. According to d'Holbach, people always act according to necessary natural laws.
+34. Before Tolstoy's Christian conversion, his perspective on the meaning of life was pessimistic.
+35. The study of reality in the broadest sense, an inquiry into the elemental nature of the universe and the things in it, is known as metaphysics.
+36. Geodemographics is a natural outcome when combining demographic and geographic variables.
+37. In an organization, the group of people tasked with buying decisions is referred to as the decision-making unit.
+38. An assumption in Maslow's hierarchy of needs is that lower-level needs must be at least partially satisfied before higher needs can affect behavior.
+39. The single group within society that is most vulnerable to reference group influence is children, who base most of their buying decisions on outside influences.
+40. Although the content and quality can be as controlled as direct mail, response rates of door-to-door media are lower because of the lack of a personal address mechanism.
+41. The sign of the covenant for Jewish males is circumcision.
+42. The Second Gem in Buddhism is the Dharma.
+43. The "Mandate of Heaven" was developed to legitimize the new rulers during the Zhou dynasty.
+44. The Meiji government in Japan promoted a kind of national cult based on the emperor and his associations with kami.
+45. The Upanishads can be characterized as philosophical texts.
+46. The post-war welfare state of 1948 did not aim to provide a minimum wage.
+47. Berger (1963) describes a puppet theatre as a metaphor for social reality.
+48. The shift from 'civil religion' to 'common religion' signifies that despite the weakening of traditional authority, our everyday lives and 'common sense' remain shaped by religious beliefs and values.
+49. The term 'hegemony' refers to a dominant ideology that legitimates economic, political, and cultural power.
+50. An issue not associated with official statistics on strike action is that most strikes go unnoticed by employers and the mass media.

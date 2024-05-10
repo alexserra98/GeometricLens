@@ -24,7 +24,7 @@ export OMP_NUM_THREADS=32
 export PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"
 
 
-model_name=llama-2-7b-chat
+model_name=llama-2-7b
 path=llama_v2
 
 torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
@@ -42,8 +42,9 @@ torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
     --use_last_token \
     --max_seq_len 4096 \
     --split "test" \
-    --num_few_shots 0 \
-    --sample_questions
+    --num_few_shots 5 \
+    --declarative
+    #--sample_questions
     # --finetuned_path  "/u/area/ddoimo/ddoimo/finetuning_llm/open-instruct/results" \
     # --finetuned_mode "test_balanced" \
     # --finetuned_epochs 4 \
