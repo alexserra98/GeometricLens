@@ -1,0 +1,19 @@
+The following are 5 statements and a final multiple choice question about abstract algebra.
+
+The characteristic of the ring 2Z is 0.
+
+It's true that every element of a group generates a cyclic subgroup of the group, while it's false that the symmetric group S_10 has 10 elements.
+
+Every function from a finite set onto itself must be one-to-one, and every subgroup of an abelian group is abelian are both true sentences.
+
+The statement: “If aH is an element of a factor group, then |aH| divides |a|” is False and the statement “If H and K are subgroups of G then HK is a subgroup of G” is also False.
+
+In \( Z_3[x] \) divided by \( (x^2 + 1) \), the structure is a field.
+
+Find the product of the given polynomials in the given polynomial ring. f(x) = 4x - 5, g(x) = 2x^2 - 4x + 2 in Z_8[x].
+A. 2x^2 + 5
+B. 6x^2 + 4x + 6
+C. 0
+D. x^2 + 1
+Answer:
+
