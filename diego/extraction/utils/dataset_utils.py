@@ -242,7 +242,11 @@ class MMLU_Dataset:
 
                 indices = np.arange(num_few_shots)
 
-                for j in indices[0:1]:
+                for j in indices:
+                    shot = local_dev_set[current_subject][int(j)]
+                    prompt += f"{shot}\n\n"
+
+                for j in indices:
                     shot = local_dev_set[current_subject][int(j)]
                     prompt += f"{shot}\n\n"
             else:
