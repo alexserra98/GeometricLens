@@ -201,6 +201,7 @@ def parse_args():
     parser.add_argument("--wrong_answers", action="store_true")
     parser.add_argument("--sample_questions", action="store_true")
     parser.add_argument("--declarative", action="store_true")
+    parser.add_argument("--prompt_search", action="store_true")
     args = parser.parse_args()
     return args
 

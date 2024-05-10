@@ -174,22 +174,6 @@ from collections import Counter
 Counter(few_shot_dataset["subject"])
 
 
-with open("diego/extraction/utils/asset/mmlu_macro_areas.json", "r") as f:
-    area_to_subjects = json.load(f)
-
-subject_list = []
-for value in area_to_subjects.values():
-    subject_list.extend(value)
-
-subject_to_area = {}
-for subject in np.unique(subject_list):
-    if subject in area_to_subjects["stem"]:
-
-        subject_to_area[subject] = "stem"
-    else:
-        subject_to_area[subject] = "not_stem"
-
-
 # path = "/home/diego/Documents/area_science/ricerca/open/geometric_lens/repo/diego/generation/utils/few_shots.txt"
 
 # with open(f"{path}", "r", encoding="utf-8") as f:
