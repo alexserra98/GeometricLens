@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --partition=DGX
-##SBATCH --nodelist=dgx001
+##SBATCH --nodelist=dgx002
 #SBATCH --account=lade
 #SBATCH --nodes=1
-#SBATCH --time=4:00:00            
+#SBATCH --time=6:00:00            
 #SBATCH --ntasks-per-node=1       
 #SBATCH --cpus-per-task=32           
 #SBATCH --mem=100G                
@@ -24,7 +24,7 @@ export OMP_NUM_THREADS=32
 export PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"
 
 
-model_name=llama-2-13b
+model_name=llama-2-7b-chat
 path=llama_v2
 
 torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
@@ -42,7 +42,7 @@ torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
     --use_last_token \
     --max_seq_len 4096 \
     --split "test" \
-    --num_few_shots 5 \
+    --num_few_shots 0 \
     --sample_questions
     # --finetuned_path  "/u/area/ddoimo/ddoimo/finetuning_llm/open-instruct/results" \
     # --finetuned_mode "test_balanced" \
