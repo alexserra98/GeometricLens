@@ -199,7 +199,9 @@ class MMLU_Dataset:
             for subject in set(subjects):
                 prompt_subject = subject
                 if self.declarative:
+
                     local_dev_set[subject] = dev_set[subject]
+
                     if aux_few_shot is not None:
                         local_aux_set[subject] = aux_few_shot.filter(
                             lambda dev_example: dev_example["subject"]
@@ -269,7 +271,7 @@ class MMLU_Dataset:
                         shot["answer"],
                         include_answer=True,
                     )
-                prompt += "The answer to the following question must be one of the options: A B C or D.\n"
+                prompt += "\n\nThe answer to the following question must be one of the options: A B C or D.\n"
                 prompt += question
             else:
                 prompt += question
