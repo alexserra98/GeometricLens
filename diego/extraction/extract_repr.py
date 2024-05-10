@@ -26,6 +26,10 @@ from torch.distributed.fsdp.fully_sharded_data_parallel import (
     FullOptimStateDictConfig,
     FullStateDictConfig,
 )
+import numpy as np
+
+
+import datetime
 
 
 # # Get the current directory (root directory of the package)
@@ -315,6 +319,15 @@ def main():
         declarative=args.declarative,
     ).construct_dataset()
 
+    if args.prompt_search:
+        mask = np.load("diego/analysis/test_mask_100.npy")
+        dataset = dataset.select(mask)
+        assert len(dataset) == 5700
+
+        time_stamp = datetime.datetime.now().__str__().split(" ")[1][:8]
+        with open(f"prompt_search_{time_stamp}.txt", "w") as f:
+            f.write(f"{dataset[0]['prompt']}\n\n")
+
     accelerator.print("num few shots:", args.num_few_shots)
     accelerator.print("max_seq_len:", len(longest_seq["input_ids"][0]))
 
@@ -397,6 +410,8 @@ def main():
         save_distances=args.save_distances,
         save_repr=args.save_repr,
         print_every=args.logging_steps,
+        prompt_search=args.prompt_search,
+        time_stamp=time_stamp,
     )
 
 
