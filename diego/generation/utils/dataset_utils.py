@@ -207,7 +207,6 @@ class MMLU_Dataset:
 
     def construct_example(self, question, answer, include_answer=False):
         # added strip
-        prompt = 
         prompt += f"Question: {question.strip()}\n"
         prompt += f"Answer: {answer.strip()}\n"
         prompt += "Declarative form:"
@@ -278,31 +277,21 @@ class MMLU_Dataset:
 
         for i, question in enumerate(questions):
 
-            prompt = f"The following are questions with related answers, which must be converted to a declarative form.\n\n"
-
-            if self.dummy:
-                prompt += self.construct_gibberish_questions(
-                    path="diego/extraction/utils/asset/dummy.txt"
+            prompt = f"The following are questions with related answers, which you must convert into a declarative form.\n\n"
+            current_subject = subjects[i]
+            indices = np.arange(num_few_shots)
+            if self.sample_questions:
+                indices = rng.choice(
+                    self.max_prompt_questions, num_few_shots, replace=False
                 )
-            elif self.gibberish:
-                prompt += self.construct_gibberish_questions(
-                    path="diego/extraction/utils/asset/gibberish.txt"
+            for j in indices:
+                shot = local_dev_set[current_subject][int(j)]
+                prompt += self.construct_question(
+                    shot["question"],
+                    shot["choices"],
+                    shot["answer"],
+                    include_answer=True,
                 )
-            else:
-                current_subject = subjects[i]
-                indices = np.arange(num_few_shots)
-                if self.sample_questions:
-                    indices = rng.choice(
-                        self.max_prompt_questions, num_few_shots, replace=False
-                    )
-                for j in indices:
-                    shot = local_dev_set[current_subject][int(j)]
-                    prompt += self.construct_question(
-                        shot["question"],
-                        shot["choices"],
-                        shot["answer"],
-                        include_answer=True,
-                    )
             question = self.construct_example(
                 questions[i], choices[i], answer_indices[i]
             )

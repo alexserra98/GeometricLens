@@ -59,9 +59,6 @@ rng = np.random.default_rng(42)
 #             include_answer=True,
 #         )
 
-
-#
-
 # with open("./subjects", "w") as f:
 #     for subject in np.unique(dataset["subject"]):
 #         f.write(f"'{subject}',\n")
@@ -91,13 +88,42 @@ rng = np.random.default_rng(42)
 #     "machine_learning",
 # ]
 
+
 dataset = load_dataset("cais/mmlu", "all", split="dev")
+
+path = "/home/diego/Documents/area_science/ricerca/open/geometric_lens/repo/diego/extraction/utils/mmul_declarative_processed1.txt"
+
+with open(f"{path}", "r") as f:
+    text = f.read()
+
+lines = text.split("\n\n")
+
+
+mmlu_declarative = {subject: [] for subject in np.unique(dataset["subject"])}
+for i, subject in enumerate(dataset["subject"]):
+
+    line = lines[i]
+    assert line.startswith(f"{i+1}."), i + 1
+    num_to_remove = len(f"{i+1}.")
+    sentence = line[num_to_remove:].strip()
+    mmlu_declarative[subject].append(sentence)
+
+
+for key, val in mmlu_declarative.items():
+    assert len(val) == 5
 
 
 with open("mmlu_declarative.txt", "w") as f:
-    for example in dataset:
-        f.write(f"{example['question']}\n")
+    for i, example in enumerate(dataset):
+        f.write(f"{i+1}. {example['question']}\n")
         f.write(f"{example['choices'][example['answer']]}\n\n")
+
+with open("mmlu_declarative_qa.txt", "w") as f:
+    for i, example in enumerate(dataset):
+        f.write(f"{i+1}. {example['question']}\n")
+        for j in range(len(example["choices"])):
+            f.write(f"{j}. {example['choices'][j]}\n")
+        f.write(f"{example['answer']}\n\n")
 
 
 dataset["question"]
@@ -147,6 +173,30 @@ def filter_out_long_sequences(tokenized_dataset, max_seq_len):
         )
         sys.stdout.flush()
     return tokenized_dataset
+
+
+path = "/home/diego/Documents/area_science/ricerca/open/geometric_lens/repo/diego/generation/utils/few_shots.txt"
+
+with open(f"{path}", "r", encoding="utf-8") as f:
+    lines = f.read()
+
+    # lines = [line.replace("\\n", "\n")[:-1] for line in lines]
+
+
+print(lines.split("\n\n")[10])
+
+prompt = ""
+for line in lines:
+    prompt += line
+prompt += "\n"
+
+base_path = "/home/diego/Documents/area_science/ricerca/open/geometric_lens/repo/diego/extraction/utils"
+path = "/home/diego/Documents/area_science/ricerca/open/geometric_lens/repo/diego/extraction/utils/mmlu_affirmative_ale.txt"
+
+dataset = load_dataset("cais/mmlu", "all", split="dev")
+
+with open(f"{base_path}/question_answers.txt", "w", encoding="utf-8") as f:
+    f.write()
 
 
 # prompt builder
@@ -305,6 +355,8 @@ class MMLU_Dataset:
                 prompt = "The following are vorpal borogoves (with gyres) about the frumious bandersnatch.\n\n"
             elif self.gibberish:
                 prompt = "Zorpulika blivikwak bakki (floopz wiz zorps) ombli bla.\n\n"
+            elif self.declarative:
+                prompt = f"The following are multiple statements and a final question about{self.format_subject(subjects[i])}.\n\n"
             else:
                 prompt = f"The following are multiple choice questions (with answers) about{self.format_subject(subjects[i])}.\n\n"
 
@@ -316,6 +368,19 @@ class MMLU_Dataset:
                 prompt += self.construct_gibberish_questions(
                     path="diego/extraction/utils/asset/gibberish.txt"
                 )
+            elif self.declarative:
+                current_subject = subjects[i]
+                indices = np.arange(num_few_shots)
+
+                for j in indices:
+                    shot = local_dev_set[current_subject][int(j)]
+                    prompt += self.construct_question(
+                        shot["question"],
+                        shot["choices"],
+                        shot["answer"],
+                        include_answer=True,
+                    )
+
             else:
                 current_subject = subjects[i]
                 indices = np.arange(num_few_shots)
