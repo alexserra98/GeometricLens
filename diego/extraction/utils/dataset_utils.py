@@ -242,7 +242,7 @@ class MMLU_Dataset:
 
                 indices = np.arange(num_few_shots)
 
-                for j in indices:
+                for j in indices[0:1]:
                     shot = local_dev_set[current_subject][int(j)]
                     prompt += f"{shot}\n\n"
             else:
@@ -252,15 +252,6 @@ class MMLU_Dataset:
                     indices = rng.choice(
                         self.max_prompt_questions, num_few_shots, replace=False
                     )
-                for j in indices:
-                    shot = local_dev_set[current_subject][int(j)]
-                    prompt += self.construct_question(
-                        shot["question"],
-                        shot["choices"],
-                        shot["answer"],
-                        include_answer=True,
-                    )
-
                 for j in indices:
                     shot = local_dev_set[current_subject][int(j)]
                     prompt += self.construct_question(
@@ -288,6 +279,7 @@ class MMLU_Dataset:
                 # prompt += "\n\nThe answer to the following question must be one of the options: A B C or D.\n"
                 prompt += f"The following is a multiple choice question (with answers) about{self.format_subject(subjects[i])}.\n\n"
                 prompt += question
+
             else:
                 prompt += question
             prompts.append(prompt)
