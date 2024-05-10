@@ -14,4 +14,5 @@ torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
     --precision "no" \
     --out_dir './results_tmp' \
     --declarative \
-    --prompt_search
+    --prompt_search \
+    --aux_few_shot

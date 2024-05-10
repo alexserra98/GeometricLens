@@ -68,6 +68,7 @@ class MMLU_Dataset:
         wrong_answers=False,
         sample_questions=False,
         declarative=False,
+        aux_few_shot=False,
     ):
 
         self.dataset = "mmlu"
@@ -90,6 +91,7 @@ class MMLU_Dataset:
         self.wrong_answers = wrong_answers
         self.sample_questions = sample_questions
         self.declarative = declarative
+        self.aux_few_shot = aux_few_shot
 
         # self.dummy_examples = self.construct_gibberish_questions(
         #     path="diego/extraction/utils/asset/dummy.txt"
@@ -180,7 +182,9 @@ class MMLU_Dataset:
         return final
 
     # prompt contruction.buils to operate on list of inputs.
-    def construct_prompt(self, batch, tokenizer, dev_set, max_seq_len, num_few_shots):
+    def construct_prompt(
+        self, batch, tokenizer, dev_set, max_seq_len, num_few_shots, aux_few_shot=None
+    ):
         prompts = []
 
         questions = batch["question"]  # list of strings
@@ -191,10 +195,16 @@ class MMLU_Dataset:
         # build a dict of subsets of the dev set with the subject of the batch
         if num_few_shots > 0:
             local_dev_set = {}
+            local_aux_set = {}
             for subject in set(subjects):
                 prompt_subject = subject
                 if self.declarative:
                     local_dev_set[subject] = dev_set[subject]
+                    if aux_few_shot is not None:
+                        local_aux_set[subject] = aux_few_shot.filter(
+                            lambda dev_example: dev_example["subject"]
+                            == prompt_subject,
+                        )
                 else:
                     if self.random_subject:
                         prompt_subject = self.sample_subject(subject)
@@ -210,7 +220,7 @@ class MMLU_Dataset:
             elif self.gibberish:
                 prompt = "Zorpulika blivikwak bakki (floopz wiz zorps) ombli bla.\n\n"
             elif self.declarative:
-                prompt = f"The following are {self.num_few_shots} statements and a final multiple choice question about{self.format_subject(subjects[i])}.\n\n"
+                prompt = f"The following are facts about {self.format_subject(subjects[i])}.\n\n"
             else:
                 prompt = f"The following are multiple choice questions (with answers) about{self.format_subject(subjects[i])}.\n\n"
 
@@ -228,7 +238,7 @@ class MMLU_Dataset:
 
                 for i, j in enumerate(indices):
                     shot = local_dev_set[current_subject][int(j)]
-                    prompt += f"{shot}\n\n"
+                    prompt += f"{shot} "
             else:
                 current_subject = subjects[i]
                 indices = np.arange(num_few_shots)
@@ -248,7 +258,21 @@ class MMLU_Dataset:
                 questions[i], choices[i], answer_indices[i]
             )
 
-            prompt += question
+            if self.declarative:
+                prompt = prompt.strip()
+
+                if aux_few_shot is not None:
+                    shot = local_aux_set[current_subject][0]
+                    prompt += self.construct_question(
+                        shot["question"],
+                        shot["choices"],
+                        shot["answer"],
+                        include_answer=True,
+                    )
+                prompt += "Answer the following question choosing an option within: A B C or D.\n"
+                prompt += question
+            else:
+                prompt += question
             prompts.append(prompt)
 
         # tokenization part
@@ -285,7 +309,6 @@ class MMLU_Dataset:
         }
 
     def construct_dataset(self):
-        print(self.declarative)
         """
         Construct the request instances for the scenario
         """
@@ -315,10 +338,13 @@ class MMLU_Dataset:
         #             "cais/mmlu", "all", split="dev+validation"
         #         )
 
+        aux_few_shot = None
         if self.declarative:
             assert self.num_few_shots > 0
             with open(f"diego/extraction/utils/mmlu_declarative.json", "r") as f:
                 few_shot_dataset = json.load(f)
+            if self.aux_few_shot:
+                aux_few_shot = load_dataset("cais/mmlu", "all", split="dev")
 
         elif self.sample_questions:
             assert self.num_few_shots > 0
@@ -342,6 +368,7 @@ class MMLU_Dataset:
             dev_set=few_shot_dataset,
             max_seq_len=self.max_seq_len,
             num_few_shots=self.num_few_shots,
+            aux_few_shot=aux_few_shot,
         )
         self.accelerator.print("tokenization started")
         sys.stdout.flush()

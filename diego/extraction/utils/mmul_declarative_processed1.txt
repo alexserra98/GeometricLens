@@ -1,4 +1,4 @@
-1. In \( Z_3[x] \) divided by \( (x^2 + 1) \), the structure is a field.
+1. In Z_3, the only c for which Z_3[x]/(x^2 + c) is a field is 1.
 
 2. The statement: “If aH is an element of a factor group, then |aH| divides |a|” is False and the statement “If H and K are subgroups of G then HK is a subgroup of G” is also False.
 
