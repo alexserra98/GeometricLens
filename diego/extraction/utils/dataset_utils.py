@@ -252,7 +252,7 @@ class MMLU_Dataset:
                     indices = rng.choice(
                         self.max_prompt_questions, num_few_shots, replace=False
                     )
-                for j in indices[0:1]:
+                for j in indices:
                     shot = local_dev_set[current_subject][int(j)]
                     prompt += self.construct_question(
                         shot["question"],
@@ -260,6 +260,16 @@ class MMLU_Dataset:
                         shot["answer"],
                         include_answer=True,
                     )
+
+                for j in indices:
+                    shot = local_dev_set[current_subject][int(j)]
+                    prompt += self.construct_question(
+                        shot["question"],
+                        shot["choices"],
+                        shot["answer"],
+                        include_answer=True,
+                    )
+
             question = self.construct_question(
                 questions[i], choices[i], answer_indices[i]
             )
