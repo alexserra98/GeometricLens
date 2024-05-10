@@ -202,6 +202,7 @@ def parse_args():
     parser.add_argument("--sample_questions", action="store_true")
     parser.add_argument("--declarative", action="store_true")
     parser.add_argument("--prompt_search", action="store_true")
+    parser.add_argument("--aux_few_shot", action="store_true")
     args = parser.parse_args()
     return args
 
@@ -318,8 +319,12 @@ def main():
         wrong_answers=args.wrong_answers,
         sample_questions=args.sample_questions,
         declarative=args.declarative,
+        aux_few_shot=args.aux_few_shot,
     ).construct_dataset()
 
+    print(dataset[0]["prompt"])
+
+    assert False
     if args.prompt_search:
         mask = np.load("diego/analysis/test_mask_100.npy")
         dataset = dataset.select(mask)

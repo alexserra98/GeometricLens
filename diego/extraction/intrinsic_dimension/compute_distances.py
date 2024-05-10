@@ -153,9 +153,8 @@ def compute_id(
                 f.write(f"accuracy_constrained: {acc_constrained}\n\n")
                 for ind in examples:
                     f.write(f"example {ind}\n")
-                    f.write(f"{dataloader.dataset[ind]['prompt']}\n")
-                    f.write(f"{answers[ind]}\n")
-                    f.write(f"{predictions[ind]}\n\n")
+                    f.write(f"{dataloader.dataset[ind]['prompt']} {answers[ind]}\n")
+                    f.write(f"prediction: {predictions[ind]}\n\n")
 
         if not prompt_search:
             statistics = {

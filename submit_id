@@ -43,7 +43,10 @@ torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
     --max_seq_len 4096 \
     --split "test" \
     --num_few_shots 5 \
-    --declarative
+    --declarative \
+    --prompt_search \
+    --aux_few_shot  
+
     #--sample_questions
     # --finetuned_path  "/u/area/ddoimo/ddoimo/finetuning_llm/open-instruct/results" \
     # --finetuned_mode "test_balanced" \
