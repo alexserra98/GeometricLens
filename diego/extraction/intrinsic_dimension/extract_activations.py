@@ -21,6 +21,8 @@ class extract_activations:
         dtypes,
         use_last_token=False,
         print_every=100,
+        prompt_search=False,
+        time_stamp=None,
     ):
         self.accelerator = accelerator
         self.model = model
@@ -41,6 +43,7 @@ class extract_activations:
         self.rank = self.accelerator.process_index
         self.global_batch_size = self.world_size * self.micro_batch_size
         self.hidden_size = 0
+        self.prompt_search = prompt_search
 
         print("rank: nsamples", self.rank, self.nsamples)
         print("rank: nbatches", self.rank, self.nbatches)
@@ -50,9 +53,9 @@ class extract_activations:
                 "before hidden states RAM Used (GB):",
                 psutil.virtual_memory()[3] / 10**9,
             )
-
-        self.init_hidden_states(target_layers, dtypes=dtypes)
-        self.init_hooks(target_layers)
+        if prompt_search == False:
+            self.init_hidden_states(target_layers, dtypes=dtypes)
+            self.init_hooks(target_layers)
 
     def init_hidden_states(self, target_layers, dtypes):
         # dict containing the representations extracted in a sigle forward pass
@@ -282,17 +285,17 @@ class extract_activations:
             targets = data["labels"].to("cuda")
 
             outputs = self.model(batch)
+            if not self.prompt_search:
+                if self.world_size > 1:
+                    seq_len = self._gather_and_update_fsdp(mask, is_last_batch)
 
-            if self.world_size > 1:
-                seq_len = self._gather_and_update_fsdp(mask, is_last_batch)
+                else:
+                    seq_len = self._update_hidden_state(mask.cpu(), is_last_batch)
 
-            else:
-                seq_len = self._update_hidden_state(mask.cpu(), is_last_batch)
-
-            # this outputs a (world_size x batch_size) x embedding matrix
-            # for the current implementation recall that when world size > 1 batch size must be ==1.
-            # seq_len = torch.sum(mask, dim=1)
-            # logits, targets = self.all_gather_logits(outputs.logits, seq_len, targets)
+                # this outputs a (world_size x batch_size) x embedding matrix
+                # for the current implementation recall that when world size > 1 batch size must be ==1.
+                # seq_len = torch.sum(mask, dim=1)
+                # logits, targets = self.all_gather_logits(outputs.logits, seq_len, targets)
 
             seq_len = torch.sum(mask, dim=1)
             logits, targets = self.all_gather_logits(outputs.logits, targets, seq_len)
@@ -330,5 +333,3 @@ class extract_activations:
         self.predictions = torch.tensor(self.predictions)
         self.constrained_predictions = torch.tensor(self.constrained_predictions)
         self.targets = torch.tensor(self.targets)
-        # self.logits = torch.cat(logit_list, dim=0)
-        # self.input_ids = batch_list

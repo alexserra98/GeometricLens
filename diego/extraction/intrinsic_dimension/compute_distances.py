@@ -73,6 +73,8 @@ def compute_id(
     save_distances=True,
     save_repr=False,
     print_every=100,
+    prompt_search=False,
+    time_stamp=None,
 ):
     model = model.eval()
     if accelerator.is_main_process:
@@ -102,6 +104,8 @@ def compute_id(
         dtypes,
         use_last_token=use_last_token,
         print_every=print_every,
+        prompt_search=prompt_search,
+        time_stamp=time_stamp,
     )
     extr_act.extract(dataloader, tokenizer)
     accelerator.print(f"num_tokens: {extr_act.hidden_size/10**3}k")
@@ -109,11 +113,12 @@ def compute_id(
 
     if accelerator.is_main_process:
         # dictionary containing the representation
-        act_dict = extr_act.hidden_states
-        if save_repr:
-            for i, (layer, act) in enumerate(act_dict.items()):
-                torch.save(act, f"{dirpath}/l{target_layer_labels[i]}{filename}.pt")
-                # torch.save(act, f"{dirpath}/{layer}{filename}.pt")
+        if not prompt_search:
+            act_dict = extr_act.hidden_states
+            if save_repr:
+                for i, (layer, act) in enumerate(act_dict.items()):
+                    torch.save(act, f"{dirpath}/l{target_layer_labels[i]}{filename}.pt")
+                    # torch.save(act, f"{dirpath}/{layer}{filename}.pt")
 
         predictions = extr_act.predictions  # tokens
         constrained_predictions = extr_act.constrained_predictions  # tokens
@@ -141,67 +146,83 @@ def compute_id(
         accelerator.print("exact_match constrained:", acc_constrained)
         accelerator.print("exact_match:", acc_pred)
 
-        statistics = {
-            "subjects": dataloader.dataset["subjects"],
-            "answers": answers,
-            "predictions": predictions,
-            "contrained_predictions": constrained_predictions,
-            "accuracy": acc_pred,
-            "constrained_accuracy": acc_constrained,
-        }
+        if prompt_search:
+            examples = [42, 1042, 2042, 3042, 4042, 5042]
+            with open(f"prompt_search_{time_stamp}.txt", "a") as f:
+                f.write(f"accuracy: {acc_pred}\n")
+                f.write(f"accuracy_constrained: {acc_constrained}\n\n")
+                for ind in examples:
+                    f.write(f"example {ind}\n")
+                    f.write(f"{dataloader.dataset[ind]["prompt"]}\n")
+                    f.write(f"{answers[ind]}\n")
+                    f.write(f"{predictions[ind]}\n\n")
 
-        with open(f"{dirpath}/statistics{filename}.pkl", "wb") as f:
-            pickle.dump(statistics, f)
 
-        if save_distances:
-            for i, (layer, act) in enumerate(act_dict.items()):
-                act = act.to(torch.float64).numpy()
+        if not prompt_search:
+            statistics = {
+                "subjects": dataloader.dataset["subjects"],
+                "answers": answers,
+                "predictions": predictions,
+                "contrained_predictions": constrained_predictions,
+                "accuracy": acc_pred,
+                "constrained_accuracy": acc_constrained,
+            }
 
-                save_backward_indices = False
-                if remove_duplicates:
-                    act, idx, inverse = np.unique(
-                        act, axis=0, return_index=True, return_inverse=True
-                    )
-                    accelerator.print(len(idx), len(inverse))
-                    if len(idx) == len(inverse):
-                        # if no overlapping data has been found return the original ordred array
-                        assert len(np.unique(inverse)) == len(inverse)
-                        act = act[inverse]
-                    else:
-                        save_backward_indices = True
-                    accelerator.print(f"unique_samples = {len(idx)}")
-                    accelerator.print(f"num_duplicates = {len(inverse)-len(idx)}")
+            with open(f"{dirpath}/statistics{filename}.pkl", "wb") as f:
+                pickle.dump(statistics, f)
 
-                n_samples = act.shape[0]
-                if n_samples == 1:
-                    accelerator.print(
-                        f"{layer} has only one sample:distance matrices not computed"
-                    )
-                else:
-                    range_scaling = min(1050, n_samples - 1)
-                    maxk = min(maxk, n_samples - 1)
+            if save_distances:
+                for i, (layer, act) in enumerate(act_dict.items()):
+                    act = act.to(torch.float64).numpy()
 
-                    start = time.time()
-                    distances, dist_index, mus, _ = compute_distances(
-                        X=act,
-                        n_neighbors=maxk + 1,
-                        n_jobs=1,
-                        working_memory=2048,
-                        range_scaling=range_scaling,
-                        argsort=False,
-                    )
-                    accelerator.print((time.time() - start) / 60, "min")
-
-                    np.save(
-                        f"{dirpath}/l{target_layer_labels[i]}{filename}_dist", distances
-                    )
-                    np.save(
-                        f"{dirpath}/l{target_layer_labels[i]}{filename}_index",
-                        dist_index,
-                    )
-                    if save_backward_indices:
-                        np.save(
-                            f"{dirpath}/l{target_layer_labels[i]}{filename}_inverse",
-                            inverse,
+                    save_backward_indices = False
+                    if remove_duplicates:
+                        act, idx, inverse = np.unique(
+                            act, axis=0, return_index=True, return_inverse=True
                         )
-                    np.save(f"{dirpath}/l{target_layer_labels[i]}{filename}_mus", mus)
+                        accelerator.print(len(idx), len(inverse))
+                        if len(idx) == len(inverse):
+                            # if no overlapping data has been found return the original ordred array
+                            assert len(np.unique(inverse)) == len(inverse)
+                            act = act[inverse]
+                        else:
+                            save_backward_indices = True
+                        accelerator.print(f"unique_samples = {len(idx)}")
+                        accelerator.print(f"num_duplicates = {len(inverse)-len(idx)}")
+
+                    n_samples = act.shape[0]
+                    if n_samples == 1:
+                        accelerator.print(
+                            f"{layer} has only one sample:distance matrices not computed"
+                        )
+                    else:
+                        range_scaling = min(1050, n_samples - 1)
+                        maxk = min(maxk, n_samples - 1)
+
+                        start = time.time()
+                        distances, dist_index, mus, _ = compute_distances(
+                            X=act,
+                            n_neighbors=maxk + 1,
+                            n_jobs=1,
+                            working_memory=2048,
+                            range_scaling=range_scaling,
+                            argsort=False,
+                        )
+                        accelerator.print((time.time() - start) / 60, "min")
+
+                        np.save(
+                            f"{dirpath}/l{target_layer_labels[i]}{filename}_dist",
+                            distances,
+                        )
+                        np.save(
+                            f"{dirpath}/l{target_layer_labels[i]}{filename}_index",
+                            dist_index,
+                        )
+                        if save_backward_indices:
+                            np.save(
+                                f"{dirpath}/l{target_layer_labels[i]}{filename}_inverse",
+                                inverse,
+                            )
+                        np.save(
+                            f"{dirpath}/l{target_layer_labels[i]}{filename}_mus", mus
+                        )
