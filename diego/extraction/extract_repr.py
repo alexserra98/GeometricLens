@@ -9,9 +9,7 @@ from accelerate.logging import get_logger
 
 import transformers
 import sys
-from utils.helpers import (
-    get_target_layers_llama,
-)
+from utils.helpers import get_target_layers_llama, get_target_layers_mistral
 from utils.model_utils import get_model
 from utils.dataloader_utils import get_dataloader
 from utils.dataset_utils import MMLU_Dataset
@@ -376,7 +374,14 @@ def main():
         )
 
     elif model_name.startswith("mistral"):
-        pass
+        target_layers = get_target_layers_mistral(
+            model=model,
+            n_layer=n_layer,
+            option=args.target_layer,
+            every=args.layer_interval,
+            world_size=accelerator.num_processes,
+            finetuned=is_finetuned,
+        )
 
     nsamples = len(dataloader.dataset)
     accelerator.print("num_total_samples", nsamples)
