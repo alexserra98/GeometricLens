@@ -259,11 +259,12 @@ def main():
         )
 
     model_name = args.model_name
-    if args.checkpoint_dir is not None:
-        model_name_tmp = args.checkpoint_dir.split("/")[-1]
-        if model_name_tmp.startswith("llama-2") or model_name_tmp.startswith("llama-3"):
-            model_name = model_name_tmp
+    #if args.checkpoint_dir is not None:
+    #    model_name_tmp = args.checkpoint_dir.split("/")[-1]
+    #    if model_name_tmp.startswith("llama-2") or model_name_tmp.startswith("llama-3"):
+    #        model_name = model_name_tmp
 
+    model_name = args.checkpoint_dir.split("/")[-1]
     # **************************************************************************************
     model = get_model(
         accelerator=accelerator,
@@ -322,7 +323,8 @@ def main():
         declarative=args.declarative,
         aux_few_shot=args.aux_few_shot,
     ).construct_dataset()
-
+    
+    time_stamp = None
     if args.prompt_search:
         mask = np.load("diego/analysis/test_mask_100.npy")
         dataset = dataset.select(mask)
