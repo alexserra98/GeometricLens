@@ -283,7 +283,7 @@ class MMLU_Dataset:
                         include_answer=True,
                     )
                 # prompt += "\n\nThe answer to the following question must be one of the options: A B C or D.\n"
-                prompt += f"The following is a multiple choice question (with answers) about{self.format_subject(subjects[i])}. Its answer must be one of the following letters: A B C D .\n\n"
+                prompt += f"The following is a multiple choice question (with answers) about{self.format_subject(subjects[i])}. The question ends with Answer: after which, you must reply with one of following letters: A B C D .\n\n"
                 prompt += question
 
             else:
