@@ -75,6 +75,7 @@ class MMLU_Dataset:
         only_question=False,
         skip_answer=False,
         skip_choices=False,
+        random_order=False,
     ):
 
         self.dataset = "mmlu"
@@ -102,6 +103,7 @@ class MMLU_Dataset:
         self.only_question = only_question
         self.skip_answer = skip_answer
         self.skip_choices = skip_choices
+        self.random_order = random_order
 
         # self.dummy_examples = self.construct_gibberish_questions(
         #     path="diego/extraction/utils/asset/dummy.txt"
@@ -200,6 +202,7 @@ class MMLU_Dataset:
     def get_few_shot_dataset(
         self,
     ):
+
         dev_set = load_dataset("cais/mmlu", "all", split="dev")
 
         val_set = load_dataset("cais/mmlu", "all", split="validation")
@@ -220,6 +223,7 @@ class MMLU_Dataset:
         assert len(np.unique(list(counts.values()))) == 1
         assert np.unique(list(counts.values()))[0] == 13
         self.max_prompt_questions = 13
+
         return final
 
     # prompt contruction.buils to operate on list of inputs.
@@ -295,10 +299,14 @@ class MMLU_Dataset:
 
                 current_subject = subjects[i]
                 indices = np.arange(num_few_shots)
+                if self.random_order:
+                    indices = rng.permutation(num_few_shots)
+
                 if self.sample_questions:
                     indices = rng.choice(
                         self.max_prompt_questions, num_few_shots, replace=False
                     )
+
                 for j in indices:
                     shot = local_dev_set[current_subject][int(j)]
                     prompt += self.construct_question(
@@ -438,7 +446,7 @@ class MMLU_Dataset:
             if self.num_few_shots > 0 and self.num_few_shots <= 5:
                 few_shot_dataset = load_dataset("cais/mmlu", "all", split="dev")
 
-            elif self.num_few_shots > 5 or self.sample_questions:
+            elif self.num_few_shots > 5:
                 assert self.split != "validation"
                 few_shot_dataset = load_dataset(
                     "cais/mmlu", "all", split="dev+validation"

@@ -205,6 +205,7 @@ def parse_args():
     parser.add_argument("--only_answer", action="store_true")
     parser.add_argument("--skip_answer", action="store_true")
     parser.add_argument("--skip_choices", action="store_true")
+    parser.add_argument("--random_order", action="store_true")
     args = parser.parse_args()
     return args
 
@@ -332,6 +333,7 @@ def main():
         only_answer=args.only_answer,
         skip_answer=args.skip_answer,
         skip_choices=args.skip_choices,
+        random_order=args.random_order,
     ).construct_dataset()
 
     # print(dataset[0]["prompt"])
@@ -416,6 +418,10 @@ def main():
         inner_path = f"evaluated_{args.split}/wrong_answers/{model_name}/{args.num_few_shots}shot"
     elif args.sample_questions:
         inner_path = f"evaluated_{args.split}/questions_sampled13/{model_name}/{args.num_few_shots}shot"
+    elif args.random_order:
+        inner_path = (
+            f"evaluated_{args.split}/random_order/{model_name}/{args.num_few_shots}shot"
+        )
     elif args.declarative:
         inner_path = (
             f"evaluated_{args.split}/declarative/{model_name}/{args.num_few_shots}shot"
