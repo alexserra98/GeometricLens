@@ -327,6 +327,9 @@ def main():
         sample_questions=args.sample_questions,
         declarative=args.declarative,
         aux_few_shot=args.aux_few_shot,
+        skip_few_shot_question=args.skip_few_shot_question,
+        skip_few_shot_options=args.skip_few_shot_options,
+        skip_few_shot_answer=args.skip_few_shot_answer,
     ).construct_dataset()
 
     # print(dataset[0]["prompt"])
@@ -435,9 +438,6 @@ def main():
         print_every=args.logging_steps,
         prompt_search=args.prompt_search,
         time_stamp=time_stamp,
-        skip_few_shot_question=args.skip_few_shot_question,
-        skip_few_shot_options=args.skip_few_shot_options,
-        skip_few_shot_answer=args.skip_few_shot_answer,
     )
 
 
