@@ -71,9 +71,10 @@ class MMLU_Dataset:
         sample_questions=False,
         declarative=False,
         aux_few_shot=False,
-        skip_few_shot_question=False,
-        skip_few_shot_options=False,
-        skip_few_shot_answer=False,
+        only_answer=False,
+        only_question=False,
+        skip_answer=False,
+        skip_choices=False,
     ):
 
         self.dataset = "mmlu"
@@ -97,9 +98,10 @@ class MMLU_Dataset:
         self.sample_questions = sample_questions
         self.declarative = declarative
         self.aux_few_shot = aux_few_shot
-        self.skip_few_shot_question = skip_few_shot_question
-        self.skip_few_shot_options = skip_few_shot_options
-        self.skip_few_shot_answer = skip_few_shot_answer
+        self.only_answer = only_answer
+        self.only_question = only_question
+        self.skip_answer = skip_answer
+        self.skip_choices = skip_choices
 
         # self.dummy_examples = self.construct_gibberish_questions(
         #     path="diego/extraction/utils/asset/dummy.txt"
@@ -135,16 +137,17 @@ class MMLU_Dataset:
         choices,
         answer,
         include_answer=False,
-        skip_question=False,
-        skip_options=False,
+        only_question=False,
+        only_answer=False,
         skip_answer=False,
+        skip_choices=False,
     ):
-        if skip_question:
+        if only_answer:
             # rjust answer template
             prompt = "Answer:"
             prompt += f" {self.answers[answer]}\n\n"
 
-        elif skip_options:
+        elif only_question:
             # just question template
             prompt = f"{question.strip()}\n\n"
 
@@ -155,7 +158,10 @@ class MMLU_Dataset:
                 # added strip
                 prompt += f"{self.answers[i]}. {choice.strip()}\n"
             prompt += "\n"
-
+        elif skip_choices:
+            prompt = f"{question.strip()}\n\n"
+            prompt += "Answer:"
+            prompt += f" {self.answers[answer]}\n\n"
         else:
             # original question + options + answer
             prompt = f"{question.strip()}\n"
@@ -300,9 +306,10 @@ class MMLU_Dataset:
                         shot["choices"],
                         shot["answer"],
                         include_answer=True,
-                        skip_question=self.skip_few_shot_question,
-                        skip_options=self.skip_few_shot_options,
-                        skip_answer=self.skip_few_shot_answer,
+                        only_answer=self.only_answer,
+                        only_question=self.only_question,
+                        skip_answer=self.skip_answer,
+                        skip_choices=self.skip_choices,
                     )
 
             question = self.construct_question(
