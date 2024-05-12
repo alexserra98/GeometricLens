@@ -71,6 +71,9 @@ class MMLU_Dataset:
         sample_questions=False,
         declarative=False,
         aux_few_shot=False,
+        skip_few_shot_question=False,
+        skip_few_shot_options=False,
+        skip_few_shot_answer=False,
     ):
 
         self.dataset = "mmlu"
@@ -94,6 +97,9 @@ class MMLU_Dataset:
         self.sample_questions = sample_questions
         self.declarative = declarative
         self.aux_few_shot = aux_few_shot
+        self.skip_few_shot_question = skip_few_shot_question
+        self.skip_few_shot_options = skip_few_shot_options
+        self.skip_few_shot_answer = skip_few_shot_answer
 
         # self.dummy_examples = self.construct_gibberish_questions(
         #     path="diego/extraction/utils/asset/dummy.txt"
@@ -123,21 +129,48 @@ class MMLU_Dataset:
             s += " " + entry
         return s
 
-    def construct_question(self, question, choices, answer, include_answer=False):
-        # added strip
-        prompt = f"{question.strip()}\n"
-        for i, choice in enumerate(choices):
-            # added strip
-            prompt += f"{self.answers[i]}. {choice.strip()}\n"
-        # added space to final answers
-        prompt += "Answer:"
-        if include_answer:
-            if self.wrong_answers:
-                ans_list = list(self.answers)
-                ans_list.remove(self.answers[answer])
-                prompt += f" {random.choice(ans_list)}\n\n"
-            else:
-                prompt += f" {self.answers[answer]}\n\n"
+    def construct_question(
+        self,
+        question,
+        choices,
+        answer,
+        include_answer=False,
+        skip_question=False,
+        skip_options=False,
+        skip_answer=False,
+    ):
+        if skip_question:
+            # rjust answer template
+            prompt = "Answer:"
+            prompt += f" {self.answers[answer]}\n\n"
+
+        elif skip_options:
+            # just question template
+            prompt = f"{question.strip()}\n\n"
+
+        elif skip_answer:
+            # just question+ options
+            prompt = f"{question.strip()}\n\n"
+            for i, choice in enumerate(choices):
+                # added strip
+                prompt += f"{self.answers[i]}. {choice.strip()}\n"
+            prompt += "\n"
+
+        else:
+            # original question + options + answer
+            prompt = f"{question.strip()}\n"
+            for i, choice in enumerate(choices):
+                # added strip
+                prompt += f"{self.answers[i]}. {choice.strip()}\n"
+
+            prompt += "Answer:"
+            if include_answer:
+                if self.wrong_answers:
+                    ans_list = list(self.answers)
+                    ans_list.remove(self.answers[answer])
+                    prompt += f" {random.choice(ans_list)}\n\n"
+                else:
+                    prompt += f" {self.answers[answer]}\n\n"
         return prompt
 
     def sample_subject(self, subject):
@@ -267,6 +300,9 @@ class MMLU_Dataset:
                         shot["choices"],
                         shot["answer"],
                         include_answer=True,
+                        skip_question=self.skip_few_shot_question,
+                        skip_options=self.skip_few_shot_options,
+                        skip_answer=self.skip_few_shot_answer,
                     )
 
             question = self.construct_question(
