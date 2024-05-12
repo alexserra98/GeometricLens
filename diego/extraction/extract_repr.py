@@ -201,9 +201,10 @@ def parse_args():
     parser.add_argument("--declarative", action="store_true")
     parser.add_argument("--prompt_search", action="store_true")
     parser.add_argument("--aux_few_shot", action="store_true")
-    parser.add_argument("--skip_few_shot_question", action="store_true")
-    parser.add_argument("--skip_few_shot_options", action="store_true")
-    parser.add_argument("--skip_few_shot_answer", action="store_true")
+    parser.add_argument("--only_question", action="store_true")
+    parser.add_argument("--only_answer", action="store_true")
+    parser.add_argument("--skip_answer", action="store_true")
+    parser.add_argument("--skip_choices", action="store_true")
     args = parser.parse_args()
     return args
 
@@ -327,9 +328,10 @@ def main():
         sample_questions=args.sample_questions,
         declarative=args.declarative,
         aux_few_shot=args.aux_few_shot,
-        skip_few_shot_question=args.skip_few_shot_question,
-        skip_few_shot_options=args.skip_few_shot_options,
-        skip_few_shot_answer=args.skip_few_shot_answer,
+        only_question=args.only_question,
+        only_answer=args.only_answer,
+        skip_answer=args.skip_answer,
+        skip_choices=args.skip_choices,
     ).construct_dataset()
 
     # print(dataset[0]["prompt"])
