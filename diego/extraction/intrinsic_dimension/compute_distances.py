@@ -56,8 +56,8 @@ def compute_accuracy(predictions, answers, subjects=None):
     for pred, ans in zip(predictions, answers):
         if pred == ans:
             num_correct += 1
-    accuracy["micro"]= num_correct / tot_ans
-    
+    accuracy["micro"] = num_correct / tot_ans
+
     if subjects is not None:
         acc_subj = {}
         for subject in np.unique(subjects):
@@ -75,7 +75,7 @@ def compute_accuracy(predictions, answers, subjects=None):
             acc_subj[subject] = acc_tmp
 
     accuracy["subjects"] = acc_subj
-    accuracy["macro"]= np.mean(acc_subj.values())
+    accuracy["macro"] = np.mean(acc_subj.values())
 
     return accuracy
 
@@ -162,21 +162,26 @@ def compute_id(
             [tokenizer.decode(pred).strip() for pred in constrained_predictions]
         )
 
-        acc_pred = compute_accuracy(predictions, answers[: len(predictions)], 
+        acc_pred = compute_accuracy(
+            predictions,
+            answers[: len(predictions)],
             np.array(subjects[: len(predictions)]),
-        acc_constrained = compute_accuracy(
-            constrained_predictions, answers[: len(constrained_predictions)],np.array(subjects[: len(predictions)]),
         )
-        accelerator.print("exact_match constrained:", acc_constrained['macro'])
-        accelerator.print("exact_match:", acc_pred['macro'])
-        accelerator.print("exact_match_stratified:", acc_pred['subjects'])
+        acc_constrained = compute_accuracy(
+            constrained_predictions,
+            answers[: len(constrained_predictions)],
+            np.array(subjects[: len(predictions)]),
+        )
+        accelerator.print("exact_match constrained:", acc_constrained["macro"])
+        accelerator.print("exact_match:", acc_pred["macro"])
+        accelerator.print("exact_match_stratified:", acc_pred["subjects"])
 
         if prompt_search:
             examples = [42, 1042, 2042, 3042, 4042, 5042]
             with open(f"prompt_search_{time_stamp}.txt", "a") as f:
-                f.write(f"accuracy: {acc_pred}\n")
-                f.write(f"accuracy_constrained: {acc_constrained}\n\n")
-                f.write(f"accuracy_sybj: {acc_stratified}\n\n")
+                f.write(f"accuracy: {acc_pred['macro']}\n")
+                f.write(f"accuracy_constrained: {acc_constrained['macro']}\n\n")
+                f.write(f"accuracy_sybj: {acc_pred['subjects']}\n\n")
                 for ind in examples:
                     f.write(f"example {ind}\n")
                     f.write(f"{dataloader.dataset[ind]['prompt']} {answers[ind]}\n")
@@ -190,7 +195,6 @@ def compute_id(
                 "contrained_predictions": constrained_predictions,
                 "accuracy": acc_pred,
                 "constrained_accuracy": acc_constrained,
-                "stratified_accuracy": acc_stratified,
             }
 
             with open(f"{dirpath}/statistics{filename}.pkl", "wb") as f:
