@@ -1,0 +1,81 @@
+prompt template:
+The following are multiple choice questions (with answers) about abstract algebra.
+
+Find the degree for the given field extension Q(sqrt(2), sqrt(3), sqrt(18)) over Q.
+A. 0
+B. 4
+C. 2
+D. 6
+Answer:
+
+accuracy: 0.6370258539373101
+accuracy_constrained: 0.6316613582685794
+
+accuracy_sybj: {'abstract_algebra': 0.29, 'anatomy': 0.6888888888888889, 'astronomy': 0.6907894736842105, 'business_ethics': 0.6, 'clinical_knowledge': 0.7358490566037735, 'college_biology': 0.7777777777777778, 'college_chemistry': 0.4, 'college_computer_science': 0.52, 'college_mathematics': 0.38, 'college_medicine': 0.6242774566473989, 'college_physics': 0.39215686274509803, 'computer_security': 0.8, 'conceptual_physics': 0.5361702127659574, 'econometrics': 0.40350877192982454, 'electrical_engineering': 0.6068965517241379, 'elementary_mathematics': 0.43915343915343913, 'formal_logic': 0.42063492063492064, 'global_facts': 0.27, 'high_school_biology': 0.7451612903225806, 'high_school_chemistry': 0.5467980295566502, 'high_school_computer_science': 0.66, 'high_school_european_history': 0.7333333333333333, 'high_school_geography': 0.7676767676767676, 'high_school_government_and_politics': 0.8497409326424871, 'high_school_macroeconomics': 0.6307692307692307, 'high_school_mathematics': 0.3888888888888889, 'high_school_microeconomics': 0.6722689075630253, 'high_school_physics': 0.3973509933774834, 'high_school_psychology': 0.8201834862385321, 'high_school_statistics': 0.5277777777777778, 'high_school_us_history': 0.8137254901960784, 'high_school_world_history': 0.8227848101265823, 'human_aging': 0.672645739910314, 'human_sexuality': 0.7709923664122137, 'international_law': 0.7933884297520661, 'jurisprudence': 0.7314814814814815, 'logical_fallacies': 0.7239263803680982, 'machine_learning': 0.38392857142857145, 'management': 0.8543689320388349, 'marketing': 0.8717948717948718, 'medical_genetics': 0.83, 'miscellaneous': 0.8173690932311622, 'moral_disputes': 0.6936416184971098, 'moral_scenarios': 0.23798882681564246, 'nutrition': 0.738562091503268, 'philosophy': 0.7138263665594855, 'prehistory': 0.7345679012345679, 'professional_accounting': 0.43617021276595747, 'professional_law': 0.46088657105606257, 'professional_medicine': 0.7058823529411765, 'professional_psychology': 0.6928104575163399, 'public_relations': 0.6909090909090909, 'security_studies': 0.746938775510204, 'sociology': 0.8407960199004975, 'us_foreign_policy': 0.86, 'virology': 0.5421686746987951, 'world_religions': 0.8128654970760234}
+
+example 42
+The following are multiple choice questions (with answers) about abstract algebra.
+
+Statement 1 | Some abelian group of order 45 has a subgroup of order 10. Statement 2 | A subgroup H of a group G is a normal subgroup if and only if thenumber of left cosets of H is equal to the number of right cosets of H.
+A. True, True
+B. False, False
+C. True, False
+D. False, True
+Answer: B
+prediction: A
+
+example 1042
+The following are multiple choice questions (with answers) about college computer science.
+
+Which of the following decimal numbers has an exact representation in binary notation?
+A. 0.1
+B. 0.2
+C. 0.3
+D. 0.5
+Answer: D
+prediction: D
+
+example 2042
+The following are multiple choice questions (with answers) about electrical engineering.
+
+Which of the following are the disadvantages of a closed loop control system?
+A. Reduces the overall gain.
+B. Complex and costly.
+C. Oscillatory response.
+D. All of the above.
+Answer: D
+prediction: D
+
+example 3042
+The following are multiple choice questions (with answers) about high school chemistry.
+
+Solvents A and B form an ideal solution. Solvent A has a vapor pressure of 345 torr at room temperature. At the same temperature, solvent B has a vapor pressure of 213 torr. What is the vapor pressure of a mixture where the mole fraction of A is 0.285?
+A. 213 torr
+B. 345 torr
+C. 568 torr
+D. 251 torr
+Answer: D
+prediction: D
+
+example 4042
+The following are multiple choice questions (with answers) about high school macroeconomics.
+
+If the economy is experiencing a recession how will a plan to decrease taxes for consumers and increase spending on government purchases affect real gross domestic product (GDP) and the price level?
+A. real GDP rises and the price level falls.
+B. real GDP falls and the price level rises.
+C. real GDP rises and the price level rises.
+D. real GDP falls and the price level falls.
+Answer: C
+prediction: A
+
+example 5042
+The following are multiple choice questions (with answers) about high school psychology.
+
+What would Piaget test in order to determine whether a child is in the pre-operational or concrete operational stage of cognitive development?
+A. object permanence
+B. attachment
+C. concepts of conservation
+D. hypothesis testing
+Answer: C
+prediction: C
+

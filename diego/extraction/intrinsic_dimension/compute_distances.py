@@ -75,7 +75,7 @@ def compute_accuracy(predictions, answers, subjects=None):
             acc_subj[subject] = acc_tmp
 
     accuracy["subjects"] = acc_subj
-    accuracy["macro"] = np.mean(acc_subj.values())
+    accuracy["macro"] = np.mean(list(acc_subj.values()))
 
     return accuracy
 
@@ -176,7 +176,8 @@ def compute_id(
 
         accelerator.print("exact_match macro:", acc_pred["macro"])
         accelerator.print("exact_match micro:", acc_pred["micro"])
-        accelerator.print("exact_match_stratified:", acc_pred["subjects"])
+        for subject, acc in acc_pred["subjects"]:
+            accelerator.print(f"{subject}: {acc_pred['subjects'][subject]:.3f}\n")
 
         if prompt_search:
             examples = [42, 1042, 2042, 3042, 4042, 5042]

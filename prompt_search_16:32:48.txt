@@ -1,0 +1,22 @@
+prompt template:
+The following are statements about abstract algebra.
+
+In Z_3, the only c for which Z_3[x]/(x^2 + c) is a field is 1.
+
+The statement: “If aH is an element of a factor group, then |aH| divides |a|” is False and the statement “If H and K are subgroups of G then HK is a subgroup of G” is also False.
+
+It's true that every element of a group generates a cyclic subgroup of the group, while it's false that the symmetric group S_10 has 10 elements.
+
+Every function from a finite set onto itself must be one-to-one, and every subgroup of an abelian group is abelian are both true sentences.
+
+The characteristic of the ring 2Z is 0.
+
+The following is a multiple choice question (with answers) about abstract algebra. The question ends with Answer: after which, you must reply with one of following letters: A B C D .
+
+Find the degree for the given field extension Q(sqrt(2), sqrt(3), sqrt(18)) over Q.
+A. 0
+B. 4
+C. 2
+D. 6
+Answer:
+

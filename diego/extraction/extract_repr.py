@@ -338,9 +338,9 @@ def main():
 
     time_stamp = None
     if args.prompt_search:
-        mask = np.load("diego/analysis/test_mask_100.npy")
-        dataset = dataset.select(mask)
-        assert len(dataset) == 5700
+        #mask = np.load("diego/analysis/test_mask_100.npy")
+        #dataset = dataset.select(mask)
+        #assert len(dataset) == 5700
 
         time_stamp = datetime.datetime.now().__str__().split(" ")[1][:8]
         with open(f"prompt_search_{time_stamp}.txt", "w") as f:

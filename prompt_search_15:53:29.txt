@@ -1,0 +1,334 @@
+prompt template:
+The following are multiple choice questions (with answers) about abstract algebra.
+
+Find all c in Z_3 such that Z_3[x]/(x^2 + c) is a field.
+A. 0
+B. 1
+C. 2
+D. 3
+Answer: B
+
+Statement 1 | If aH is an element of a factor group, then |aH| divides |a|. Statement 2 | If H and K are subgroups of G then HK is a subgroup of G.
+A. True, True
+B. False, False
+C. True, False
+D. False, True
+Answer: B
+
+Statement 1 | Every element of a group generates a cyclic subgroup of the group. Statement 2 | The symmetric group S_10 has 10 elements.
+A. True, True
+B. False, False
+C. True, False
+D. False, True
+Answer: C
+
+Statement 1| Every function from a finite set onto itself must be one to one. Statement 2 | Every subgroup of an abelian group is abelian.
+A. True, True
+B. False, False
+C. True, False
+D. False, True
+Answer: A
+
+Find the characteristic of the ring 2Z.
+A. 0
+B. 3
+C. 12
+D. 30
+Answer: A
+
+Find the degree for the given field extension Q(sqrt(2), sqrt(3), sqrt(18)) over Q.
+A. 0
+B. 4
+C. 2
+D. 6
+Answer:
+
+accuracy: 0.6667785983739878
+accuracy_constrained: 0.6636609257587543
+
+accuracy_sybj: {'abstract_algebra': 0.33, 'anatomy': 0.6666666666666666, 'astronomy': 0.6907894736842105, 'business_ethics': 0.63, 'clinical_knowledge': 0.7471698113207547, 'college_biology': 0.7708333333333334, 'college_chemistry': 0.47, 'college_computer_science': 0.51, 'college_mathematics': 0.34, 'college_medicine': 0.6358381502890174, 'college_physics': 0.5588235294117647, 'computer_security': 0.81, 'conceptual_physics': 0.5957446808510638, 'econometrics': 0.5, 'electrical_engineering': 0.6620689655172414, 'elementary_mathematics': 0.43386243386243384, 'formal_logic': 0.47619047619047616, 'global_facts': 0.35, 'high_school_biology': 0.7741935483870968, 'high_school_chemistry': 0.541871921182266, 'high_school_computer_science': 0.67, 'high_school_european_history': 0.7696969696969697, 'high_school_geography': 0.8131313131313131, 'high_school_government_and_politics': 0.8963730569948186, 'high_school_macroeconomics': 0.6564102564102564, 'high_school_mathematics': 0.3851851851851852, 'high_school_microeconomics': 0.7310924369747899, 'high_school_physics': 0.4503311258278146, 'high_school_psychology': 0.8385321100917431, 'high_school_statistics': 0.5509259259259259, 'high_school_us_history': 0.8431372549019608, 'high_school_world_history': 0.8312236286919831, 'human_aging': 0.7040358744394619, 'human_sexuality': 0.7786259541984732, 'international_law': 0.8512396694214877, 'jurisprudence': 0.75, 'logical_fallacies': 0.7423312883435583, 'machine_learning': 0.5267857142857143, 'management': 0.8737864077669902, 'marketing': 0.8974358974358975, 'medical_genetics': 0.77, 'miscellaneous': 0.8390804597701149, 'moral_disputes': 0.7341040462427746, 'moral_scenarios': 0.4033519553072626, 'nutrition': 0.7647058823529411, 'philosophy': 0.7331189710610932, 'prehistory': 0.7345679012345679, 'professional_accounting': 0.48936170212765956, 'professional_law': 0.4602346805736636, 'professional_medicine': 0.7058823529411765, 'professional_psychology': 0.7271241830065359, 'public_relations': 0.7090909090909091, 'security_studies': 0.7551020408163265, 'sociology': 0.8656716417910447, 'us_foreign_policy': 0.87, 'virology': 0.5602409638554217, 'world_religions': 0.8304093567251462}
+
+example 42
+The following are multiple choice questions (with answers) about abstract algebra.
+
+Find all c in Z_3 such that Z_3[x]/(x^2 + c) is a field.
+A. 0
+B. 1
+C. 2
+D. 3
+Answer: B
+
+Statement 1 | If aH is an element of a factor group, then |aH| divides |a|. Statement 2 | If H and K are subgroups of G then HK is a subgroup of G.
+A. True, True
+B. False, False
+C. True, False
+D. False, True
+Answer: B
+
+Statement 1 | Every element of a group generates a cyclic subgroup of the group. Statement 2 | The symmetric group S_10 has 10 elements.
+A. True, True
+B. False, False
+C. True, False
+D. False, True
+Answer: C
+
+Statement 1| Every function from a finite set onto itself must be one to one. Statement 2 | Every subgroup of an abelian group is abelian.
+A. True, True
+B. False, False
+C. True, False
+D. False, True
+Answer: A
+
+Find the characteristic of the ring 2Z.
+A. 0
+B. 3
+C. 12
+D. 30
+Answer: A
+
+Statement 1 | Some abelian group of order 45 has a subgroup of order 10. Statement 2 | A subgroup H of a group G is a normal subgroup if and only if thenumber of left cosets of H is equal to the number of right cosets of H.
+A. True, True
+B. False, False
+C. True, False
+D. False, True
+Answer: B
+prediction: C
+
+example 1042
+The following are multiple choice questions (with answers) about college computer science.
+
+Which of the following regular expressions is equivalent to (describes the same set of strings as) (a* + b)*(c + d)?
+A. a*(c + d)+ b(c + d)
+B. a*(c + d)* + b(c + d)*
+C. a*(c + d)+ b*(c + d)
+D. (a + b)*c +(a + b)*d
+Answer: D
+
+A certain pipelined RISC machine has 8 general-purpose registers R0, R1, . . . , R7 and supports the following operations.
+ADD Rs1, Rs2, Rd Add Rs1 to Rs2 and put the sum in Rd
+MUL Rs1, Rs2, Rd Multiply Rs1 by Rs2 and put the product in Rd
+An operation normally takes one cycle; however, an operation takes two cycles if it produces a result required by the immediately following operation in an operation sequence. Consider the expression AB + ABC + BC, where variables A, B, C are located in registers R0, R1, R2. If the contents of these three registers must not be modified, what is the minimum number of clock cycles required for an operation sequence that computes the value of AB + ABC + BC?
+A. 5
+B. 6
+C. 7
+D. 8
+Answer: B
+
+The Singleton design pattern is used to guarantee that only a single instance of a class may be instantiated. Which of the following is (are) true of this design pattern?
+I. The Singleton class has a static factory method to provide its instance.
+II. The Singleton class can be a subclass of another class.
+III. The Singleton class has a private constructor.
+A. I only
+B. II only
+C. III only
+D. I, II, and III
+Answer: D
+
+A compiler generates code for the following assignment statement.
+G := (A + B) * C - (D + E) * F
+The target machine has a single accumulator and a single-address instruction set consisting of instructions load, store, add, subtract, and multiply. For the arithmetic operations, the left operand is taken from the accumulator and the result appears in the accumulator. The smallest possible number of instructions in the resulting code is
+A. 5
+B. 6
+C. 7
+D. 9
+Answer: D
+
+Consider a computer design in which multiple processors, each with a private cache memory, share global memory using a single bus. This bus is the critical system resource. Each processor can execute one instruction every 500 nanoseconds as long as memory references are satisfied by its local cache. When a cache miss occurs, the processor is delayed for an additional 2,000 nanoseconds. During half of this additional delay, the bus is dedicated to serving the cache miss. During the other half, the processor cannot continue, but the bus is free to service requests from other processors. On average, each instruction requires 2 memory references. On average, cache misses occur on 1 percent of references. What proportion of the capacity of the bus would a single processor consume, ignoring delays due to competition from other processors?
+A. 1/50
+B. 1/27
+C. 1/25
+D. 2/27
+Answer: B
+
+Which of the following decimal numbers has an exact representation in binary notation?
+A. 0.1
+B. 0.2
+C. 0.3
+D. 0.5
+Answer: D
+prediction: D
+
+example 2042
+The following are multiple choice questions (with answers) about electrical engineering.
+
+In an SR latch built from NOR gates, which condition is not allowed
+A. S=0, R=0
+B. S=0, R=1
+C. S=1, R=0
+D. S=1, R=1
+Answer: D
+
+In a 2 pole lap winding dc machine , the resistance of one conductor is 2Ω and total number of conductors is 100. Find the total resistance
+A. 200Ω
+B. 100Ω
+C. 50Ω
+D. 10Ω
+Answer: C
+
+The coil of a moving coil meter has 100 turns, is 40 mm long and 30 mm wide. The control torque is 240*10-6 N-m on full scale. If magnetic flux density is 1Wb/m2 range of meter is
+A. 1 mA.
+B. 2 mA.
+C. 3 mA.
+D. 4 mA.
+Answer: B
+
+Two long parallel conductors carry 100 A. If the conductors are separated by 20 mm, the force per meter of length of each conductor will be
+A. 100 N.
+B. 0.1 N.
+C. 1 N.
+D. 0.01 N.
+Answer: B
+
+A point pole has a strength of 4π * 10^-4 weber. The force in newtons on a point pole of 4π * 1.5 * 10^-4 weber placed at a distance of 10 cm from it will be
+A. 15 N.
+B. 20 N.
+C. 7.5 N.
+D. 3.75 N.
+Answer: A
+
+Which of the following are the disadvantages of a closed loop control system?
+A. Reduces the overall gain.
+B. Complex and costly.
+C. Oscillatory response.
+D. All of the above.
+Answer: D
+prediction: D
+
+example 3042
+The following are multiple choice questions (with answers) about high school chemistry.
+
+Which of the following is considered an acid anhydride?
+A. HCl
+B. H2SO3
+C. SO2
+D. Al(NO3)3
+Answer: C
+
+Which of the following is expected to be a polar molecule?
+A. PCl4F
+B. BF3
+C. CO2
+D. Si(CH3)4
+Answer: A
+
+From the solubility rules, which of the following is true?
+A. All chlorides, bromides, and iodides are soluble
+B. All sulfates are soluble
+C. All hydroxides are soluble
+D. All ammonium-containing compounds are soluble
+Answer: D
+
+A new compound is synthesized and found to be a monoprotic acid with a molar mass of 248 g/mol. When 0.0050 mol of this acid are dissolved in 0.500 L of water, the pH is measured as 3.89. What is the pKa of this acid?
+A. 3.89
+B. 7.78
+C. 5.78
+D. 2.33
+Answer: C
+
+A solution contains 2.00 mole of acetic acid, CH3COOH, and 1.00 mole of calcium acetate, Ca(CH3COO)2. The solution is able to resist the addition of a small amount of strong acid or strong base with only minor changes in the pH of the solution. Larger quantities of strong acid or strong base can cause a significant change in pH. How many moles of nitric acid, HNO3, may be added before the pH begins to change significantly?
+A. 0.500 mole
+B. 1.00 mole
+C. 2.00 mole
+D. 3.00 mole
+Answer: C
+
+Solvents A and B form an ideal solution. Solvent A has a vapor pressure of 345 torr at room temperature. At the same temperature, solvent B has a vapor pressure of 213 torr. What is the vapor pressure of a mixture where the mole fraction of A is 0.285?
+A. 213 torr
+B. 345 torr
+C. 568 torr
+D. 251 torr
+Answer: D
+prediction: D
+
+example 4042
+The following are multiple choice questions (with answers) about high school macroeconomics.
+
+Which of the following is not included in the U.S. GDP?
+A. The U.S. military opens a new base in a foreign country with 1000 U.S. personnel.
+B. Japanese consumers buy thousands of CDs produced in the United States.
+C. An American pop singer performs a sold-out concert in Paris.
+D. A French theatrical production tours dozens of American cities.
+Answer: C
+
+The short-run Phillips curve indicates a
+A. direct relation between unemployment and inflation
+B. direct relation between price and quantity demanded
+C. inverse relation between price and quantity demanded
+D. inverse relation between unemployment and inflation
+Answer: D
+
+A federal deficit occurs when
+A. exports exceed imports.
+B. imports exceed exports.
+C. federal tax collections exceed spending.
+D. federal spending exceeds federal tax revenues.
+Answer: D
+
+Holding all else equal which of the following monetary policies would be used to boost U.S. exports?
+A. Increasing the discount rate
+B. Increasing the reserve ratio
+C. Buying government securities
+D. Lowering tariffs
+Answer: C
+
+Which of the following policies best describes supply-side fiscal policy?
+A. An increase in the money supply
+B. Increased government spending
+C. Lower taxes on research and development of new technology
+D. Higher taxes on household income
+Answer: C
+
+If the economy is experiencing a recession how will a plan to decrease taxes for consumers and increase spending on government purchases affect real gross domestic product (GDP) and the price level?
+A. real GDP rises and the price level falls.
+B. real GDP falls and the price level rises.
+C. real GDP rises and the price level rises.
+D. real GDP falls and the price level falls.
+Answer: C
+prediction: A
+
+example 5042
+The following are multiple choice questions (with answers) about high school psychology.
+
+Ani believes that her attitudes and behavior play a central role in what happens to her. Such a belief is likely to be associated with
+A. a strong superego.
+B. low self-esteem.
+C. low self-efficacy.
+D. an internal locus of control.
+Answer: D
+
+According to Caplan's model of consultee-centered case consultation, the consultant is primarily interested in
+A. identifying the causes and solutions of the client's presenting problems
+B. identifying and eliminating the causes of the consultee's difficulties in handling a problem
+C. establishing a hierarchy of authority to enable effective decision making
+D. presenting a single, well-defined and unambiguous course of action for the consultant to overcome skills deficits
+Answer: B
+
+While swimming in the ocean, Ivan is frightened by a dark shadow in the water even before he has the chance to identify what the shadow is. The synaptic connections taking place during this incident of fright are best described by which of the following?
+A. Messages are sent from the thalamus directly to the amygdala.
+B. Messages are sent from the thalamus to the "what" and "where" pathways.
+C. Messages are sent from the parasympathetic nervous system to the cerebral cortex.
+D. Messages are sent from the frontal lobes to the pituitary gland.
+Answer: A
+
+According to the Individuals with Disabilities Education Improvement Act, which of the following must an educational agency do before it changes the educational placement of a student with a disability?
+A. Give the child a trial period in the new environment
+B. Notify the parents in writing
+C. Obtain school board approval
+D. Obtain parental consent
+Answer: B
+
+Pascale is interested in the processing strategies children use to learn new information. Pascale would best be classified as what type of psychologist?
+A. sociocultural
+B. clinical
+C. cognitive
+D. behaviorist
+Answer: C
+
+What would Piaget test in order to determine whether a child is in the pre-operational or concrete operational stage of cognitive development?
+A. object permanence
+B. attachment
+C. concepts of conservation
+D. hypothesis testing
+Answer: C
+prediction: C
+

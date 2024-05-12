@@ -1,0 +1,46 @@
+prompt template:
+The following are vorpal borogoves (with gyres) about the frumious bandersnatch.
+
+Blorptastic grimblo snazzlepop, how many flimflam do the glipglops zibber?
+A. Seventeen twizzleflorps
+B. Four quizzlebops and a half
+C. Eleventy-twelve glabberzoots
+D. Ninety-three flibber flabbles
+Answer: A
+
+ In Snarfblatt's grand blooperoo, how many zippity zappity zoodles can a flibbleflarb wobble before it goes kablooey?
+A. Skoos and two half wibble wobbles
+B. Flops with extra zibber zabber
+C. Plus a single doodle dabble
+D. Eighty-eight yip yaps yapping
+Answer: B
+
+If a flibbertigibbet dances whimsically in the moonlit parsnip garden, what does the echo of its shadow sing?
+A. Quintessentially perpendicular
+B. Biscuits on Tuesday
+C. Seven-fold origami whispers
+D. Plaid sunsets in reverse
+Answer: C
+
+If a glipglop glabbles twelve blorfenschnorts, how many zibblezorps will it take to schnoodle the froopledoop in the zarglebargle moonlight?
+A. Seven zibblezorps
+B. Nineteen floopfloops
+C. Thirty-three zarglebargles
+D. Forty-two plipplop ploofs, assuming the glipglop is not grimbled
+Answer: B
+
+In the whimsical land of Bloopity Blop, when the Snickerdoodle Snarfblats sing their Glorp Glorp tune, how many Flim Flam Flibbertigibbets does it take to dance the Whirly Twirly Wobble?
+A. a pinch of Fizzlefuzzle
+B. Twaddles juggling Jibber Jabbers
+C. Wibble Wobbles wearing wacky Wonkysocks
+D. Noodle Noggins bouncing on Boingy Boinks
+Answer: D
+
+
+Find the degree for the given field extension Q(sqrt(2), sqrt(3), sqrt(18)) over Q.
+A. 0
+B. 4
+C. 2
+D. 6
+Answer:
+

@@ -46,14 +46,14 @@ torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
     --use_last_token \
     --max_seq_len 4090 \
     --split "test" \
-    --num_few_shots 1 \
+    --num_few_shots 5 \
     --prompt_search \
+    --skip_few_shot_options 
     #--wrong_answers  
     #--declarative 
     #--random_subject
     #--declarative
     #--sample_questions
-    #--prompt_search \
     #--declarative \
     #--aux_few_shot 
     #--prompt_search \
