@@ -90,7 +90,7 @@ class extract_activations:
         return hook_fn
 
     def all_gather_logits(self, logits, targets, seq_len):
-        
+
         _, _, embdim = logits.shape
         if self.world_size > 1:
             # gather the logits to rank 0
@@ -332,4 +332,3 @@ class extract_activations:
 
         self.predictions = torch.tensor(self.predictions)
         self.constrained_predictions = torch.tensor(self.constrained_predictions)
-        self.targets = torch.tensor(self.targets)

@@ -44,18 +44,35 @@ def get_embdims(model, dataloader, target_layers):
     return embdims, dtypes
 
 
-def compute_accuracy(predictions, answers):
+def compute_accuracy(predictions, answers, subjects=None):
 
     # ground_truths is an array of letters, without trailing spaces
     # predictions is an array of tokens
 
     # we remove spaces in from of the letters
-    tot_ans = len(predictions)
-    num_correct = 0
-    for pred, ans in zip(predictions, answers):
-        if pred == ans:
-            num_correct += 1
-    return num_correct / tot_ans
+    if subjects is None:
+        tot_ans = len(predictions)
+        num_correct = 0
+        for pred, ans in zip(predictions, answers):
+            if pred == ans:
+                num_correct += 1
+        acc = num_correct / tot_ans
+    else:
+        acc = {}
+        for subject in np.unique(subjects):
+            mask = subject == subjects
+            pred_tmp = pred[mask]
+            ans_tmp = answers[mask]
+
+            tot_ans = len(ans_tmp)
+            for pred, ans in zip(pred_tmp, ans_tmp):
+                if pred == ans:
+                    num_correct += 1
+            acc_tmp = num_correct / tot_ans
+
+            acc[subject] = acc_tmp
+
+    return acc
 
 
 @torch.inference_mode()
@@ -126,6 +143,7 @@ def compute_id(
 
         answers = dataloader.dataset["answers"]  # letters
         ground_truths = dataloader.dataset["labels"]  # tokens
+        subjects = dataloader.dataset["subjects"]
 
         # check
         # assert torch.all(ground_truths == processed_labels), (
@@ -143,8 +161,14 @@ def compute_id(
         acc_constrained = compute_accuracy(
             constrained_predictions, answers[: len(constrained_predictions)]
         )
+        acc_stratified = compute_accuracy(
+            predictions,
+            answers[: len(predictions)],
+            np.array(subjects[: len(predictions)]),
+        )
         accelerator.print("exact_match constrained:", acc_constrained)
         accelerator.print("exact_match:", acc_pred)
+        accelerator.print("exact_match_stratified:", acc_stratified)
 
         if prompt_search:
             examples = [42, 1042, 2042, 3042, 4042, 5042]
@@ -164,6 +188,7 @@ def compute_id(
                 "contrained_predictions": constrained_predictions,
                 "accuracy": acc_pred,
                 "constrained_accuracy": acc_constrained,
+                "stratified_accuracy": acc_stratified,
             }
 
             with open(f"{dirpath}/statistics{filename}.pkl", "wb") as f:

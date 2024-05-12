@@ -445,7 +445,9 @@ class MMLU_Dataset:
         def truncate_from_left(example):
             if len(example["input_ids"]) > self.max_seq_len:
                 example["input_ids"] = example["input_ids"][-self.max_seq_len :]
-                example["attention_mask"] = example["attention_mask"][-self.max_seq_len :]
+                example["attention_mask"] = example["attention_mask"][
+                    -self.max_seq_len :
+                ]
 
             return example
 
