@@ -332,4 +332,3 @@ class extract_activations:
 
         self.predictions = torch.tensor(self.predictions)
         self.constrained_predictions = torch.tensor(self.constrained_predictions)
-        self.targets = torch.tensor(self.targets)

@@ -23,12 +23,13 @@ export OMP_NUM_THREADS=32
 
 export PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"
 
+#export CUDA_LAUNCH_BLOCKING=1
 
-#model_name=llama-3-8b
-#path=llama_v3
+model_name=llama-3-8b
+path=llama_v3
 
-model_name=mistral-1-7b-chat
-path=mistral_v1
+#model_name=mistral-1-7b-chat
+#path=mistral_v1
 
 torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
        	--nnodes=1  --nproc-per-node=1 \
@@ -43,11 +44,11 @@ torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
     --save_distances --save_repr \
     --remove_duplicates \
     --use_last_token \
-    --max_seq_len 4096 \
+    --max_seq_len 4090 \
     --split "test" \
-    --num_few_shots 10 \
+    --num_few_shots 5 \
     --prompt_search \
-    --declarative
+    #--declarative
     #--sample_questions
     #--prompt_search \
     #--declarative \
