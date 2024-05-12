@@ -1,44 +1,65 @@
 from datasets import load_dataset
-import torch
-from functools import partial
 from datasets.utils.logging import disable_progress_bar
 import numpy as np
-
-# from dataset_utils.utils import MMLU_Dataset
-import sys
-import random
 import json
-
+from collections import Counter
 
 disable_progress_bar()
 
-dataset = load_dataset("cais/mmlu", "all", split="dev")
+# ***********************************************************
+dataset_split = "val"
+path = "/home/diego/Documents/area_science/ricerca/open/geometric_lens/repo/diego/extraction/utils"
+if dataset_split == "val":
+    with open(f"{path}/subject_val.txt", "r") as f:
+        subject_list = f.readlines()
 
-path = "/home/diego/Documents/area_science/ricerca/open/geometric_lens/repo/diego/extraction/utils/mmul_declarative_processed1.txt"
+    dataset = load_dataset("cais/mmlu", "all", split="validation")
 
-with open(f"{path}", "r") as f:
+    count = 0
+    current = "abstract_algebra"
+    subject_list = []
+    for i, subject in enumerate(dataset["subject"]):
+        if subject != current:
+            count = 0
+            current = subject
+
+        if count < 15:
+            subject_list.append(subject)
+            count += 1
+    subjects_counts = Counter(subject_list)
+else:
+    dataset = load_dataset("cais/mmlu", "all", split="dev")
+    subject_list = dataset["subject"]
+
+
+# *****************************************************************
+
+
+with open(f"{path}/mmlu_{dataset_split}_declarative_processed1.txt", "r") as f:
     text = f.read()
-
 lines = text.split("\n\n")
+assert len(subject_list) == len(lines)
 
 
-mmlu_declarative = {subject: [] for subject in np.unique(dataset["subject"])}
-for i, subject in enumerate(dataset["subject"]):
+len(lines)
 
+
+with open(f"mmlu_subject_val15.json", "w", encoding="utf-8") as f:
+    json.dump(subjects_counts, f, ensure_ascii=False, indent=4)
+
+
+mmlu_declarative = {subject: [] for subject in np.unique(subject_list)}
+for i, subject in enumerate(subject_list):
     line = lines[i]
     assert line.startswith(f"{i+1}."), i + 1
     num_to_remove = len(f"{i+1}.")
     sentence = line[num_to_remove:].strip()
     mmlu_declarative[subject].append(sentence)
 
-
 for key, val in mmlu_declarative.items():
-    assert len(val) == 5
+    assert len(val) == subjects_counts[key]
 
-
-import json
-
-with open("mmlu_declarative.json", "w", encoding="utf-8") as f:
+with open(f"mmlu_declarative_{dataset_split}.json", "w", encoding="utf-8") as f:
     json.dump(mmlu_declarative, f, ensure_ascii=False, indent=4)
 
 

@@ -18,10 +18,10 @@ rng = np.random.default_rng(42)
 def filter_out_long_sequences(tokenized_dataset, max_seq_len):
 
     tot_examples = tokenized_dataset.num_rows
-    tokenized_datasets = tokenized_dataset.filter(
-        lambda example: len(example["input_ids"]) < max_seq_len
+    processed_dataset = tokenized_dataset.filter(
+        lambda example: len(example["input_ids"]) <= max_seq_len
     )
-    tot_filtered_examples = tokenized_datasets.num_rows
+    tot_filtered_examples = processed_dataset.num_rows
 
     if tot_filtered_examples < tot_examples:
         diff = tot_examples - tot_filtered_examples
@@ -29,7 +29,9 @@ def filter_out_long_sequences(tokenized_dataset, max_seq_len):
             f"you filter out {diff} examples, {diff/tot_examples*100: .2f}% of the total"
         )
         sys.stdout.flush()
-    return tokenized_dataset
+    else:
+        print(f"there are no sequences longer than {max_seq_len}")
+        sys.stdout.flush()
 
 
 with open("diego/extraction/utils/asset/mmlu_macro_areas.json", "r") as f:
@@ -219,37 +221,39 @@ class MMLU_Dataset:
 
             if self.dummy:
                 prompt = "The following are vorpal borogoves (with gyres) about the frumious bandersnatch.\n\n"
-            elif self.gibberish:
-                prompt = "Zorpulika blivikwak bakki (floopz wiz zorps) ombli bla.\n\n"
-            elif self.declarative:
-                prompt = f"The following are {self.num_few_shots} statements about {self.format_subject(subjects[i])}.\n\n"
-            else:
-                prompt = f"The following are multiple choice questions (with answers) about{self.format_subject(subjects[i])}.\n\n"
-
-                # prompt += "The muon decays with a characteristic lifetime of about \(10^{-6}\) second into an electron, a muon neutrino, and an electron antineutrino, respecting the conservation of lepton number. For a thermodynamic process occurring at constant volume, the increase in the internal energy of an ideal gas is equal to the heat added to the gas. For two Nichrome wires attached at one end, where the longer wire has a length of 2L and the shorter a length of L, if the free end of the longer wire is at 8.0 volts and the shorter at 1.0 volt, the potential at the junction is approximately 2.4 volts. The angular magnification of a refracting telescope, consisting of two converging lenses separated by 100 cm with the eye-piece lens having a focal length of 20 cm, is 4. The angular magnification of a refracting telescope with two converging lenses separated by 100 cm, where the eye-piece lens has a focal length of 20 cm, is 4."
-
-            if self.dummy:
                 prompt += self.construct_gibberish_questions(
                     path="diego/extraction/utils/asset/dummy.txt"
                 )
             elif self.gibberish:
+                prompt = "Zorpulika blivikwak bakki (floopz wiz zorps) ombli bla.\n\n"
                 prompt += self.construct_gibberish_questions(
                     path="diego/extraction/utils/asset/gibberish.txt"
                 )
             elif self.declarative:
+                prompt = f"The following are statements about{self.format_subject(subjects[i])}.\n\n"
+
                 current_subject = subjects[i]
+
+                num_few_shots_tmp = num_few_shots
+                if num_few_shots > len(local_dev_set[current_subject]):
+                    num_few_shots_tmp = len(local_dev_set[current_subject])
+                    assert (
+                        num_few_shots_tmp == self.subject_count[current_subject] + 5
+                    ), (
+                        current_subject,
+                        num_few_shots_tmp,
+                        self.subject_count[current_subject] + 5,
+                    )
+
                 # indices = rng.permutation(num_few_shots)
-
-                indices = np.arange(num_few_shots)
-
+                indices = np.arange(num_few_shots_tmp)
                 for j in indices:
                     shot = local_dev_set[current_subject][int(j)]
                     prompt += f"{shot}\n\n"
 
-                for j in indices:
-                    shot = local_dev_set[current_subject][int(j)]
-                    prompt += f"{shot}\n\n"
             else:
+                prompt = f"The following are multiple choice questions (with answers) about{self.format_subject(subjects[i])}.\n\n"
+
                 current_subject = subjects[i]
                 indices = np.arange(num_few_shots)
                 if self.sample_questions:
@@ -270,8 +274,6 @@ class MMLU_Dataset:
             )
 
             if self.declarative:
-                # prompt = prompt.strip()
-
                 if aux_few_shot is not None:
                     shot = local_aux_set[current_subject][0]
                     prompt += self.construct_question(
@@ -354,8 +356,32 @@ class MMLU_Dataset:
         aux_few_shot = None
         if self.declarative:
             assert self.num_few_shots > 0
-            with open(f"diego/extraction/utils/mmlu_declarative.json", "r") as f:
-                few_shot_dataset = json.load(f)
+
+            with open(f"diego/extraction/utils/mmlu_declarative_dev.json", "r") as f:
+                few_shot_dataset_dev = json.load(f)
+
+            with open(f"diego/extraction/utils/mmlu_declarative_val.json", "r") as f:
+                few_shot_dataset_val = json.load(f)
+
+            few_shot_dataset = {key: [] for key in few_shot_dataset_dev.keys()}
+
+            for key, val in few_shot_dataset_dev.items():
+                few_shot_dataset[key].extend(val)
+
+            for key, val in few_shot_dataset_val.items():
+                few_shot_dataset[key].extend(val)
+
+            # check that we have all the subjects
+            with open("diego/extraction/utils/mmlu_subject_val15.json", "r") as f:
+                subjects_count = json.load(f)
+            self.subject_count = subjects_count
+            for key, val in few_shot_dataset.items():
+                assert len(val) == subjects_count[key] + 5, (
+                    key,
+                    len(val),
+                    subjects_count[key] + 5,
+                )
+
             if self.aux_few_shot:
                 aux_few_shot = load_dataset("cais/mmlu", "all", split="dev")
 
@@ -385,6 +411,7 @@ class MMLU_Dataset:
         )
         self.accelerator.print("tokenization started")
         sys.stdout.flush()
+
         tokenized_dataset = dataset.map(
             encode_function,
             batched=True,
@@ -394,6 +421,9 @@ class MMLU_Dataset:
         )
 
         self.accelerator.print("tokenization finished")
+        sys.stdout.flush()
+
+        self.accelerator.print("checking max_seq_len")
         sys.stdout.flush()
 
         def sort_by_token_length(example):
@@ -410,8 +440,17 @@ class MMLU_Dataset:
         # remove examples loger than max seq len maybe not necessary at all
         # list of list is made list of tensors
         tokenized_dataset.set_format(type="pt")
-        tokenized_dataset = filter_out_long_sequences(
-            tokenized_dataset, self.max_seq_len
-        )
+        _ = filter_out_long_sequences(tokenized_dataset, self.max_seq_len)
+
+        def truncate_from_left(example):
+            if len(example["input_ids"]) > self.max_seq_len:
+                example["input_ids"] = example["input_ids"][-self.max_seq_len :]
+
+            return example
+
+        tokenized_dataset = tokenized_dataset.map(truncate_from_left)
+        self.accelerator.print("after_truncation")
+        tokenized_dataset.set_format(type="pt")
+        _ = filter_out_long_sequences(tokenized_dataset, self.max_seq_len)
 
         return tokenized_dataset, longest_sequences

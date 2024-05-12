@@ -258,13 +258,15 @@ def main():
             f"world size = {args.micro_batch_size}. Setting micro_batch_size =1"
         )
 
-    model_name = args.model_name
-    #if args.checkpoint_dir is not None:
+    # if args.checkpoint_dir is not None:
     #    model_name_tmp = args.checkpoint_dir.split("/")[-1]
     #    if model_name_tmp.startswith("llama-2") or model_name_tmp.startswith("llama-3"):
     #        model_name = model_name_tmp
 
-    model_name = args.checkpoint_dir.split("/")[-1]
+    if args.checkpoint_dir is None:
+        model_name = args.model_name
+    else:
+        model_name = args.checkpoint_dir.split("/")[-1]
     # **************************************************************************************
     model = get_model(
         accelerator=accelerator,
@@ -323,7 +325,11 @@ def main():
         declarative=args.declarative,
         aux_few_shot=args.aux_few_shot,
     ).construct_dataset()
-    
+
+    # print(dataset[0]["prompt"])
+    # print(len(dataset))
+    # assert False
+
     time_stamp = None
     if args.prompt_search:
         mask = np.load("diego/analysis/test_mask_100.npy")

@@ -6,7 +6,7 @@ torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
     diego/extraction/extract_repr.py \
     --tokenizer_dir /home/diego/area_science/ricerca/llama_analysis/hf_llama \
     --use_slow_tokenizer \
-    --num_few_shots 5 \
+    --num_few_shots 10 \
     --micro_batch_size 2 \
     --max_seq_len 4096 \
     --preprocessing_num_workers 16 \
@@ -15,4 +15,4 @@ torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
     --out_dir './results_tmp' \
     --declarative \
     --prompt_search \
-    --aux_few_shot
+    #--aux_few_shot
