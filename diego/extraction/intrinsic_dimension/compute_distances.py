@@ -173,7 +173,9 @@ def compute_id(
             np.array(subjects[: len(predictions)]),
         )
         accelerator.print("exact_match constrained:", acc_constrained["macro"])
-        accelerator.print("exact_match:", acc_pred["macro"])
+
+        accelerator.print("exact_match macro:", acc_pred["macro"])
+        accelerator.print("exact_match micro:", acc_pred["micro"])
         accelerator.print("exact_match_stratified:", acc_pred["subjects"])
 
         if prompt_search:
