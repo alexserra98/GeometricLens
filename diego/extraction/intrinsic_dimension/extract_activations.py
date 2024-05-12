@@ -90,7 +90,7 @@ class extract_activations:
         return hook_fn
 
     def all_gather_logits(self, logits, targets, seq_len):
-
+        
         _, _, embdim = logits.shape
         if self.world_size > 1:
             # gather the logits to rank 0
