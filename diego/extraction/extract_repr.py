@@ -201,6 +201,9 @@ def parse_args():
     parser.add_argument("--declarative", action="store_true")
     parser.add_argument("--prompt_search", action="store_true")
     parser.add_argument("--aux_few_shot", action="store_true")
+    parser.add_argument("--skip_few_shot_question", action="store_true")
+    parser.add_argument("--skip_few_shot_options", action="store_true")
+    parser.add_argument("--skip_few_shot_answer", action="store_true")
     args = parser.parse_args()
     return args
 
@@ -432,6 +435,9 @@ def main():
         print_every=args.logging_steps,
         prompt_search=args.prompt_search,
         time_stamp=time_stamp,
+        skip_few_shot_question=args.skip_few_shot_question,
+        skip_few_shot_options=args.skip_few_shot_options,
+        skip_few_shot_answer=args.skip_few_shot_answer,
     )
 
 
