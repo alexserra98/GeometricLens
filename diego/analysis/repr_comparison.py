@@ -74,7 +74,10 @@ def parse_args():
     return args
 
 
+# **************************************************************************************************
+
 args = parse_args()
+args.results_path += f"/{args.model_name}"
 os.makedirs(args.results_path, exist_ok=True)
 
 base_dir = "/orfeo/cephfs/scratch/area/ddoimo/open/geometric_lens/repo/results"

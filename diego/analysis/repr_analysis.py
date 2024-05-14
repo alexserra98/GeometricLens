@@ -52,15 +52,12 @@ def parse_args():
 
 
 # **************************************************************************
-
-
 args = parse_args()
 
-
+args.results_path += f"/{args.model_name}"
 os.makedirs(args.results_path, exist_ok=True)
 
 base_dir = "/orfeo/cephfs/scratch/area/ddoimo/open/geometric_lens/repo/results"
-
 
 # args.finetuned_mode = "dev_val_balanced_20samples"
 # args.epochs = 4
