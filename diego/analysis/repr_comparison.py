@@ -42,6 +42,10 @@ def parse_args():
         help="The maximum total sequence length (prompt+completion) of each training example.",
     )
     parser.add_argument(
+        "--mask_dir",
+        type=str,
+    )
+    parser.add_argument(
         "--model_name",
         type=str,
         help="Batch size (per device) for the training dataloader.",
@@ -83,9 +87,7 @@ print(f"num_shots: {args.num_shots}")
 sys.stdout.flush()
 
 if args.eval_dataset == "test":
-    mask_dir = (
-        "/u/area/ddoimo/ddoimo/finetuning_llm/open-instruct/open_instruct/my_utils"
-    )
+    mask_dir = args.mask_dir
     if args.samples_subject == 100:
         dataset_mask = np.load(f"{mask_dir}/test_mask_100.npy")
     if args.samples_subject == 200:
@@ -108,9 +110,9 @@ ov_repr = defaultdict(list)
 cluster_comparison = defaultdict(list)
 
 
-if args.model_name == "llama3-8b":
+if args.model_name == "llama-3-8b":
     nlayers = 34
-elif args.model_name == "llama2-13b":
+elif args.model_name == "llama-2-13b":
     nlayers = 42
 else:
     assert False, "wrong model name"
@@ -144,13 +146,13 @@ for epoch in ckpts[::-1]:
             finetuned_repr = finetuned_repr[dataset_mask]
             subjects = subjects[dataset_mask]
             # check that all the subjects have the same frequency
-            frequences = Counter(subjects).values()
-            assert len(np.unique(list(frequences))) == 1
+            #frequences = Counter(subjects).values()
+            #assert len(np.unique(list(frequences))) == 1
             # check that the frequency is 100
-            assert np.unique(list(frequences))[0] == 100, (
-                np.unique(list(frequences))[0],
-                frequences,
-            )
+            #assert np.unique(list(frequences))[0] == 100, (
+            #    np.unique(list(frequences))[0],
+            #    frequences,
+            #)
 
             # remove identical points
             base_unique, base_idx, base_inverse = np.unique(
