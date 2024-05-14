@@ -169,12 +169,12 @@ else:
     ckpts = [0]
 
 
-if args.model_name == "llama3-8b":
+if args.model_name == "llama-3-8b":
     nlayers = 34
-elif args.model_name == "llama2-13b":
+elif args.model_name == "llama-2-13b":
     nlayers = 42
 else:
-    assert False, "wrong model name"
+    assert False, f"wrong model name {args.model_name}, expected llama-3-8b or llama-2-13b"
 
 
 overlaps = defaultdict(list)
@@ -191,7 +191,7 @@ for epoch in ckpts[::-1]:
             print(f"processing {args.num_shots} layer {layer}")
             sys.stdout.flush()
         # ************************************
-        if args.finetune_mode is None:
+        if args.finetuned_mode is None:
             assert args.num_shots is not None
             # if args.question_sampled:
             #     base_path = f"{base_dir}/evaluated_test/questions_sampled/{args.model_name}/{args.num_shots}shot"
