@@ -25,8 +25,8 @@ export PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"
 
 #export CUDA_LAUNCH_BLOCKING=1
 
-model_name=llama-2-13b
-path=llama_v2
+model_name=llama-3-8b
+path=llama_v3
 
 #model_name=mistral-1-7b
 #path=mistral_v1
@@ -50,7 +50,7 @@ torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
     --finetuned_path  "/u/area/ddoimo/ddoimo/finetuning_llm/open-instruct/results" \
     --finetuned_mode "dev_val_balanced_20samples" \
     --finetuned_epochs 4 \
-    --ckpt_epoch 0
+    --ckpt_epoch 0 
     #--prompt_search
     #--random_order \
     #--skip_choices 
