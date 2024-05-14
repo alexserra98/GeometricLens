@@ -1,0 +1,376 @@
+1. In \( Z_3[x] \) divided by \( (x^2 + 1) \), the structure is a field.
+2. Neither statement 1 (If aH is an element of a factor group, then |aH| divides |a|) nor statement 2 (If H and K are subgroups of G then HK is a subgroup of G) are true.
+3. It's true that every element of a group generates a cyclic subgroup of the group, while it's false that the symmetric group S_10 has 10 elements.
+4. Every function from a finite set onto itself must be one to one, and every subgroup of an abelian group is abelian are both true.
+5. The characteristic of the ring 2Z is 0.
+6. The embryological origin of the hyoid bone is the second and third pharyngeal arches.
+7. None of the branches of the trigeminal nerve contain somatic motor processes.
+8. The pleura extends into the neck.
+9. In Angle's Class II Div 2 occlusion, there is excess overjet of the upper lateral incisors.
+10. The body cavity that contains the pituitary gland is the cranial cavity.
+11. Accelerating a truck on Mars would be the same as on Earth, assuming there is no friction.
+12. Most short-period comets come from the Kuiper belt, and this is known because these comets tend to be in the plane of the solar system, just like the Kuiper belt.
+13. A telescope with an aperture of 50 cm can gather 10,000 times more light than the human eye with a pupil diameter of 5 mm.
+14. Resonance with Jupiter prevented material in the asteroid belt from collecting together to form a planet.
+15. Mars is red because its surface is covered with heavily oxidized ("rusted") minerals.
+16. Beyond the business case for engaging in CSR, there are moral arguments related to negative externalities, the power that corporations possess, and the mutual dependence of business and society.
+17. Business ethics management is the direct attempt to formally or informally manage ethical issues or problems through specific policies, practices, and programs.
+18. To ensure the independence of non-executive board members, they should be drawn from outside the company, appointed for a limited time period, and appointed independently.
+19. Three contrasting tactics that CSOs can engage in to meet their aims include indirect action, which typically involves research and communication; violent direct action, which may involve physically attacking a company's operations; and non-violent direct-action often involving a boycott.
+20. Contrary to boycotts, buycotts aim to reward favourable behaviour by companies, and the success of such campaigns has been heightened through the use of digital technology, which facilitates the company in achieving increased sales.
+21. The energy for all forms of muscle contraction is provided by ATP.
+22. Male catheters are longer than female catheters.
+23. Opposition of the thumb by opponents pollicis is supplied by spinal root T1 in the assessment of hand function.
+24. According to the medical knowledge of 2020, you should make two attempts to cannulate a patient before passing the job on to a senior colleague.
+25. Glycolysis involves the conversion of glycogen or glucose to pyruvate or lactate.
+26. Arthropods possess an open circulatory system with a dorsal heart.
+27. In a given population in Hardy-Weinberg equilibrium, 38 out of 400 individuals are expected to carry the recessive allele b but are not expected to develop the cancer.
+28. The presence of homologous structures such as the humerus in the front limbs of both a human and a bird indicates that they belong to a clade.
+29. According to the pressure-flow model, the movement of photosynthate from source to sink in phloem is driven by a water-pressure potential gradient.
+30. Centromeres contain DNA sequences required for the segregation of chromosomes in mitosis and meiosis.
+31. The statement that the atomic radii of the lanthanide elements increase across the period from La to Lu is not true.
+32. A 0.217 g sample of HgO reacts with excess iodide ions, and the resulting solution requires 20 mL of 0.10 M HCl to reach the equivalence point.
+33. The EPR spectrum of a solution of 13C-labelled methyl radical (13CH3•) is predicted to have 4 lines.
+34. In the given reaction, Cl−(aq) behaves as a reducing agent.
+35. The hydrides of group-14 elements are ordered in thermal stability from lowest to highest as follows: PbH4 < SnH4 < GeH4 < SiH4 < CH4.
+36. The regular expression (a* + b)*(c + d) is equivalent to (a + b)*c + (a + b)*d.
+37. A certain pipelined RISC machine has 8 general-purpose registers R0, R1, . . . , R7 and supports the following operations.
+ADD Rs1, Rs2, Rd Add Rs1 to Rs2 and put the sum in Rd
+MUL Rs1, Rs2, Rd Multiply Rs1 by Rs2 and put the product in Rd
+An operation normally takes one cycle; however, an operation takes two cycles if it produces a result required by the immediately following operation in an operation sequence. Let's consider the expression AB + ABC + BC, where variables A, B, C are located in registers R0, R1, R2. If the contents of these three registers must not be modified, the minimum number of clock cycles required for an operation sequence that computes the value of AB + ABC + BC is 6 
+The minimum number of clock cycles required to compute the value of AB + ABC + BC, ensuring that the contents of the registers are not modified, is 6.
+38. The Singleton design pattern characteristics include: it has a static factory method to provide its instance, it can be a subclass of another class, and it has a private constructor.
+39. A compiler generates code for the following assignment statement.
+G := (A + B) * C - (D + E) * F
+The target machine has a single accumulator and a single-address instruction set consisting of instructions load, store, add, subtract, and multiply. For the arithmetic operations, the left operand is taken from the accumulator and the result appears in the accumulator. The smallest possible number of instructions in the resulting code is 9
+40. Consider a computer design in which multiple processors, each with a private cache memory, share global memory using a single bus. This bus is the critical system resource. Each processor can execute one instruction every 500 nanoseconds as long as memory references are satisfied by its local cache. When a cache miss occurs, the processor is delayed for an additional 2,000 nanoseconds. During half of this additional delay, the bus is dedicated to serving the cache miss. During the other half, the processor cannot continue, but the bus is free to service requests from other processors. On average, each instruction requires 2 memory references. On average, cache misses occur on 1 percent of references. A single processor, assuming no delays due to competition from other processors, consumes 1/27 of the bus capacity in the described computer design.
+41. For the set of all real polynomials \( p(x) \), when transformations \( T \) and \( S \) are defined by \( T: p(x) \to xp(x) \) and \( S: p(x) \to p'(x) \), the operation \( ST - TS \) is the identity map of \( V \) onto itself.
+42. After 100 minutes, the tank initially containing a salt solution of 3 grams of salt dissolved in 100 liters of water will have \( 2 + e^{-4} \) grams of salt remaining, given the conditions of inflow and outflow of the solution.
+43. For a real 2x2 matrix \( A \), the determinant of \( A^2 \) is always nonnegative.
+44. If \( f(x) \) is a polynomial function such that \( f(1 + x) = f(x) \) for all real \( x \) and \( f(5) = 11 \), then \( f(15/2) \) is also 11.
+45. The greatest negative number in the set \( B \), derived from the set of all ordered pairs of integers \( (m, n) \) such that \( 7m + 12n = 22 \), is -4.
+46. Glucose is transported into the muscle cell via protein transporters called GLUT4.
+47. Insulin does not promote glucose uptake by all tissues in the body.
+48. In a pedigree of a rare genetic disorder with X-linked recessive transmission, all daughters of an affected male will be carriers, not affected.
+49. Increasing the temperature or the moles of gas will both increase the pressure of a system sealed with pure nitrogen at 1.70 atm and 25°C.
+50. An expected side effect of creatine supplementation is a gain in body mass.
+51. The angular magnification of a refracting telescope, consisting of two converging lenses separated by 100 cm with the eye-piece lens having a focal length of 20 cm, is 4.
+52. For a thermodynamic process occurring at constant volume, the increase in the internal energy of an ideal gas is equal to the heat added to the gas.
+53. For two Nichrome wires attached at one end, where the longer wire has a length of 2L and the shorter a length of L, if the free end of the longer wire is at 8.0 volts and the shorter at 1.0 volt, the potential at the junction is approximately 2.4 volts.
+54. The angular magnification of a refracting telescope with two converging lenses separated by 100 cm, where the eye-piece lens has a focal length of 20 cm, is 4.
+55. The muon decays with a characteristic lifetime of about \(10^{-6}\) second into an electron, a muon neutrino, and an electron antineutrino, respecting the conservation of lepton number.
+56. SHA-1 produces a message digest of 160 bits.
+57. A Ransom Trojan can modify data on your system to the point where it doesn’t run correctly or you can no longer access specific data, or it may even demand a ransom to restore your access.
+58. Ethical hacking involves hacking systems, such as during penetration testing, to expose vulnerabilities so they can be fixed, rather than exploited.
+59. Exploitation of the Heartbleed bug permits reading outside the bounds of a buffer.
+60. The Deep Web is anything that your search engine cannot search.
+61. Compared with the mass of a uranium atom undergoing fission, the combined masses of the products are less.
+62. According to the equivalence principle, gravity and acceleration are equivalent.
+63. The colors in a soap bubble result from light interference.
+64. A model airplane flying at right angles to the wind has a greater ground speed compared with flying in still air.
+65. Of the three elements, hydrogen has the most mass per nucleon.
+66. For a stationary autoregressive process, shocks will eventually die away.
+67. In an AR(1) model with disturbances having zero mean and unit variance \( \text{yt} = 0.2 + 0.4 \text{yt-1} + \text{ut} \), the (unconditional) mean of y will be 0.33.
+68. If a test statistic has a p-value of 0.08, then if the size of the test were exactly 8%, we would be indifferent between rejecting and not rejecting the null hypothesis; the null would be rejected if a 10% size of the test were used; and the null would not be rejected if a 1% size of the test were used.
+69. If heteroscedasticity is present in a regression model but ignored, the OLS estimator will be inefficient.
+70. According to Akaike's information criterion, the optimal model order for a bi-variate VAR with 500 observations is 3 lags.
+71. In an SR latch built from NOR gates, the condition S=1, R=1 is not allowed.
+72. In a 2-pole lap winding DC machine with 100 conductors, each having a resistance of 2Ω, the total resistance is 50Ω.
+73. The coil of a moving coil meter with 100 turns, 40 mm long and 30 mm wide, produces a control torque of 240*10^-6 N-m on full scale under a magnetic flux density of 1Wb/m2, and its range is 2 mA.
+74. Two long parallel conductors carrying 100 A and separated by 20 mm exert a force of 0.1 N per meter of length on each other.
+75. A point pole with a strength of 4π * 10^-4 weber exerts a force of 15 N on another point pole of 4π * 1.5 * 10^-4 weber placed at a distance of 10 cm from it.
+76. In the number 145,826, the value of the digit 5 is 5 thousand.
+77. In the number pattern created by the rule "Add 11" starting with 10, the pattern will never have two even numbers next to each other.
+78. To find the number of basketball teams needed for 30 players where each team consists of 5 players, divide 30 by 5 to determine that 6 teams are needed.
+79. A store with 107 different colors of paint, each color having 25 cans, has a total of 2,675 cans of paint in storage.
+80. The expression equivalent to 5 x 9 is (5 x 5) + (5 x 4).
+81. The best translation into predicate logic of "No people drive on Mars" is \( (\forall x)(P(x) \Rightarrow \sim D(x)) \).
+82. The best translation into predicate logic of "George borrows Hector's lawnmower" is \( B_{g l h} \) (where \( g \) stands for George, \( h \) stands for Hector, and \( l \) stands for Hector's lawnmower).
+83. The best English interpretation of the given arguments in predicate logic is: Marina is a dancer. No weakling is a dancer. Either everything is a weakling or Georgia plays volleyball. So something plays volleyball.
+84. The truth table pairs \( E \Rightarrow (F \cdot E) \) and \( \sim E \cdot F \) are neither logically equivalent nor contradictory, but consistent.
+85. The best symbolization of the sentence "Turtles live long lives and are happy creatures, unless they are injured" in propositional logic is \( (L \cdot H) \vee I \).
+86. As of 2019, people tend to be optimistic about their own future but pessimistic about the future of their nation or the world.
+87. As of 2019, 46% of Americans agree that the state is run for the benefit of all people.
+88. As of 2015, forests have increased in Europe but decreased in Africa and the Americas since 1990.
+89. As of 2019, about 38% of Russians believe it is very important to have free media without government/state censorship.
+90. As of 2017, 80% of the world's 1-year-old children have been vaccinated against some disease.
+91. Translation is not a method used to form recombinant DNA.
+92. A mutation in a bacterial enzyme that changes a previously polar amino acid to a nonpolar one at a site distant from the enzyme’s active site might alter the enzyme’s substrate specificity by changing the shape of the protein.
+93. The most likely pathway that a secretory protein takes as it is synthesized in an animal cell is from the ribosome to the rough ER, then to the Golgi apparatus, and finally into a secretory vesicle before reaching the plasma membrane.
+94. Fibroblast cells are not known to be involved in the control of cell division.
+95. Among the examples of homologous structures often cited as evidence for natural selection, the forelegs of an insect and the forelimbs of a dog are not homologous structures.
+96. SO2 is considered an acid anhydride.
+97. PCl4F is expected to be a polar molecule.
+98. According to solubility rules, all ammonium-containing compounds are soluble.
+99. A new compound synthesized and found to be a monoprotic acid with a molar mass of 248 g/mol has a pKa of 5.78 when 0.0050 mol of this acid is dissolved in 0.500 L of water and the pH is measured as 3.89.
+100. A solution containing 2.00 moles of acetic acid, CH3COOH, and 1.00 mole of calcium acetate, Ca(CH3COO)2, can resist the addition of a small amount of strong acid or strong base with only minor changes in pH, and 2.00 moles of nitric acid, HNO3, may be added before the pH begins to change significantly.
+Here are the affirmative statements transformed from the provided question and answer pairs:
+101. An example of the use of a device on the Internet of Things (IoT) is when a refrigerator orders milk from an online delivery service when the milk in the refrigerator is almost gone.
+102. Items placed in a Web store's shopping cart for future purchases during an anonymous browsing session will not be saved on the user's computer.
+103. The output of "abc"[::-1] in Python 3 is "cba".
+104. The result of the running program program below with the initial value of x set as 5 and the initial value of y set as 10. is "November".
+ IF (X < O) 
+	 {
+	 DISPLAY ("Foxtrot")
+	 }
+ ELSE
+	 {
+		 IF (X > y)
+			 {
+			   DISPLAY ("Hotel")
+			 }
+		 ELSE 
+			 {
+			   IF (y > O)
+				   {
+				   DISPLAY ("November")
+				   }
+			   ELSE
+				   {
+				   DISPLAY ("Yankee")
+				   }
+			 }
+ 	}
+ 
+
+105. A list of numbers has n elements, indexed from 1 to n. The following algorithm is intended to display the number of elements in the list that have a value greater than 100. The algorithm uses the variables count and position.
+	Step 1: Set count to 0 and position to 1.
+	Step 2: If the value of the element at index position is greater
+	than 100, increase the value of count by 1.
+	Step 3: Repeat step 2 until the value of position is greater than n.
+	Step 4: (missing step)
+	Step 5: Increase the value of count by 1.
+106. The following excerpt is from The Age of Reason, 1794–1795 of Thomas Paine.
+"You will do me the justice to remember, that I have always strenuously supported the Right of every man to his own opinion, however different that opinion might be to mine. He who denies to another this right, makes a slave of himself to his present opinion, because he precludes himself the right of changing it.
+The most formidable weapon against errors of every kind is Reason. I have never used any other, and I trust I never shall.
+The circumstance that has now taken place in France of the total abolition of the whole national order of priesthood, and of everything appertaining to compulsive systems of religion, and compulsive articles of faith, has not only precipitated my intention, but rendered a work of this kind exceedingly necessary, lest in the general wreck of superstition, of false systems of government, and false theology, we lose sight of morality, of humanity, and of the theology that is true.
+I believe in one God, and no more; and I hope for happiness beyond this life.
+I believe in the equality of man; and I believe that religious duties consist in doing justice, loving mercy, and endeavoring to make our fellow-creatures happy.
+I do not believe in the creed professed by the Jewish church, by the Roman church, by the Greek church, by the Turkish church, by the Protestant church, nor by any church that I know of. My own mind is my own church.
+All national institutions of churches, whether Jewish, Christian or Turkish, appear to me no other than human inventions, set up to terrify and enslave mankind, and monopolize power and profit.
+I do not mean by this declaration to condemn those who believe otherwise; they have the same right to their belief as I have to mine."
+Baron Montesquieu was the Enlightenment philosopher that designed a system of checks and balances for government to avoid abuses of power.
+107. The following excerpt is from  Political Confession of Faith, 1820 of Klemens von Metternich:
+"The revolutionary seed had penetrated into every country and spread more or less. It was greatly developed under the régime of the military despotism of Bonaparte. His conquests displaced a number of laws, institutions, and customs; broke through bonds sacred among all nations, strong enough to resist time itself; which is more than can be said of certain benefits conferred by these innovators.
+The monarchs will fulfil the duties imposed upon them by Him who, by entrusting them with power, has charged them to watch over the maintenance of justice, and the rights of all, to avoid the paths of error, and tread firmly in the way of truth. Placed beyond the passions which agitate society, it is in days of trial chiefly that they are called upon to despoil realities of their false appearances, and to show themselves as they are, fathers invested with the authority belonging by right to the heads of families, to prove that, in days of mourning, they know how to be just, wise, and therefore strong, and that they will not abandon the people whom they ought to govern to be the sport of factions, to error and its consequences, which must involve the loss of society.
+Union between the monarchs is the basis of the policy which must now be followed to save society from total ruin. . . .
+Let them not confound concessions made to parties with the good they ought to do for their people, in modifying, according to their recognized needs, such branches of the administration as require it.
+Let them be just, but strong; beneficent, but strict.
+Let them maintain religious principles in all their purity, and not allow the faith to be attacked and morality interpreted according to the social contract or the visions of foolish sectarians.
+Let them suppress Secret Societies; that gangrene of society."
+According to Metternich, the greatest cause of fear was that the ideas of personal liberty and nationalism conceived during the Enlightenment might lead to radical revolutions spreading across Europe.
+108. The following excerpt is taken from Germinal, 1885 of émile Zola:
+"In Russia there was nothing going on well, and [Souvarine] was in despair over the news he had received. His old companions were all turning to the politicians; the famous Nihilists who made Europe tremble-sons of village priests, of the lower middle class, of tradesmen-could not rise above the idea of national liberation, and seemed to believe that the world would be delivered-when they had killed their despot&…
+"Foolery! They'll never get out of it with their foolery."
+Then, lowering his voice still more, in a few bitter words he described his old dream of fraternity. He had renounced his rank and his fortune; he had gone among workmen, only in the hope of seeing at last the foundation of a new society of labour in common. All the sous in his pockets had long gone to the urchins of the settlement; he had been as tender as a brother with the colliers, smiling at their suspicion, winning them over by his quiet workmanlike ways and his dislike of chattering. But decidedly the fusion had not taken place.
+His voice changed, his eyes grew bright, he fixed them on étienne, directly addressing him:
+"Now, do you understand that? These hatworkers at Marseilles who have won the great lottery prize of a hundred thousand francs have gone off at once and invested it, declaring that they are going to live without doing anything! Yes, that is your idea, all of you French workmen; you want to unearth a treasure in order to devour it alone afterwards in some lazy, selfish corner. You may cry out as much as you like against the rich, you haven't got courage enough to give back to the poor the money that luck brings you. You will never be worthy of happiness as long as you own anything, and your hatred of the bourgeois proceeds solely from an angry desire to be bourgeois yourselves in their place."
+The passage displays the direct concern for the welfare of the working classes that was typically a part of Communism.
+109.The excerpts below are from the Navigation Acts of 1651.
+"[A]fter the first day of December, one thousand six hundred fifty and one, and from thence forwards, no goods or commodities whatsoever of the growth, production or manufacture of Asia, Africa or America, or of any part thereof; or of any islands belonging to them, or which are described or laid down in the usual maps or cards of those places, as well of the English plantations as others, shall be imported or brought into this Commonwealth of England, or into Ireland, or any other lands, islands, plantations, or territories to this Commonwealth belonging, or in their possession, in any other ship or ships, vessel or vessels whatsoever, but only in such as do truly and without fraud belong only to the people of this Commonwealth, or the plantations thereof, as the proprietors or right owners thereof; and whereof the master and mariners are also of the people of this Commonwealth, under the penalty of the forfeiture and loss of all the goods that shall be imported contrary to this act, , , ,
+[N]o goods or commodities of the growth, production, or manufacture of Europe, or of any part thereof, shall after the first day of December, one thousand six hundred fifty and one, be imported or brought into this Commonwealth of England, or any other lands or territories to this Commonwealth belonging, or in their possession, in any ship or ships, vessel or vessels whatsoever, but in such as do truly and without fraud belong only to the people of this Commonwealth, and in no other, except only such foreign ships and vessels as do truly and properly belong to the people of that country or place, of which the said goods are the growth, production or manufacture."
+The Navigation Acts of 1651 served as a catalyst for the growth of English shipping and overseas trade but did little to limit the prospects of the Dutch in the seventeenth century.
+110. The following excerpt is taken from the Act of Supremacy held at the English Parliament in 1534:
+"Albeit the king's Majesty justly and rightfully is and ought to be the supreme head of the Church of England, and so is recognized by the clergy of this realm in their convocations, yet nevertheless, for corroboration and confirmation thereof, and for increase of virtue in Christ's religion within this realm of England, and to repress and extirpate all errors, heresies, and other enormities and abuses heretofore used in the same, be it enacted, by authority of this present Parliament, that the king, our sovereign lord, his heirs and successors, kings of this realm, shall be taken, accepted, and reputed the only supreme head in earth of the Church of England, called Anglicans Ecclesia; and shall have and enjoy, annexed and united to the imperial crown of this realm, as well the title and style thereof, as all honors, dignities, preeminences, jurisdictions, privileges, authorities, immunities, profits, and commodities to the said dignity of the supreme head of the same Church belonging and appertaining; and that our said sovereign lord, his heirs and successors, kings of this realm, shall have full power and authority from time to time to visit, repress, redress, record, order, correct, restrain, and amend all such errors, heresies, abuses, offenses, contempts, and enormities, whatsoever they be, which by any manner of spiritual authority or jurisdiction ought or may lawfully be reformed, repressed, ordered, redressed, corrected, restrained, or amended, most to the pleasure of Almighty God, the increase of virtue in Christ's religion, and for the conservation of the peace, unity, and tranquility of this realm; any usage, foreign land, foreign authority, prescription, or any other thing or things to the contrary hereof notwithstanding."
+From the passage, one may infer that the English Parliament wished to argue that the Act of Supremacy would end various forms of corruption plaguing the Church in England
+111. The rate of natural increase of a population is found by subtracting the crude death rate from the crude birth date.
+112. During the third stage of the demographic transition model, birth rates decline and the population growth rate is less rapid.
+113. One neighborhood's efforts to reduce pollution are always supported by neighboring communities is not an accurate statement regarding the services provided by local governments in the United States.
+114. The practice of hiring a foreign third-party service provider to run an operation is called offshoring.
+115. A dove symbol is an example of a nonmaterial culture.
+116. Uncertainty over the limits to presidential power is caused primarily by the fact that the constitutional definition of those powers is broad and unspecific.
+117. The term "budget deficit" refers to the amount the government spends in excess of its revenues.
+118. The case Miranda v. Arizona established the precedent that a defendant must be informed of the right to remain silent, the right to a lawyer, and protection from self-incrimination.
+119. It's false that the Cabinet departments cannot all be run by leaders who belong to the same political party of the president.
+120.James Madison, in The Federalist number 10, argued that the negative effects of factionalism can be reduced by a republican government.
+121. An American pop singer performs a sold-out concert in Paris is not included in the U.S. GDP.
+122. The short-run Phillips curve indicates an inverse relation between unemployment and inflation.
+123. A federal deficit occurs when federal spending exceeds federal tax revenues.
+124. Buying government securities would be the monetary policy used to boost U.S. exports, holding all else equal.
+125. Lower taxes on research and development of new technology best describes supply-side fiscal policy.
+126.  Joe was in charge of lights for a dance. The red light blinks every two seconds, the yellow light every three seconds, and the blue light every five seconds. If we include the very beginning and very end of the dance, during a seven minute dance all the lights will come on at the same time 15 times(Assume that all three lights blink simultaneously at the very beginning of the dance.)
+127. If five thousand dollars compounded annually at an x% interest rate takes six years to double, then at the same interest rate, it will take $300 thirty years to grow to $9600.
+128. If the variable x varies directly as the square of y, and y varies directly as the cube of z, and x equals -16 when z equals 2, then the value of x is -1/256 when z equals 1/2.
+129. The simplified result with a rational denominator of sqrt(sqrt[3](sqrt(1/729))) is sqrt(3)/3.
+130. The mean of the ten students' test scores of 45, 55, 50, 70, 65, 80, 40, 90, 70, 85 is 65.
+131. In a competitive labor market for housepainters, an increase in the construction of new houses would increase the demand for housepainters.
+132. If the government subsidizes producers in a perfectly competitive market, then the consumer surplus will increase.
+133. The concentration ratio for a monopoly is 100.
+134. To be an effective floor, a price floor must be set above the equilibrium price.
+135. A few large producers is necessarily a characteristic of oligopoly.
+136. Zero net external torque is the condition that will ensure that angular momentum is conserved.
+137. At the closed end of the pipe producing a standing wave, the pressure is at an antinode, but the particle displacement is at a node.
+138. If a photocell of work function φ = 2eV connected to a resistor in series is hit by light of frequency f = 1 × 10^15 Hz and power P = 100 W, then the current through the resistor is 24 A.
+139. If a microwave oven is connected to an outlet at 120 V and draws a current of 2 amps, then the rate of energy being used by the microwave oven is 240 W.
+140. If a point charge Q = +1 mC is fixed at the origin, then the work required to move a charge Q = +8 μC from the point (0, 4 meters) to the point (3 meters, 0) is 6.0 J.
+141. The belief that one's attitudes and behavior play a central role in what happens to them is likely to be associated with an internal locus of control.
+142. According to Caplan's model of consultee-centered case consultation, the consultant is primarily interested in identifying and eliminating the causes of the consultee's difficulties in handling a problem.
+143. During Ivan's incident of fright from a dark shadow in the water before identifying it while swimming in the ocean, the synaptic connections taking place are best described by messages being sent from the thalamus directly to the amygdala.
+144. According to the Individuals with Disabilities Education Improvement Act, an educational agency must notify the parents in writing before it changes the educational placement of a student with a disability.
+145. Since Pascale is interested in the processing strategies children use to learn new information, Pascale would best be classified as a cognitive psychologist.
+146. The correlation r is equal to the slope of the regression line when z-scores for the y-variable are plotted against z-scores for the x-variable is a correct statement about correlation.
+147. There is insufficient information to answer the question about the expected value and variance of the random variable X + Y when given E(X) = 37, var(X) = 5, E(Y) = 62, and var(Y) = 12.
+148. For each sampled tree in the random sample of 100 trees from the orange grove, whether it suffered more than 50 percent damage or at most 50 percent damage due to the frost is the response variable in this experiment.
+149. If a new smartwatch has a mean weight of 62 grams with a standard deviation of 1.0 grams, and its packaging has a mean weight of 456 grams with a standard deviation of 6 grams, then together the distribution of the weight of the smartwatch and its packaging would have a mean of 518 grams and a standard deviation of 6.1 grams.
+150. The set {100} has the smallest standard deviation and the set {-10,10} has the largest standard deviation among the sets {1,2,3}, {-10,10}, and {100}.
+151. The following excerpt is taken from Common Sense in 1776 by Thomas Paine
+"Society in every state is a blessing, but government even in its best state is but a necessary evil; in its worst state an intolerable one; for when we suffer, or are exposed to the same miseries by a government, which we might expect in a country without government, our calamity is heightened by reflecting that we furnish the means by which we suffer. Government, like dress, is the badge of lost innocence; the palaces of kings are built on the ruins of the bowers of paradise. For were the impulses of conscience clear, uniform, and irresistibly obeyed, man would need no other lawgiver; but that not being the case, he finds it necessary to surrender up a part of his property to furnish means for the protection of the rest; and this he is induced to do by the same prudence which in every other case advises him out of two evils to choose the least. Wherefore, security being the true design and end of government, it unanswerably follows that whatever form thereof appears most likely to ensure it to us, with the least expense and greatest benefit, is preferable to all others."
+The "miseries" alluded above are the Federal response to the Whiskey Rebellion. They were most condemned by Anti-Federalists of the post-Revolutionary.
+152. The following excerpt is taken from "Apology of the Paxton Boys" in 1764 (Note: "apology" in this context should be read as an explanation, not an admission of guilt or regret.)
+"As our late Conduct at the Conestoga Manor and Lancaster have occasioned much Speculation & a great diversity of Sentiments in this and neighboring Governments; some vindicating & others condemning it; some charitably alleviating the Crime, & others maliciously painting it in the most odious & detestable Colours, we think it our duty to lay before the Publick, the whole Matter as it appeared, & still appears, to us. . . .
+"If these things are not sufficient to prove an unjustifiable Attachment in the Quakers to the Indians Savages, a fixed Resolution to befriend them & an utter insensibility to human Distresses, let us consider a few more recent Facts. When we found the last Summer that we were likely to get no Assistance from the Government, some Volunteers went out at our own Expense, determined to drive our Enemies from our Borders; & when we came near to the great Island, we understood that a Number of their Warriors had gone out against our Frontiers. Upon this we returned and came up with them and fought with them at the Munfey Hill where we lost some of our Men & killed some of their Warriors & thereby saved our Frontiers from this Story in another Expedition. But no sooner had we destroyed their Provisions on the great Island, & ruined their trade with the good People at Bethlehem, but these very Indians, who were justly suspected of having murdered our Friends in Northampton County, were by the Influence of some Quakers taken under the Protection of the Government to screen them from the Resentments of the Friends and Relations of the Murdered, & to support them thro the Winter."
+The sentiments expressed in the explanation above reflect the tensions between backcountry settlers and elites within colonial America during the colonial period of American history.
+153. The following excerpt is taken from  "Declaration of Rights for Women," July 4, 1876, of Susan B. Anthony:
+"In the new Code of Laws which I suppose it will be necessary for you to make I desire you would Remember the Ladies, and be more generous and favorable to them than your ancestors. Do not put such unlimited power into the hands of the Husbands. Remember all Men would be tyrants if they could. If particular care and attention is not paid to the Ladies we are determined to foment a Rebellion, and will not hold ourselves bound by any Laws in which we have no voice, or Representation."
+Abigail Adams, in a letter to John Adams, 1776
+"Special legislation for woman has placed us in a most anomalous position. Women invested with the rights of citizens in one section—voters, jurors, office-holders—crossing an imaginary line, are subjects in the next. In some States, a married woman may hold property and transact business in her own name; in others, her earnings belong to her husband. In some States, a woman may testify against her husband, sue and be sued in the courts; in others, she has no redress in case of damage to person, property, or character. In case of divorce on account of adultery in the husband, the innocent wife is held to possess no right to children or property, unless by special decree of the court. But in no State of the Union has the wife the right to her own person, or to any part of the joint earnings of the co-partnership during the life of her husband. In some States women may enter the law schools and practice in the courts; in others they are forbidden. In some universities girls enjoy equal educational advantages with boys, while many of the proudest institutions in the land deny them admittance, though the sons of China, Japan and Africa are welcomed there. But the privileges already granted in the several States are by no means secure."
+The sentiments expressed in the second excerpt by Susan B are most likely in support of universal suffrage
+154. The following excerpt is taken from  "The Lessons of Vietnam" April 25, 1967, of Senator George McGovern:
+Our leaders talk about stopping aggression from the north, but this was a struggle among groups of Vietnamese until we intervened. We seem bent upon saving the Vietnamese from Ho Chi Minh even if we have to kill them and demolish their country to do it. As the native people survey bombed-out villages, women and children burned by napalm, rice crops destroyed and cities overrun with our military personnel, they are doubtless saying secretly of the Vietcong guerillas and of the American forces, "A plague on both your houses." … Stop the bombing, north and south, end search and destroy offensive sweeps, and confine our military action to holding operations on the ground. Bombing the north has failed to halt or seriously check the flow of troops to the south and may, in fact, have prompted a much greater war effort by Hanoi.
+From the text above we can infer that George McGovern considered American bombing in Vietnam a failure.
+155. The following excerpt is taken from  "Memorial Soliciting a State Hospital for the Protection and Cure of the Insane" submitted to the General Assembly of North Carolina, November 1848 of Dorothea Dix
+I come not to urge personal claims, nor to seek individual benefits; I appear as the advocate of those who cannot plead their own cause; I come as the friend of those who are deserted, oppressed, and desolate. In the Providence of God, I am the voice of the maniac whose piercing cries from the dreary dungeons of your jails penetrate not your Halls of Legislation. I am the Hope of the poor crazed beings who pine in the cells, and stalls, and cages, and waste rooms of your poor-houses. I am the Revelation of hundreds of wailing, suffering creatures, hidden in your private dwellings, and in pens and cabins—shut out, cut off from all healing influences, from all mind-restoring cares.… Could their melancholy histories be spread before you as revealed to my grieved spirit during the last three months, how promptly, how earnestly would you search out the most approved means of relief; how trifling, how insignificant, by comparison, would appear the sacrifices you are asked to make; how would a few dimes and dollars, gathered from each citizen, diminish in value as a possession, compared with the certain benefits and vast good to be secured for the suffering insane...by the consecration and application of a sufficient fund to the construction of a suitable hospital.…
+Given the text above we can observe the similarity between Dorothea Dix Clara Barton
+156: The following excerpt is taken from  "The Upanishads" written in India approximately around 1000 BCE:
+"He contains all works and desires and all perfumes and all tastes. He enfolds the whole universe and in silence is loving to all. This is the Spirit that is in my heart, this is Brahman. To him I shall come when I go beyond this life, and to him will come he who has faith and doubts not."
+It is clear from the nature of the speech above that the speaker belongs to the Hindu religion.
+157: The following excerpt is about the phenomenon of  Decolonization and is taken from  "Neo-Colonialism", 1965, written by Kwame Nkrumah:
+"The struggle against neo-colonialism is not aimed at excluding the capital of the developed world from operating in less developed countries. It is aimed at preventing the financial power of the developed countries being used in such a way as to impoverish the less developed.
+Non-alignment, as practiced by Ghana and many other countries, is based on co-operation with all States whether they be capitalist, socialist or have a mixed economy. Such a policy, therefore, involves foreign investment from capitalist countries, but it must be invested in accordance with a national plan drawn up by the government of the non-aligned State with its own interests in mind. The issue is not what return the foreign investor receives on his investments…The question is one of power. A State in the grip of neo-colonialism is not master of its own destiny."
+158: The following is a speech held by Otto von Bismarck in 1884:
+"The real grievance of the worker is the insecurity of his existence; he is not sure that he will always have work, he is not sure that he will always be healthy, and he foresees that he will one day be old and unfit to work. If he falls into poverty, even if only through a prolonged illness, he is then completely helpless, exam_ins to his own devices, and society does not currently recognize any real obligation towards him beyond the usual help for the poor, even if he has been working all the time ever so faithfully and diligently. The usual help for the poor, however, leaves a lot to be desired, especially in large cities, where it is very much worse than in the country."
+In the above speech, Otto von Bismarck remarked on the Negative effects attributed to industrial capitalism.
+159: The following is a letter from Ottoman Sultan Selim I to Safavid Shah Ismail I, written in  1514.
+"Indeed, as both the fatwas of distinguished [scholars] who base their opinion on reason and tradition alike and the consensus of the Sunni community agree that the ancient obligation of extirpation, extermination, and expulsion of evil innovation must be the aim of our exalted aspiration, for "Religious zeal is a victory for the Faith of God the Beneficent"; then, in accordance with the words of the Prophet (Peace upon him!) "Whosoever introduces evil innovation into our order must be expelled" and "Whosoever does aught against our order must be expelled," action has become necessary and exigent…"
+A salient theme of the above text is the expanding tensions between religious sects.
+160: The following is an excerpt from Ecological Imperialism, 2004, of the historian Alfred Crosby:
+"At least one of the [world's] societies would have to somehow enormously increase its productivity [in order to achieve global hegemony]. That quantum jump would have to be made before the various scientific, technological, agricultural, and industrial revolutions on which our post-quantum-leap world rests. It could only be accomplished by exploiting the ecosystems, mineral resources, and human assets of whole continents outside the lands of the society making the jump. Western Europe did just that by means of its brutality and guns and, more important, by geographical and ecological luck."
+Copyright © 2015 Cambridge University Press.
+The "quantum jump" mentioned in the passage most directly contributed to an increase in the population of the world through more plentiful supplies of food in the period 1450–1750 C.E.
+161. As of 2019, an African American woman is more likely to remain at home alone.
+162. The phenomenon where adults remember events from their adolescence better than other periods is known as the reminiscence bump.
+163. Texas is the most likely destination for older adults moving to a new state after retirement.
+164. Tar in tobacco smoke is responsible for cancers.
+165. An older Asian American woman is more likely to show signs of osteoporosis, all other things being equal.
+166. Morning sickness is typically a problem during the first trimester.
+167. A woman who knows she has active herpes and untreated syphilis but continues to have sex without informing her partners likely has a weak superego, according to psychoanalytic terms.
+168. Women's ability to have multiple orgasms is primarily because they do not have a refractory period.
+169. The nature of homosexual activities during preadolescence includes all but sexual intercourse.
+170. The most common disorder among men who seek sexual therapy is erectile disorder.
+171. Article 2(4) of the UN Charter prohibits only armed force.
+172. If a party to a contentious case before the ICJ does not have a national sitting as a judge, it is entitled to nominate someone as a judge solely for that case, with the title of judge ad hoc.
+173. A reservation to the definition of torture in the ICCPR is an unacceptable reservation because it contravenes the object and purpose of the ICCPR.
+174. Consent can serve as a circumstance precluding the wrongfulness of a State's conduct, provided the consent is valid and the conduct remains within the limits of the consent given.
+175. The consent of a state to be bound by a treaty may be expressed by signature, ratification, acceptance, approval, or accession.
+176. People in the original position (POP) would choose equality above liberty, according to Rawls.
+177. Promoting the principles of the free enterprise system is not a function of the law.
+178. Weber explains the development of formally rational law primarily through capitalism.
+179. The Natural Law School of Jurisprudence postulates that the law is based on what is "correct."
+180. Iverson Jewelers' letter to Miller, offering an exceptionally fine self-winding Rolex watch at a very favorable price, lacks one of the essential elements of an offer.
+181. If someone attacks the character of an opposing arguer instead of responding to that opponent's arguments, the first person has probably committed the fallacy of argument against the person.
+182. The complex question fallacy consists of asking a question that includes either an unproven assumption or more than one question, thus making a straightforward yes or no answer meaningless.
+183. A valid categorical syllogism must use the middle term in at least one premise in a universal or unqualified sense.
+184. Arguing that what is true of the parts must be true of the whole is the fallacy of composition.
+185. When an arguer causes confusion during refutation because of real or feigned lack of an ability to engage in refutation, that arguer may have committed the fallacy of ignorance of refutation.
+186. The probability of side 3 coming up when a 6-sided die is rolled 15 times using Add-1 Smoothing is 1/7.
+187. Random crop and horizontal flips are the most common image data augmentations for natural images.
+188. A submission claiming that a method achieves a test error lower than all previous methods when the regularization parameter λ is chosen to minimize cross-validation error would be considered for acceptance at the World’s Fanciest Machine Learning Conference.
+189. To achieve a 0/1 loss estimate that is less than 1 percent of the true 0/1 loss with a probability of 95%, according to Hoeffding's inequality, the IID test set must have more than 1000 examples.
+190. The biggest problem with having a multiway split in decision-tree learning for each distinct value of a real-valued input attribute is that it would probably result in a decision tree that scores well on the training set but badly on a test set.
+191. The two main dimensions of the Ohio Studies into leadership are initiating structure and considerations.
+192. Hygiene factors are associated with Frederick Hertzberg.
+193. Symbols form the element of the cultural web that forms regalia.
+194. Morale is not a key feature of the 'open systems' model of management.
+195. Organizational structures characterized by democratic and inclusive styles of management can be described as flat.
+196. Geodemographics is a natural outcome when combining demographic and geographic variables.
+197. In an organization, the group of people tasked with buying decisions is referred to as the decision-making unit.
+198. An assumption in Maslow's hierarchy of needs is that lower-level needs must be at least partially satisfied before higher needs can affect behavior.
+199. Children, who base most of their buying decisions on outside influences, are the single group within society most vulnerable to reference group influence.
+200. Door to door is a media format where, although the content and quality can be as controlled as direct mail, response rates are lower because of the lack of a personal address mechanism.
+201. Large triplet repeat expansions can be detected by Southern blotting.
+202. DNA ligase is an enzyme that joins fragments in normal DNA replication.
+203. In a gene showing codominance, both alleles are independently expressed in the heterozygote.
+204. Marfan syndrome does not show multifactorial inheritance.
+205. The stage of meiosis in which chromosomes pair and cross over is prophase I.
+206. A standard automobile has two axles.
+207. The 1979 live album by rock legends Cheap Trick is named "Budokan."
+208. Anthony 'Spud' Webb is the shortest man to ever win an NBA slam dunk competition.
+209. Oxygen is produced during photosynthesis.
+210. 'De Do Do Do, De Da Da Da' was a Top 10 hit for the rock band The Police.
+211. According to Metz, it is unclear as of yet whether or not capital punishment deters harm to the community, which is wrong with consequentialist arguments against capital punishment based on African values.
+212. A fertilized ovum is also known as a zygote.
+213. According to Singer, the ability to learn and solve problems is an intrinsic good.
+214. SCNT is not a different kind of reproduction because there are no morally relevant differences between it and other permissible means of reproduction, as concluded by Pence.
+215. Baron admits that the versions of the ticking bomb hypothetical she discusses are "stunningly stupid," but claims this is actually evidence of the readiness on the part of many intelligent people to see torture as the best solution to deal with terrorism.
+216. According to ordinary moral standards in the US as of 2020, loving a newborn baby boy is not wrong, but inviting the class to the house of a girl embarrassed to live in a trailer park is wrong.
+217. According to ordinary moral standards in the US as of 2020, asking for a cigarette from a guy outside the store is not wrong, but pocketing a rare coin when the security guard left his post is wrong.
+218. According to ordinary moral standards in the US as of 2020, both buying an old pick-up truck for work and throwing a rock at a gorgeous waterfall are not considered morally wrong.
+219. According to ordinary moral standards in the US as of 2020, pushing someone into a wall during a house's demolition is wrong, but choosing a babysitter for twin nieces without regard to her racial background is not wrong.
+220. According to ordinary moral standards in the US as of 2020, both taking a wallet after being harassed at a bar and making love to a newborn baby boy are considered morally wrong.
+221. Based on the information given, we cannot tell if the observed difference in the risk of developing diabetes between tea consumers and non-consumers is the result of chance.
+222. As of 2020, consumers with phenylketonuria must avoid the consumption of the sweetener aspartame.
+223. The most plausible explanation for the protective effect of dietary fiber against colon cancer, as of 2020, is that butyric acid formed during colonic fiber fermentation stimulates antioxidant defenses in the colon.
+224. As of 2020, the iodine content of organic milk is generally lower than the level in non-organic milk.
+225. As of 2020, metformin is the first-line drug for patients with type 2 diabetes and obesity.
+226. Psychological egoism is a claim about human nature and the ways people are capable of behaving.
+227. According to Moore’s "ideal utilitarianism," the right action is the one that brings about the greatest amount of good.
+228. According to d'Holbach, people always act according to necessary natural laws.
+229. Before Tolstoy's Christian conversion, his perspective on the meaning of life was pessimistic.
+230. Metaphysics is the study of reality in the broadest sense, an inquiry into the elemental nature of the universe and the things in it.
+231. The great Mayan king Pacal built temples in the city of Palenque to legitimize his kingship, since his father was not royal.
+232. According to Timothy Pauketat, the evidence for social stratification and political power at Cahokia suggests it was a center of Mississippian civilization with conditions similar to the rise of early states.
+233. Researchers now believe that the decline of the Maya was caused chiefly by ecological degradation resulting from slash-and-burn farming techniques.
+234. Recent research on hominid species dating from the Middle Pliocene indicates there was either a great amount of species diversity or a single species that exhibited a lot of diversity as of 2020.
+235. The approximate mean cranial capacity of Homo erectus is just under 1000 cc.
+236. Box a nongovernmental not-for-profit organization had the following transactions during the year: Proceeds from sale of investments $80000 Purchase of property plant and equipment $10000 Proceeds from long-term debt $100000 Loss on sale of investment $5000. Given these transactions in Box's statement cash flows the reported amount of net cash provided by financing activities is 100000
+237. One hundred years ago, an investment of $100 at 5% yearly interest would be worth $13,000 today.
+238. Krete is an unmarried taxpayer with income exclusively from wages. By December 31, year 1, Krete's employer has withheld $16,000 in federal income taxes and Krete has made no estimated tax payments. On April 15, year 2, Krete timely filed for an extension request to file her individual tax return and paid $300 of additional taxes. Krete's year 1 tax liability was $16,500 when she timely filed her return on April 30, year 2, and paid the remaining tax liability balance. Given the above information, Krete should not be subject to the penalty for underpayment of estimated taxes.
+239. On January 1, year 1, Alpha Co. signed an annual maintenance agreement with a software provider for $15,000 and the maintenance period begins on March 1, year 2. Alpha also incurred $5,000 of costs on January 1, year 1, related to software modification requests that will increase the functionality of the software. Alpha depreciates and amortizes its computer and software assets over five years using the straight-line method. Alpha Co. should recognize a total expense of $13,500 related to the maintenance agreement and software modifications for the year ended December 31, year 1.
+240. An auditor tracing the serial numbers on equipment to a nonissuer’s subledger supports the management assertion of completeness.
+241. A state legislature has recently enacted a statute making it a misdemeanor to curse or revile or use obscene or opprobrious language toward or in reference to a police officer performing his duties. A student at a state university organized a demonstration on campus to protest the war. The rally was attended by a group of 50 students who shouted anti-war messages at cars passing by. To show his contempt for the United States, the student sewed the American flag to the rear of his jeans. When a police officer saw the flag sown on the student's jeans, he approached and told him to remove the flag or he would be placed under arrest. The student became angered and shouted at the police officer, "Listen, you bastard, I'll wear this rag anywhere I please. " The student was subsequently placed under arrest and charged with violating the state statute. The student subsequently brings suit in state court challenging the constitutionality of the statute. The strongest constitutional argument for the student is that the statute is overbroad and consequently invalid under the First and Fourteenth Amendments.
+242. A state has recently enacted a statute prohibiting the disposal of any nuclear waste within the state. This law does not contravene or conflict with any federal statutes. A man operates a company in the state that is engaged in the disposal of nuclear wastes. After the passage of the state statute, the man, not yet aware of the new law, entered into contracts with many out-of-state firms to dispose of their nuclear wastes in the state. On account of this new law, however, the man will be unable to perform these contracts. Assume that the man has standing to challenge this state law. In this context, his strongest constitutional ground to challenge the state law prohibiting the disposal of nuclear wastes within the state is the commerce clause.
+243. Facts that have been asserted by individual political organizations are not an appropriate kind of fact for judicial notice.
+244. On October 1, 1980, a developer, owner of several hundred acres in a rural county, drafted a general development plan for the area. The duly recorded plan imposed elaborate limitations and restrictions upon the land in the plan, which was to be developed as a residential district. The restrictions were to extend to all persons acquiring any of the lots and to their heirs, assigns, and lessees. It was further provided that all subsequent owners would be charged with due notice of the restrictions. Among those restrictions in the general plan were the following:(22) A franchise right is created in a strip of land 10 feet in width along the rear of each lot for the use of public utility companies with the right of ingress and egress. (23) No house or structure of any kind shall be built on the aforementioned strip of land running through the said blocks. In 2000, a retiree purchased one of the lots built a house, and erected a fence in the rear of his property within the restricted area. In 2004, a teacher purchased a lot adjacent to the retiree's property and built a new house. Two years later, a librarian purchased the lot that adjoined the teacher's property. The three deeds to those properties each contained references to the deed book where the general plan was recorded. In 2008, the librarian began the construction of a seven-foot post-and-rail fence along the line dividing his lot with the teacher's, and along the center of the area subject to the franchise right. Although the teacher objected to its construction, the fence was completed. If the teacher seeks a mandatory injunction to compel the removal of the librarian's fence, the court will most likely grant relief, because the encroachment of the fence violated the restriction in the original plan. 
+245. Question: A son owed a creditor $5,000. The son's father contacted the creditor and told him that he wanted to pay the son's debt. The father signed a document that stated the father would pay the son's debt at a rate of $500 a month for 10 months. The creditor made no written or oral commitment to forbear to sue the son to collect the $5,000 debt, and the father made no oral or written request for any such forbearance. For the next five months, the father made and the creditor accepted the $500 monthly payments as agreed. During that period, the creditor, did forbear to take any legal action against the son. However, the father then informed the creditor that he would make no further payments on the debt. In this situation, the most compelling argument for the father's liability to the creditor under their agreement is that the father's promise, coupled with the creditor's reliance on it, if substantiated, establishes a valid claim against the father based on the doctrine of promissory estoppel.
+246. A 42-year-old man comes to the office for preoperative evaluation prior to undergoing adrenalectomy scheduled in 2 weeks. One month ago, he received care in the emergency department for pain over his right flank following a motor vehicle collision. At that time, blood pressure was 160/100 mm Hg and CT scan of the abdomen showed an incidental 10-cm left adrenal mass. Results of laboratory studies, including complete blood count, serum electrolyte concentrations, and liver function tests, were within the reference ranges. The patient otherwise had been healthy and had never been told that he had elevated blood pressure. He takes no medications. A follow-up visit in the office 2 weeks ago disclosed elevated urinary normetanephrine and metanephrine and plasma aldosterone concentrations. The patient was referred to a surgeon, who recommended the adrenalectomy. Today, vital signs are temperature 36.6°C (97.9°F), pulse 100/min, respirations 14/min, and blood pressure 170/95 mm Hg. Physical examination discloses no significant findings. Initial preoperative preparation should include treatment with Phenoxybenzamine
+247. A 36-year-old male presents to the office with a 3-week history of low back pain. He denies any recent trauma but says that he climbs in and out of his truck numerous times a day for his job. Examination of the patient in the prone position reveals a deep sacral sulcus on the left, a posterior inferior lateral angle on the right, and a lumbosacral junction that springs freely on compression. The most likely diagnosis is right-on-right sacral torsion
+248. A previously healthy 32-year-old woman comes to the physician 8 months after her husband was killed in a car crash. Since that time, she has had a decreased appetite and difficulty falling asleep. She states that she is often sad and cries frequently. She has been rechecking the door lock five times before leaving her house and has to count exactly five pieces of toilet paper before she uses it. She says that she has always been a perfectionist but these urges and rituals are new. Pharmacotherapy should be targeted to modulate the Serotonin neurotransmitter
+249. A 44-year-old man comes to the office because of a 3-day history of sore throat, nonproductive cough, runny nose, and frontal headache. He says the headache is worse in the morning and ibuprofen does provide some relief. He has not had shortness of breath. Medical history is unremarkable. He takes no medications other than ibuprofen for pain. Vital signs are temperature 37.4°C (99.4°F), pulse 88/min, respirations 18/min, and blood pressure 120/84 mm Hg. Examination of the nares shows erythematous mucous membranes. Examination of the throat shows erythema and follicular lymphoid hyperplasia on the posterior oropharynx. There is no palpable cervical adenopathy. Lungs are clear to auscultation. The most likely cause of this patient's symptoms is Rhinovirus
+250. A 22-year-old male marathon runner presents to the office with the complaint of right-sided rib pain when he runs long distances. Physical examination reveals normal heart and lung findings and an exhalation dysfunction at ribs 4-5 on the right. The most useful muscle or muscle group in correcting this dysfunction utilizing a direct method is pectoralis minor.
+251. One of your therapy clients asks your advice about a good weight- reduction program. You have investigated the programs in the community and are enrolled in the one you consider the best. This program offers a $50 bonus to its patrons for each new person they bring into the program. Under these circumstances, your most appropriate response would be to tell your client the pros and cons of each program you know about, but do not claim the $50 bonus if your client enrolls in your program.
+Under these circumstances, your most appropriate response would be to tell your client the pros and cons of each program you know about, but do not claim the $50 bonus if your client enrolls in your program
+252. The mode, in statistics, is defined as the most frequently occurring number.
+253. According to Hofstede’s cultural dimensions, the United States scores highest on individualism.
+254. Carl Jung believed that a client's transference reflects the client’s personal and collective unconscious.
+255. In constructing a multiple regression equation for prediction, the optimal combination of predictors are those uncorrelated with each other but moderately correlated with the criterion.
+256. A public relations media practitioner should say 'I don't know' and promise to provide the information later if she does not know the answer to a reporter's question.
+257. The most proactive approach in issues management for addressing negative or misleading online information about an organization is to make policy changes addressing the complaints highlighted on these sites.
+258. In 2010, criticisms regarding accusations of child abuse cover-ups were taken as attacks on the Catholic Church.
+259. A situation analysis is carried out at the defining stage of the planning process.
+260. Earth Hour was a campaign launched by the World Wildlife Fund.
+261. Coercive diplomacy distinguishes itself from military force by using threats of limited force to induce an adversary's incentive to comply with the coercer's demands, leaving an element of choice with the target.
+262. Investigating the role of child soldiers through the lens that children have political subjecthood reveals their active roles rather than seeing them merely as passive victims of warfare.
+263. For a threat to become securitized, it must be presented as an urgent threat to the survival of the referent object, justifying the employment of extraordinary action in response.
+264. The relationship between the state-centric approach and human security is best described by the adoption of the human security framework highlighting the limitations of the realist state-centric approach.
+265. As of 2020, terrorism has been analyzed as a problem solvable by military means, normal police techniques, or as a medical issue with underlying causes and symptoms.
+266. The post-war welfare state of 1948 did not aim to provide a minimum wage.
+267. Berger (1963) describes social reality metaphorically as a puppet theatre.
+268. The shift from 'civil religion' to 'common religion' implies that despite the weakening of traditional authority, religious beliefs and values still shape our everyday lives and 'common sense'.
+269. Hegemony refers to a dominant ideology that legitimates economic, political, and cultural power.
+270. It is not true that most strikes go unnoticed by employers and the mass media.
+271. The 2008 financial crisis damaged international support for the US model of political economy and capitalism.
+272. NSC-68 changed U.S. strategy comprehensively.
+273. The realm of policy decisions primarily concerned with relations between the United States and the rest of the world is known as foreign policy.
+274. Defensive Realism and Offensive Realism differ in their explanation of state behavior; defensive realists view states as security maximizers, while offensive realists see them as power maximizers.
+275. In the 2016 campaign, Donald Trump criticized globalization by arguing that liberal elites encouraged it while 'ordinary Americans' lost jobs as a result.
+276. Parvoviruses are highly impactful parasites because they contain no nucleic acid.
+277. Paramyxoviruses are characterized morphologically as fragile viruses often visualized with RNA spewing from the inside.
+278. The application of nested case-control studies from the MACS was facilitated by the establishment of a repository of biologic specimens.
+279. The most important goal of a behavioral intervention is sustained behavior change.
+280. The median survival time to AIDS and death was established by following seroconverters.
+281. Circumcision is the sign of the covenant for Jewish males.
+282. The Second Gem in Buddhism is the Dharma.
+283. The "Mandate of Heaven" was developed during the Zhou dynasty to legitimize new rulers.
+284. The Meiji government in Japan promoted a national cult based around the emperor and his associations with kami.
+285. The Upanishads can be characterized as philosophical texts.
+

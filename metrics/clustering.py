@@ -6,6 +6,7 @@ from .utils import (
 )
 from metrics.query import DataFrameQuery
 from common.globals_vars import _NUM_PROC, _OUTPUT_DIR
+from common.error import DataNotFoundError, UnknownError
 from dadapy.data import Data
 from sklearn.metrics import mutual_info_score
 from sklearn.metrics.cluster import adjusted_rand_score, adjusted_mutual_info_score
@@ -57,9 +58,16 @@ class LabelClustering(HiddenStatesMetrics):
             ):
                 module_logger.debug(f"Processing query {query_dict}")
                 query = DataFrameQuery(query_dict)
-                hidden_states, _, hidden_states_df = tsm.retrieve_tensor(
-                    query, self.storage_logic
-                )
+                try:
+                    hidden_states, _, hidden_states_df = tsm.retrieve_tensor(
+                        query, self.storage_logic
+                    )
+                except DataNotFoundError as e:
+                    module_logger.error(f"Error processing query {query_dict}: {e}")
+                    continue
+                except UnknownError as e:
+                    module_logger.error(f"Error processing query {query_dict}: {e}")
+                    raise
                 if self.variations["label_clustering"] == "balanced_letter":
                     hidden_states_df.reset_index(inplace=True)
                     hidden_states_df, index = balance_by_label_within_groups(

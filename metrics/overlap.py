@@ -6,6 +6,7 @@ from .utils import (
 )
 from metrics.query import DataFrameQuery
 from common.globals_vars import _NUM_PROC, _OUTPUT_DIR
+from common.error import DataNotFoundError, UnknownError
 
 from dadapy import Data
 
@@ -90,14 +91,24 @@ class PointOverlap(HiddenStatesMetrics):
                                 "train_instances": shot_j,
                             }
                         )
-
-                        # Hidden states to compare
-                        hidden_states_i, _, df_i = tsm.retrieve_tensor(
-                            query_i, self.storage_logic
-                        )
-                        hidden_states_j, _, df_j = tsm.retrieve_tensor(
-                            query_j, self.storage_logic
-                        )
+                        try:
+                            # Hidden states to compare
+                            hidden_states_i, _, df_i = tsm.retrieve_tensor(
+                                query_i, self.storage_logic
+                            )
+                            hidden_states_j, _, df_j = tsm.retrieve_tensor(
+                                query_j, self.storage_logic
+                            )
+                        except DataNotFoundError as e:
+                            module_logger.error(
+                                f"Data not found for {query_i} or {query_j}. Error: {e}"
+                            )
+                            continue
+                        except UnknownError as e:
+                            module_logger.error(
+                                f"Unknown error for {query_i} or {query_j}. Error: {e}"
+                            )
+                            raise e
 
                         df_i.reset_index(inplace=True)
                         df_j.reset_index(inplace=True)
@@ -285,9 +296,20 @@ class LabelOverlap(HiddenStatesMetrics):
             ):
                 module_logger.debug(f"Processing query {query_dict}")
                 query = DataFrameQuery(query_dict)
-                hidden_states, _, hidden_states_df = tsm.retrieve_tensor(
-                    query, self.storage_logic
-                )
+                try:            
+                    hidden_states, _, hidden_states_df = tsm.retrieve_tensor(
+                        query, self.storage_logic
+                    )
+                except DataNotFoundError as e:
+                    module_logger.error(
+                        f"Data not found for {query}. Error: {e}"
+                    )
+                    continue
+                except UnknownError as e:
+                    module_logger.error(
+                        f"Unknown error for {query}. Error: {e}"
+                    )
+                    raise e
                 if self.variations["label_overlap"] == "balanced_letter":
                     hidden_states_df.reset_index(inplace=True)
                     hidden_states_df, index = balance_by_label_within_groups(

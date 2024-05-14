@@ -4,6 +4,7 @@ from .utils import (
 )
 from metrics.query import DataFrameQuery
 from common.globals_vars import _NUM_PROC, _OUTPUT_DIR
+from common.error import DataNotFoundError, UnknownError
 
 
 from sklearn.metrics import accuracy_score
@@ -45,11 +46,18 @@ class LinearProbe(HiddenStatesMetrics):
         ):
             module_logger.debug(f"Processing query {query_dict}")
             query = DataFrameQuery(query_dict)
-
-            # Retrieve hidden states and labels
-            hidden_states, _, hidden_states_df = tsm.retrieve_tensor(
-                query, self.storage_logic
-            )
+            
+            try:
+                # Retrieve hidden states and labels
+                hidden_states, _, hidden_states_df = tsm.retrieve_tensor(
+                    query, self.storage_logic
+                )
+            except DataNotFoundError as e:
+                module_logger.error(f"Error processing query {query_dict}: {e}")
+                continue
+            except UnknownError as e:
+                module_logger.error(f"Error processing query {query_dict}: {e}")
+                raise
             target = np.asarray(hidden_states_df[label].tolist())
 
             skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=42)

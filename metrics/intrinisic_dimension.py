@@ -2,6 +2,7 @@ from metrics.hidden_states_metrics import HiddenStatesMetrics
 from .utils import exact_match, TensorStorageManager
 from metrics.query import DataFrameQuery
 from common.globals_vars import _NUM_PROC, _OUTPUT_DIR
+from common.error import DataNotFoundError, UnknownError
 
 from dadapy.data import Data
 
@@ -39,11 +40,16 @@ class IntrinsicDimension(HiddenStatesMetrics):
                     raise ValueError(
                         "Unknown variation. It must be either None or 'norm'"
                     )
-
-                hidden_states, _, hidden_states_df = tsm.retrieve_tensor(
-                    query, self.storage_logic
-                )
-
+                try:
+                    hidden_states, _, hidden_states_df = tsm.retrieve_tensor(
+                        query, self.storage_logic
+                    )
+                except DataNotFoundError as e:
+                    module_logger.error(f"Error processing query {query_dict}: {e}")
+                    continue
+                except UnknownError as e:
+                    module_logger.error(f"Error processing query {query_dict}: {e}")
+                    raise
                 if match == "correct":
                     hidden_states_df = hidden_states_df[
                         hidden_states_df.apply(

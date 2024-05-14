@@ -1,6 +1,7 @@
 from metrics.query import DataFrameQuery
 from common.tensor_storage import TensorStorage
 from common.globals_vars import _DEBUG
+from common.error import DataNotFoundError, UnknownError
 
 from dadapy.data import Data
 
@@ -42,28 +43,6 @@ class Layer(Enum):
     LAST = "last"
     SUM = "sum"
 
-
-class DataNotFoundError(Exception):
-    """Exception raised when the requested data is not found in the data source."""
-
-    def __init__(self, message="Requested data not found in the file system"):
-        # Call the base class constructor with the parameters it needs
-        super().__init__(message)
-        self.message = message
-
-    def __str__(self):
-        return self.message
-
-
-class UnknownError(Exception):
-    """Exception raised for generic errors during data retrieval or processing."""
-
-    def __init__(self, message="Uknown error occurred while retrieving data"):
-        super().__init__(message)
-        self.message = message
-
-    def __str__(self):
-        return self.message
 
 
 def softmax(logits):

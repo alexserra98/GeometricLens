@@ -1,0 +1,102 @@
+252: Question: There are three ways to measure the Central Tendency: the Mean, the Median and the Mode. From your knowledge about them, what is the mode?
+Answer: the most frequently occurring number
+------
+253: Question: In terms of Hofstede’s (1980) five cultural dimensions, the United States scores at the top of the scale on:
+Answer: individualism.
+------
+254: Question: Carl Jung believed that a client's transference:
+Answer: reflects the client’s personal and collective unconscious.
+------
+255: Question: In the construction of a multiple regression equation for purposes of prediction, the optimal combination of measures is one in which the predictors
+Answer: are uncorrelated with each other but are moderately correlated with the criterion
+------
+256: Question: What should a public relations media practitioner do if she does not know the answer to a reporter's question?
+Answer: Say 'I don't know' and promise to provide the information later.
+------
+257: Question: In issues management, what is the most proactive approach to addressing negative or misleading information posted online about your organization?
+Answer: Make policy changes to address complaints highlighted on these sites.
+------
+258: Question: Which of these statements is true of the Vatican in 2010 at the time of the accusations of child abuse cover-ups?
+Answer: Criticisms were taken as attacks on the Catholic Church.
+------
+259: Question: At which stage in the planning process would a situation analysis be carried out?
+Answer: Defining the program
+------
+260: Question: Earth Hour was a campaign launched by which organization?
+Answer: World Wildlife Fund
+------
+261: Question: What distinguishes coercive diplomacy from military force?
+Answer: Coercive diplomacy constitutes the threats of limited force to induce adversary's incentive to comply with the coercer's demands. It is an influence strategy that is intended to obtain compliance: the use of force to defeat an opponent first does not count. It leaves an element of choice with the target to comply, or to continue.
+------
+262: Question: Which of the following is the best lens through which to investigate the role of child soldiers?
+Answer: Children have political subjecthood that is missed when they are considered as passive victims of warfare.
+------
+263: Question: In order to become securitized, a threat must be presented in which of these ways?
+Answer: As an urgent threat to the survival of the referent object, so serious that it legitimises the employment of extraordinary action in response.
+------
+264: Question: How can we best describe the relationship between the state-centric approach and the concept of human security?
+Answer: By adopting the framework of human security, the limitations of the realist state-centric approach become evident. Whilst human security defines the referent object as the person or population, state-centric approaches prioritise the security of the state, de-prioritizing the pursuit of human security.
+------
+265: Question: What are the frameworks of analysis within which terrorism has been considered (as of 2020)?
+Answer: Terrorism can be viewed as a problem to be resolved by military means (war on terrorism), by normal police techniques (terrorism as crime), or as a medical problem with underlying causes and symptoms (terrorism as disease).
+------
+266: Question: Which of the following did the post-war welfare state of 1948 not aim to provide:
+Answer: a minimum wage
+------
+267: Question: What does Berger (1963) describe as a metaphor for social reality?
+Answer: a puppet theatre
+------
+268: Question: The shift from 'civil religion' to 'common religion' means that:
+Answer: despite the weakening of traditional authority, our everyday lives and 'common sense' remain shaped by religious beliefs and values
+------
+269: Question: The term 'hegemony' refers to:
+Answer: a dominant ideology that legitimates economic, political and cultural power
+------
+270: Question: Which of the following is not a problem associated with official statistics on strike action?
+Answer: most strikes go unnoticed by employers and the mass media
+------
+271: Question: How did the 2008 financial crisis affect America's international reputation?
+Answer: It damaged support for the US model of political economy and capitalism
+------
+272: Question: How did NSC-68 change U.S. strategy?
+Answer: All of the above
+------
+273: Question: The realm of policy decisions concerned primarily with relations between the United States and the rest of the world is known as
+Answer: foreign policy.
+------
+274: Question: How do Defensive Realism and Offensive Realism differ in their explanation of state behaviour?
+Answer: Defensive realists believe states are security maximizers, while Offensive realists believe states to be power maximizers
+------
+275: Question: How did Donald Trump attack globalization in the 2016 campaign?
+Answer: Liberal elites had encouraged globalization, while 'ordinary Americans' lost jobs because of it
+------
+276: Question: Why are parvoviruses a highly impactful parasite?
+Answer: Because they have no nucleic acid
+------
+277: Question: Which of the following is a morphological characteristic of the paramyxoviruses.
+Answer: Fragile viruses often visualised with RNA spewing from the inside
+------
+278: Question: A key factor facilitating the application of nested case-control studies from the MACS was:
+Answer: Establishment of a repository of biologic specimens
+------
+279: Question: The most important goal of a behavioral intervention is:
+Answer: Sustained behavior change
+------
+280: Question: The median survival time to AIDS and death was established by following:
+Answer: Seroconverters
+------
+281: Question:  What is the sign of the covenant for Jewish males?
+Answer: Circumcision
+------
+282: Question: What is the Second Gem in Buddhism?
+Answer: The Dharma
+------
+283: Question:  In which dynasty was the "Mandate of Heaven" developed to legitimatize the new rulers?
+Answer: Zhou
+------
+284: Question:  Which Japanese government promoted a kind of national cult based on the emperor and his associations with kami?
+Answer: Meiji
+------
+285: Question: How can the Upanishads be characterized?
+Answer: Philosophical texts
+------
