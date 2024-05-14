@@ -42,6 +42,10 @@ def parse_args():
         help="The maximum total sequence length (prompt+completion) of each training example.",
     )
     parser.add_argument(
+        "--mask_dir",
+        type=str,
+    )
+    parser.add_argument(
         "--model_name",
         type=str,
         help="Batch size (per device) for the training dataloader.",
@@ -83,9 +87,7 @@ print(f"num_shots: {args.num_shots}")
 sys.stdout.flush()
 
 if args.eval_dataset == "test":
-    mask_dir = (
-        "/u/area/ddoimo/ddoimo/finetuning_llm/open-instruct/open_instruct/my_utils"
-    )
+    mask_dir = args.mask_dir
     if args.samples_subject == 100:
         dataset_mask = np.load(f"{mask_dir}/test_mask_100.npy")
     if args.samples_subject == 200:
