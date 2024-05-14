@@ -32,5 +32,4 @@ python diego/analysis/repr_comparison.py \
     --eval_dataset "test" \
     --num_shots 0 \
     --finetuned_mode "test_balanced" \
-
     #--finetuned_mode "test_balanced" \
