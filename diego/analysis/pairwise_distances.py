@@ -3,6 +3,7 @@ import numpy as np
 from sklearn.metrics import pairwise_distances_chunked
 import math
 import copy
+import sys
 
 
 def compute_distances(
@@ -33,6 +34,8 @@ def compute_distances(
         rs np.ndarray(float)): the FULL matrix of the distances of the neighbors involved in the mu estimates
     """
 
+    print(n_neighbors, range_scaling)
+    sys.stdout.flush()
     reduce_func = partial(
         _kneighbors_reduce_func,
         n_neighbors=n_neighbors,
@@ -93,15 +96,16 @@ def _kneighbors_reduce_func(
     neigh : array of shape (n_samples_chunk, n_neighbors)
             The neighbors indices.
     """
-
     if range_scaling is not None:
         "maybe faster without argpartition"
         max_step = int(math.log(range_scaling, 2))
         steps = np.array([2**i for i in range(max_step)])
+
         sample_range = np.arange(dist.shape[0])[:, None]
         if argsort:
             neigh_ind = np.argsort(dist, axis=1)[:, :range_scaling]
         else:
+
             neigh_ind = np.argpartition(dist, steps[-1], axis=1)
             neigh_ind = neigh_ind[:, : steps[-1] + 1]
             # argpartition doesn't guarantee sorted order, so we sort again

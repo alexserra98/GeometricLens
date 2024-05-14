@@ -13,86 +13,7 @@ from dadapy import data
 from sklearn.metrics import adjusted_mutual_info_score, adjusted_rand_score
 import warnings
 
-
-def return_data_overlap(indices_base, indices_other, k=30, subjects=None):
-
-    assert indices_base.shape[0] == indices_other.shape[0]
-    ndata = indices_base.shape[0]
-
-    overlaps_full = c_ov._compute_data_overlap(
-        ndata, k, indices_base.astype(int), indices_other.astype(int)
-    )
-
-    overlaps = np.mean(overlaps_full)
-    if subjects is not None:
-        overlaps = {}
-        for subject in np.unique(subjects):
-            mask = subject == subjects
-            overlaps[subject] = np.mean(overlaps_full[mask])
-
-    return overlaps
-
-
-def _label_imbalance_helper(labels, k, class_fraction):
-    if k is not None:
-        max_k = k
-        k_per_sample = np.array([k for _ in range(len(labels))])
-
-    k_per_class = {}
-    class_count = Counter(labels)
-    # potentially overwrites k_per_sample
-    if class_fraction is not None:
-        for label, count in class_count.items():
-            class_k = int(count * class_fraction)
-            k_per_class[label] = class_k
-            if class_k == 0:
-                k_per_class[label] = 1
-                warnings.warn(
-                    f" max_k < 1 for label {label}. max_k set to 1.\
-                    Consider increasing class_fraction.",
-                    stacklevel=2,
-                )
-        max_k = max([k for k in k_per_class.values()])
-        k_per_sample = np.array([k_per_class[label] for label in labels])
-
-    class_weights = {label: 1 / count for label, count in class_count.items()}
-    sample_weights = np.array([class_weights[label] for label in labels])
-
-    return k_per_sample, sample_weights, max_k
-
-
-def return_label_overlap(
-    dist_indices,
-    labels,
-    k=None,
-    avg=True,
-    class_fraction=None,
-    weighted=True,
-):
-    k_per_sample, sample_weights, max_k = _label_imbalance_helper(
-        labels, k, class_fraction
-    )
-
-    assert len(labels) == dist_indices.shape[0]
-
-    neighbor_index = dist_indices[:, 1 : max_k + 1]
-    ground_truth_labels = np.repeat(np.array([labels]).T, repeats=max_k, axis=1)
-    overlaps = np.equal(np.array(labels)[neighbor_index], ground_truth_labels)
-
-    if class_fraction is not None:
-        nearest_neighbor_rank = np.arange(max_k)[np.newaxis, :]
-        # should this overlap entry be discarded?
-        mask = nearest_neighbor_rank >= k_per_sample[:, np.newaxis]
-        # mask out the entries to be discarded
-        overlaps[mask] = False
-
-    overlaps = overlaps.sum(axis=1) / k_per_sample
-    if avg and weighted:
-        overlaps = np.average(overlaps, weights=sample_weights)
-    elif avg:
-        overlaps = np.mean(overlaps)
-
-    return overlaps
+from utils import return_data_overlap, return_label_overlap
 
 
 def parse_args():
@@ -126,7 +47,7 @@ def parse_args():
     parser.add_argument("--samples_subject", type=int, default=200)
     parser.add_argument("--num_shots", type=int, default=None)
     parser.add_argument("--ckpt", type=int, default=None)
-    args = parser.parse_args()
+    args = parser.parse_args([])
     return args
 
 
@@ -134,10 +55,21 @@ def parse_args():
 
 
 args = parse_args()
+
+
 os.makedirs(args.results_path, exist_ok=True)
 
 base_dir = "/orfeo/cephfs/scratch/area/ddoimo/open/geometric_lens/repo/results"
 
+
+args.finetuned_mode = "dev_val_balanced_20samples"
+args.epochs = 4
+args.model_name = "llama-3-8b"
+args.eval_dataset = "test"
+args.samples_subject = 200
+args.mask_dir = (
+    "/home/diego/Documents/area_science/ricerca/open/geometric_lens/repo/diego/analysis"
+)
 
 print(f"processing model: {args.model_name}")
 print(f"processing epochs: {args.epochs}")
@@ -174,7 +106,9 @@ if args.model_name == "llama-3-8b":
 elif args.model_name == "llama-2-13b":
     nlayers = 42
 else:
-    assert False, f"wrong model name {args.model_name}, expected llama-3-8b or llama-2-13b"
+    assert (
+        False
+    ), f"wrong model name {args.model_name}, expected llama-3-8b or llama-2-13b"
 
 
 overlaps = defaultdict(list)
@@ -202,7 +136,9 @@ for epoch in ckpts[::-1]:
 
         else:
             base_path = f"{base_dir}/finetuned_{args.finetuned_mode}/evaluated_{args.eval_dataset}/{args.model_name}/{args.epochs}epochs/epoch_{epoch}"
-            name = f"finetuned_{args.finetuned_mode}_eval_{args.eval_dataset}_epoch{args.epochs}"
+
+            base_path = "/home/diego/Documents/area_science/ricerca/open/geometric_lens/repo/repr_tmp"
+            # name = f"finetuned_{args.finetuned_mode}_eval_{args.eval_dataset}_epoch{args.epochs}"
 
         base_repr = torch.load(f"{base_path}/l{layer}_target.pt")
         base_repr = base_repr.to(torch.float64).numpy()
@@ -244,63 +180,63 @@ for epoch in ckpts[::-1]:
         letter_label = letter_label[indices]
         # ***********************************************************************
 
-        maxk = 300
+        maxk = 1000
         assert indices.shape[0] > maxk, (indices.shape[0], maxk)
         distances_base, dist_index_base, mus, _ = compute_distances(
             X=base_repr,
             n_neighbors=maxk + 1,
             n_jobs=1,
             working_memory=2048,
-            range_scaling=maxk + 2,
+            range_scaling=1024,
             argsort=False,
         )
 
-        for halo in [True, False]:
-            is_halo = ""
-            if halo:
-                is_halo = "-halo"
-            for z in [0.5, 1, 1.6, 2.1]:
+        # for halo in [True, False]:
+        #     is_halo = ""
+        #     if halo:
+        #         is_halo = "-halo"
+        #     for z in [0.5, 1, 1.6, 2.1]:
 
-                d = data.Data(distances=(distances_base, dist_index_base))
-                ids, _, _ = d.return_id_scaling_gride(range_max=100)
-                d.set_id(ids[3])
-                # intrinsic_dim[f"ids-ep{epoch}"].append(ids)
-                d.compute_density_kNN(k=16)
-                assignment = d.compute_clustering_ADP(Z=z, halo=halo)
+        #         d = data.Data(distances=(distances_base, dist_index_base))
+        #         ids, _, _ = d.return_id_scaling_gride(range_max=100)
+        #         d.set_id(ids[3])
+        #         # intrinsic_dim[f"ids-ep{epoch}"].append(ids)
+        #         d.compute_density_kNN(k=16)
+        #         assignment = d.compute_clustering_ADP(Z=z, halo=halo)
 
-                mask = np.ones(len(assignment), dtype=bool)
-                if halo:
-                    mask = assignment != -1
+        #         mask = np.ones(len(assignment), dtype=bool)
+        #         if halo:
+        #             mask = assignment != -1
 
-                clusters[f"subjects-ami-ep{epoch}-z{z}{is_halo}"].append(
-                    adjusted_mutual_info_score(assignment[mask], subj_label[mask])
-                )
+        #         clusters[f"subjects-ami-ep{epoch}-z{z}{is_halo}"].append(
+        #             adjusted_mutual_info_score(assignment[mask], subj_label[mask])
+        #         )
 
-                clusters[f"subjects-ari-ep{epoch}-z{z}{is_halo}"].append(
-                    adjusted_rand_score(assignment[mask], subj_label[mask])
-                )
+        #         clusters[f"subjects-ari-ep{epoch}-z{z}{is_halo}"].append(
+        #             adjusted_rand_score(assignment[mask], subj_label[mask])
+        #         )
 
-                clusters[f"letters-ami-ep{epoch}-z{z}{is_halo}"].append(
-                    adjusted_mutual_info_score(assignment[mask], letter_label[mask])
-                )
+        #         clusters[f"letters-ami-ep{epoch}-z{z}{is_halo}"].append(
+        #             adjusted_mutual_info_score(assignment[mask], letter_label[mask])
+        #         )
 
-                clusters[f"letters-ari-ep{epoch}-z{z}{is_halo}"].append(
-                    adjusted_rand_score(assignment[mask], letter_label[mask])
-                )
+        #         clusters[f"letters-ari-ep{epoch}-z{z}{is_halo}"].append(
+        #             adjusted_rand_score(assignment[mask], letter_label[mask])
+        #         )
 
         for class_fraction in [0.3, 0.5]:
             overlaps[f"subjects-ep{epoch}_{class_fraction}"].append(
                 return_label_overlap(
                     dist_indices=dist_index_base,
-                    labels=subj_label,
+                    labels=list(subj_label),
                     class_fraction=class_fraction,
                 )
             )
-
+        for class_fraction in [0.03, 0.1, 0.3]:
             overlaps[f"letters-ep{epoch}_{class_fraction}"].append(
                 return_label_overlap(
                     dist_indices=dist_index_base,
-                    labels=letter_label,
+                    labels=list(letter_label),
                     class_fraction=class_fraction,
                 )
             )
