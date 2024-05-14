@@ -42,7 +42,7 @@ def parse_args():
         help="The maximum total sequence length (prompt+completion) of each training example.",
     )
     parser.add_argument(
-        "--model",
+        "--model_name",
         type=str,
         help="Batch size (per device) for the training dataloader.",
     )
@@ -66,7 +66,6 @@ def parse_args():
     )
     parser.add_argument("--samples_subject", type=int, default=200)
     parser.add_argument("--ckpt", type=int, default=None)
-    parser.add_argument("--balanced", action="store_true")
     args = parser.parse_args()
     return args
 
@@ -77,7 +76,7 @@ os.makedirs(args.results_path, exist_ok=True)
 base_dir = "/orfeo/cephfs/scratch/area/ddoimo/open/geometric_lens/repo/results"
 
 
-print(f"processing model: {args.model}")
+print(f"processing model: {args.model_name}")
 print(f"processing epochs: {args.epochs}")
 print(f"processing daset: {args.eval_dataset}")
 print(f"num_shots: {args.num_shots}")
@@ -108,19 +107,28 @@ else:
 ov_repr = defaultdict(list)
 cluster_comparison = defaultdict(list)
 
+
+if args.model_name == "llama3-8b":
+    nlayers = 34
+elif args.model_name == "llama2-13b":
+    nlayers = 42
+else:
+    assert False, "wrong model name"
+
+
 for epoch in ckpts[::-1]:
     # layer 0 is all overlapped
-    for layer in range(1, 34):
+    for layer in range(1, nlayers):
         print(f"processing {args.num_shots} epoch {epoch} layer {layer}")
         sys.stdout.flush()
 
         # ************************************
 
-        pretrained_path = f"{base_dir}/mmlu/{args.model}/{args.num_shots}shot"
+        pretrained_path = f"{base_dir}/mmlu/{args.model_name}/{args.num_shots}shot"
         base_repr = torch.load(f"{pretrained_path}/l{layer}_target.pt")
         base_repr = base_repr.to(torch.float64).numpy()
 
-        finetuned_path = f"{base_dir}/finetuned_{args.finetuned_mode}/evaluated_{args.eval_dataset}/{args.model}/{args.epochs}epochs/epoch_{epoch}"
+        finetuned_path = f"{base_dir}/finetuned_{args.finetuned_mode}/evaluated_{args.eval_dataset}/{args.model_name}/{args.epochs}epochs/epoch_{epoch}"
         finetuned_repr = torch.load(f"{finetuned_path}/l{layer}_target.pt")
         finetuned_repr = finetuned_repr.to(torch.float64).numpy()
 
@@ -237,13 +245,13 @@ for epoch in ckpts[::-1]:
                 ov_repr[f"ep{epoch}_{subject}_k30"].append(ov_repr_tmp[subject])
 
     with open(
-        f"{args.results_path}/overlaps_{args.model}_finetuned_{args.finetuned_mode}_eval_{args.eval_dataset}{is_balanced}_epoch{args.epochs}_{args.num_shots}.pkl",
+        f"{args.results_path}/overlaps_{args.model_name}_finetuned_{args.finetuned_mode}_eval_{args.eval_dataset}{is_balanced}_epoch{args.epochs}_{args.num_shots}.pkl",
         "wb",
     ) as f:
         pickle.dump(ov_repr, f, protocol=pickle.HIGHEST_PROTOCOL)
 
     with open(
-        f"{args.results_path}/cluster_comparison_{args.model}_finetuned_{args.finetuned_mode}_eval_{args.eval_dataset}{is_balanced}_epoch{args.epochs}_{args.num_shots}.pkl",
+        f"{args.results_path}/cluster_comparison_{args.model_name}_finetuned_{args.finetuned_mode}_eval_{args.eval_dataset}{is_balanced}_epoch{args.epochs}_{args.num_shots}.pkl",
         "wb",
     ) as f:
         pickle.dump(cluster_comparison, f, protocol=pickle.HIGHEST_PROTOCOL)
