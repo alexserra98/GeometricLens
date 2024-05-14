@@ -25,11 +25,10 @@ export PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"
 
 
 python diego/analysis/repr_comparison.py \
-    --model "llama-3-8b" \
+    --model_name "llama-3-8b" \
     --results_path "diego/analysis/results" \
     --epochs 4 \
     --eval_dataset "test" \
-    --question_sampled \
-    --num_shots 0
+    --num_shots 0 \
+    --finetuned_mode "dev_val_balanced_20samples" \
     #--finetuned_mode "test_balanced" \
-    #--num_shots 0
