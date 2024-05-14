@@ -157,7 +157,7 @@ class TensorStorageManager:
                 storage_path = Path(
                     f"/orfeo/cephfs/scratch/area/ddoimo/open"
                     f"/geometric_lens/repo/results/{folder}"
-                    f"/{model_name}/{num_of_epochs}epochs"
+                    f"/{model_name[:-3]}/{num_of_epochs}epochs"
                     f"/epoch_{num_of_epochs}"
                 )
 
@@ -251,10 +251,10 @@ class TensorStorageManager:
         except DataNotFoundError as e:
             # Handle missing data but continue the program
             print(e)
-            return None
+            raise e 
         except UnknownError as e:
             print(e)
-            raise
+            raise e
 
         if self.instances_per_sub == 100:
             mask = np.load(
@@ -293,7 +293,7 @@ class TensorStorageManager:
         except DataNotFoundError as e:
             # Handle missing data but continue the program
             print(e)
-            return None
+            raise
         except UnknownError as e:
             # Handle generic error and stop the program
             print(e)

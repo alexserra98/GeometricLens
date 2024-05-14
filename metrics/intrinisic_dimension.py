@@ -45,7 +45,7 @@ class IntrinsicDimension(HiddenStatesMetrics):
                         query, self.storage_logic
                     )
                 except DataNotFoundError as e:
-                    module_logger.error(f"Error processing query {query_dict}: {e}")
+                    module_logger.error(f"Error processing query {query_dict} data not found: {e}")
                     continue
                 except UnknownError as e:
                     module_logger.error(f"Error processing query {query_dict}: {e}")
