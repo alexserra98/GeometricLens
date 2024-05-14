@@ -47,7 +47,7 @@ def parse_args():
     parser.add_argument("--samples_subject", type=int, default=200)
     parser.add_argument("--num_shots", type=int, default=None)
     parser.add_argument("--ckpt", type=int, default=None)
-    args = parser.parse_args([])
+    args = parser.parse_args()
     return args
 
 
@@ -62,14 +62,14 @@ os.makedirs(args.results_path, exist_ok=True)
 base_dir = "/orfeo/cephfs/scratch/area/ddoimo/open/geometric_lens/repo/results"
 
 
-args.finetuned_mode = "dev_val_balanced_20samples"
-args.epochs = 4
-args.model_name = "llama-3-8b"
-args.eval_dataset = "test"
-args.samples_subject = 200
-args.mask_dir = (
-    "/home/diego/Documents/area_science/ricerca/open/geometric_lens/repo/diego/analysis"
-)
+# args.finetuned_mode = "dev_val_balanced_20samples"
+# args.epochs = 4
+# args.model_name = "llama-3-8b"
+# args.eval_dataset = "test"
+# args.samples_subject = 200
+# args.mask_dir = (
+#     "/home/diego/Documents/area_science/ricerca/open/geometric_lens/repo/diego/analysis"
+# )
 
 print(f"processing model: {args.model_name}")
 print(f"processing epochs: {args.epochs}")
@@ -191,38 +191,38 @@ for epoch in ckpts[::-1]:
             argsort=False,
         )
 
-        # for halo in [True, False]:
-        #     is_halo = ""
-        #     if halo:
-        #         is_halo = "-halo"
-        #     for z in [0.5, 1, 1.6, 2.1]:
+        for halo in [True, False]:
+            is_halo = ""
+            if halo:
+                is_halo = "-halo"
+            for z in [0.5, 1, 1.6, 2.1]:
 
-        #         d = data.Data(distances=(distances_base, dist_index_base))
-        #         ids, _, _ = d.return_id_scaling_gride(range_max=100)
-        #         d.set_id(ids[3])
-        #         # intrinsic_dim[f"ids-ep{epoch}"].append(ids)
-        #         d.compute_density_kNN(k=16)
-        #         assignment = d.compute_clustering_ADP(Z=z, halo=halo)
+                d = data.Data(distances=(distances_base, dist_index_base))
+                ids, _, _ = d.return_id_scaling_gride(range_max=100)
+                d.set_id(ids[3])
+                # intrinsic_dim[f"ids-ep{epoch}"].append(ids)
+                d.compute_density_kNN(k=16)
+                assignment = d.compute_clustering_ADP(Z=z, halo=halo)
 
-        #         mask = np.ones(len(assignment), dtype=bool)
-        #         if halo:
-        #             mask = assignment != -1
+                mask = np.ones(len(assignment), dtype=bool)
+                if halo:
+                    mask = assignment != -1
 
-        #         clusters[f"subjects-ami-ep{epoch}-z{z}{is_halo}"].append(
-        #             adjusted_mutual_info_score(assignment[mask], subj_label[mask])
-        #         )
+                clusters[f"subjects-ami-ep{epoch}-z{z}{is_halo}"].append(
+                    adjusted_mutual_info_score(assignment[mask], subj_label[mask])
+                )
 
-        #         clusters[f"subjects-ari-ep{epoch}-z{z}{is_halo}"].append(
-        #             adjusted_rand_score(assignment[mask], subj_label[mask])
-        #         )
+                clusters[f"subjects-ari-ep{epoch}-z{z}{is_halo}"].append(
+                    adjusted_rand_score(assignment[mask], subj_label[mask])
+                )
 
-        #         clusters[f"letters-ami-ep{epoch}-z{z}{is_halo}"].append(
-        #             adjusted_mutual_info_score(assignment[mask], letter_label[mask])
-        #         )
+                clusters[f"letters-ami-ep{epoch}-z{z}{is_halo}"].append(
+                    adjusted_mutual_info_score(assignment[mask], letter_label[mask])
+                )
 
-        #         clusters[f"letters-ari-ep{epoch}-z{z}{is_halo}"].append(
-        #             adjusted_rand_score(assignment[mask], letter_label[mask])
-        #         )
+                clusters[f"letters-ari-ep{epoch}-z{z}{is_halo}"].append(
+                    adjusted_rand_score(assignment[mask], letter_label[mask])
+                )
 
         for class_fraction in [0.3, 0.5]:
             overlaps[f"subjects-ep{epoch}_{class_fraction}"].append(
