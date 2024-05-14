@@ -261,30 +261,30 @@ class PointClustering(HiddenStatesMetrics):
         rows = []
 
         couples_list = [
-            ("meta-llama-Llama-3-70b-hf", "meta-llama-Llama-3-70b-hf"),
-            ("meta-llama-Llama-2-70b-hf", "meta-llama-Llama-2-70b-hf"),
-            ("meta-llama-Llama-2-70b-hf", "meta-llama-Llama-2-70b-chat-hf"),
-            ("meta-llama-Llama-3-70b-hf", "meta-llama-Llama-3-70b-chat-hf"),
-            ("meta-llama-Llama-2-13b-hf", "meta-llama-Llama-2-13b-hf"),
-            ("meta-llama-Llama-2-13b-hf", "meta-llama-Llama-2-13b-chat-hf"),
-            ("meta-llama-Llama-2-13b-hf", "meta-llama-Llama-2-13b-hf"),
-            ("meta-llama-Llama-2-13b-hf", "meta-llama-Llama-2-13b-ft-hf"),
-            ("meta-llama-Llama-2-7b-hf", "meta-llama-Llama-2-7b-hf"),
-            ("meta-llama-Llama-2-7b-hf", "meta-llama-Llama-2-7b-chat-hf"),
-            ("meta-llama-Llama-3-8b-hf", "meta-llama-Llama-3-8b-hf"),
-            ("meta-llama-Llama-3-8b-hf", "meta-llama-Llama-3-8b-chat-hf"),
-            ("meta-llama-Llama-3-8b-hf", "meta-llama-Llama-3-8b-ft-hf"),
+            ("llama-3-70b", "llama-3-70b"),
+            ("llama-2-70b", "llama-2-70b"),
+            ("llama-2-70b", "llama-2-70b-chat"),
+            ("llama-3-70b", "llama-3-70b-chat"),
+            ("llama-2-13b", "llama-2-13b-hf"),
+            ("llama-2-13b", "llama-2-13b-chat"),
+            ("llama-2-13b", "llama-2-13b"),
+            ("llama-2-13b", "llama-2-13b-ft"),
+            ("llama-2-7b", "llama-2-7b"),
+            ("llama-2-7b", "llama-2-7b-chat"),
+            ("llama-3-8b", "llama-3-8b"),
+            ("llama-3-8b", "llama-3-8b-chat"),
+            ("llama-3-8b", "llama-3-8b-ft"),
         ]
 
-        tsm = self.tensor_storage        
-        for z in tqdm.tqdm(iter_list, desc="Computing overlaps k"):
-            for couples in self.pair_names(self.df["model_name"].unique().tolist()):
+        tsm = self.tensor_storage
+        for z in iter_list:
+            for couples in tqdm.tqdm(couples_list, desc="Computing couple"):
                 for method in ["last"]:  # self.df["method"].unique().tolist():
                     if couples[0] == couples[1]:
                         iterlist = [("0", "0"), ("0", "5")]
                     else:
                         iterlist = [("0", "0"), ("0", "5"), ("5", "5"), ("5", "0")]
-                    module_logger.debug(f"Processing {couples} with k {k}")
+                    module_logger.debug(f"Processing {couples} with k {z}")
                     shot_number = "4" if "70" in couples[0] else "5"
                     if couples[0] == couples[1]:
                         iterlist = [("0", shot_number)]
@@ -360,10 +360,11 @@ class PointClustering(HiddenStatesMetrics):
 
                         except Exception as e:
                             module_logger.error(
-                                f"Error computing overlap for {couples} with k {k}. Error: {e}"
+                                f"Error computing overlap for {couples} with k {z}. Error: {e}"
                             )
                             raise e
-                        rows.append([
+                        rows.append(
+                            [
                                 z,
                                 couples,
                                 method,
@@ -391,7 +392,9 @@ class PointClustering(HiddenStatesMetrics):
                                     "f1_score",
                                 ],
                             )
-                            df_temp.to_pickle(check_point_dir / f"checkpoint_point_overlap.pkl")
+                            df_temp.to_pickle(
+                                check_point_dir / f"checkpoint_point_overlap.pkl"
+                            )
 
         df = pd.DataFrame(
             rows,
@@ -408,7 +411,6 @@ class PointClustering(HiddenStatesMetrics):
             ],
         )
         return df
-
 
     def pair_names(self, names_list):
         """
@@ -450,7 +452,10 @@ class PointClustering(HiddenStatesMetrics):
         if self.parallel:
             with Parallel(n_jobs=_NUM_PROC) as parallel:
                 results = parallel(
-                    delayed(process_layer)(layer) for layer in range(1, number_of_layers)
+                    delayed(process_layer)(layer)
+                    for layer in tqdm.tqdm(
+                        range(number_of_layers), desc="Processing layers"
+                    )
                 )
         else:
             results = []
@@ -471,25 +476,24 @@ class PointClustering(HiddenStatesMetrics):
         data_i = Data(input_i[:, layer, :])
         data_j = Data(input_j[:, layer, :])
 
-
         if self.variations["point_clustering"] == "norm":
             data_i = data_i / np.linalg.norm(data_i, axis=1, keepdims=True)
             clusters_i = self.compute_cluster_assignment(data_i, z)
-        
+
             data_j = data_j / np.linalg.norm(data_j, axis=1, keepdims=True)
             clusters_j = self.compute_cluster_assignment(data_j, z)
-        
+
         else:
             clusters_i = self.compute_cluster_assignment(data_i, z)
             clusters_j = self.compute_cluster_assignment(data_j, z)
-        
+
         layer_results = {}
-        
+
         for key, func in _COMPARISON_METRICS.items():
             layer_results[key] = func(clusters_i, clusters_j)
 
         return layer_results
-    
+
     def compute_cluster_assignment(self, base_repr, z):
         data = Data(coordinates=base_repr, maxk=100)
         ids, _, _ = data.return_id_scaling_gride(range_max=100)
@@ -497,6 +501,7 @@ class PointClustering(HiddenStatesMetrics):
         data.compute_density_kNN(k=16)
         clusters_assignment = data.compute_clustering_ADP(Z=z)
         return clusters_assignment
+
 
 def balance_by_label_within_groups(df, group_field, label_field):
     """

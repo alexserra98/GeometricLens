@@ -44,23 +44,24 @@ class PointOverlap(HiddenStatesMetrics):
         rows = []
 
         couples_list = [
-            ("meta-llama-Llama-3-70b-hf", "meta-llama-Llama-3-70b-hf"),
-            ("meta-llama-Llama-2-70b-hf", "meta-llama-Llama-2-70b-hf"),
-            ("meta-llama-Llama-2-70b-hf", "meta-llama-Llama-2-70b-chat-hf"),
-            ("meta-llama-Llama-3-70b-hf", "meta-llama-Llama-3-70b-chat-hf"),
-            ("meta-llama-Llama-2-13b-hf", "meta-llama-Llama-2-13b-hf"),
-            ("meta-llama-Llama-2-13b-hf", "meta-llama-Llama-2-13b-chat-hf"),
-            ("meta-llama-Llama-2-13b-hf", "meta-llama-Llama-2-13b-hf"),
-            ("meta-llama-Llama-2-13b-hf", "meta-llama-Llama-2-13b-ft-hf"),
-            ("meta-llama-Llama-2-7b-hf", "meta-llama-Llama-2-7b-hf"),
-            ("meta-llama-Llama-2-7b-hf", "meta-llama-Llama-2-7b-chat-hf"),
-            ("meta-llama-Llama-3-8b-hf", "meta-llama-Llama-3-8b-hf"),
-            ("meta-llama-Llama-3-8b-hf", "meta-llama-Llama-3-8b-chat-hf"),
-            ("meta-llama-Llama-3-8b-hf", "meta-llama-Llama-3-8b-ft-hf"),
+            ("llama-3-70b", "llama-3-70b"),
+            ("llama-2-70b", "llama-2-70b"),
+            ("llama-2-70b", "llama-2-70b-chat"),
+            ("llama-3-70b", "llama-3-70b-chat"),
+            ("llama-2-13b", "llama-2-13b-hf"),
+            ("llama-2-13b", "llama-2-13b-chat"),
+            ("llama-2-13b", "llama-2-13b"),
+            ("llama-2-13b", "llama-2-13b-ft"),
+            ("llama-2-7b", "llama-2-7b"),
+            ("llama-2-7b", "llama-2-7b-chat"),
+            ("llama-3-8b", "llama-3-8b"),
+            ("llama-3-8b", "llama-3-8b-chat"),
+            ("llama-3-8b", "llama-3-8b-ft"),
         ]
-        #couples_list = [
+
+        # couples_list = [
         #    ("meta-llama-Llama-3-8b-hf", "meta-llama-Llama-3-8b-chat-hf"),
-        #]
+        # ]
 
         tsm = self.tensor_storage
         for k in tqdm.tqdm(iter_list, desc="Computing overlaps k"):
@@ -167,7 +168,9 @@ class PointOverlap(HiddenStatesMetrics):
                                     "point_overlap",
                                 ],
                             )
-                            df_temp.to_pickle(check_point_dir / f"checkpoint_point_overlap.pkl")
+                            df_temp.to_pickle(
+                                check_point_dir / f"checkpoint_point_overlap.pkl"
+                            )
 
         df = pd.DataFrame(
             rows,
@@ -297,19 +300,15 @@ class LabelOverlap(HiddenStatesMetrics):
             ):
                 module_logger.debug(f"Processing query {query_dict}")
                 query = DataFrameQuery(query_dict)
-                try:            
+                try:
                     hidden_states, _, hidden_states_df = tsm.retrieve_tensor(
                         query, self.storage_logic
                     )
                 except DataNotFoundError as e:
-                    module_logger.error(
-                        f"Data not found for {query}. Error: {e}"
-                    )
+                    module_logger.error(f"Data not found for {query}. Error: {e}")
                     continue
                 except UnknownError as e:
-                    module_logger.error(
-                        f"Unknown error for {query}. Error: {e}"
-                    )
+                    module_logger.error(f"Unknown error for {query}. Error: {e}")
                     raise e
                 if self.variations["label_overlap"] == "balanced_letter":
                     hidden_states_df.reset_index(inplace=True)

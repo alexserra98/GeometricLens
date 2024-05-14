@@ -38,6 +38,7 @@ class MetricName(Enum):
     POINT_OVERLAP = ("metrics.overlap", "PointOverlap")
     PROBE = ("metrics.probe", "LinearProbe")
     LABEL_CLUSTERING = ("metrics.clustering", "LabelClustering")
+    POINT_CLUSTERING = ("metrics.clustering", "PointClustering")
 
 
 def metric_function(name):
