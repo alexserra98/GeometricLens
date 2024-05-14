@@ -8,28 +8,9 @@ import pickle
 
 import os
 import argparse
-from collections import Counter
 from dadapy import data
 from sklearn.metrics import adjusted_mutual_info_score, adjusted_rand_score
-
-
-def return_data_overlap(indices_base, indices_other, k=30, subjects=None):
-
-    assert indices_base.shape[0] == indices_other.shape[0]
-    ndata = indices_base.shape[0]
-
-    overlaps_full = c_ov._compute_data_overlap(
-        ndata, k, indices_base.astype(int), indices_other.astype(int)
-    )
-
-    overlaps = np.mean(overlaps_full)
-    if subjects is not None:
-        overlaps = {}
-        for subject in np.unique(subjects):
-            mask = subject == subjects
-            overlaps[subject] = np.mean(overlaps_full[mask])
-
-    return overlaps
+from utils import return_data_overlap
 
 
 def parse_args():
@@ -40,6 +21,10 @@ def parse_args():
         "--finetuned_mode",
         type=str,
         help="The maximum total sequence length (prompt+completion) of each training example.",
+    )
+    parser.add_argument(
+        "--pretrained_mode",
+        type=str,
     )
     parser.add_argument(
         "--mask_dir",
@@ -77,7 +62,7 @@ def parse_args():
 # **************************************************************************************************
 
 args = parse_args()
-args.results_path += f"/{args.model_name}"
+args.results_path += f"/finetuned/{args.model_name}"
 os.makedirs(args.results_path, exist_ok=True)
 
 base_dir = "/orfeo/cephfs/scratch/area/ddoimo/open/geometric_lens/repo/results"
@@ -119,6 +104,8 @@ else:
     assert False, "wrong model name"
 
 
+assert args.pretrained_mode in ["mmlu", "random_order"]
+
 if dataset_mask is not None:
     is_balanced = f"_balanced{args.samples_subject}"
 
@@ -131,7 +118,9 @@ for epoch in ckpts[::-1]:
 
         # ************************************
 
-        pretrained_path = f"{base_dir}/mmlu/{args.model_name}/{args.num_shots}shot"
+        pretrained_path = (
+            f"{base_dir}/{args.pretrained_mode}/{args.model_name}/{args.num_shots}shot"
+        )
         base_repr = torch.load(f"{pretrained_path}/l{layer}_target.pt")
         base_repr = base_repr.to(torch.float64).numpy()
 
