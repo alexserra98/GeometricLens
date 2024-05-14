@@ -25,10 +25,10 @@ export PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"
 
 #export CUDA_LAUNCH_BLOCKING=1
 
-model_name=llama-3-8b
-path=llama_v3
+model_name=llama-2-13b
+path=llama_v2
 
-#model_name=mistral-1-7b-chat
+#model_name=mistral-1-7b
 #path=mistral_v1
 
 torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
@@ -46,9 +46,10 @@ torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
     --use_last_token \
     --max_seq_len 4090 \
     --split "test" \
-    --num_few_shots 5 \
-    --prompt_search \
-    --skip_few_shot_options 
+    --num_few_shots 2 \
+    --prompt_search
+    #--random_order \
+    #--skip_choices 
     #--wrong_answers  
     #--declarative 
     #--random_subject

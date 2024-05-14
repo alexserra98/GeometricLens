@@ -176,8 +176,8 @@ def compute_id(
 
         accelerator.print("exact_match macro:", acc_pred["macro"])
         accelerator.print("exact_match micro:", acc_pred["micro"])
-        for subject, acc in acc_pred["subjects"]:
-            accelerator.print(f"{subject}: {acc_pred['subjects'][subject]:.3f}\n")
+        for subject, acc in acc_pred["subjects"].items():
+            accelerator.print(f"{subject}: {acc:.3f}\n")
 
         if prompt_search:
             examples = [42, 1042, 2042, 3042, 4042, 5042]

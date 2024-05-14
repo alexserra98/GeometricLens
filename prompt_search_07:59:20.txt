@@ -22,10 +22,10 @@ C. 2
 D. 6
 Answer:
 
-accuracy: 0.656811069586273
-accuracy_constrained: 0.6552305905434669
+accuracy: 0.5443680520392902
+accuracy_constrained: 0.5438624795263896
 
-accuracy_sybj: {'abstract_algebra': 0.28, 'anatomy': 0.7111111111111111, 'astronomy': 0.7039473684210527, 'business_ethics': 0.64, 'clinical_knowledge': 0.7283018867924528, 'college_biology': 0.7708333333333334, 'college_chemistry': 0.46, 'college_computer_science': 0.49, 'college_mathematics': 0.35, 'college_medicine': 0.5953757225433526, 'college_physics': 0.43137254901960786, 'computer_security': 0.81, 'conceptual_physics': 0.5574468085106383, 'econometrics': 0.41228070175438597, 'electrical_engineering': 0.6689655172413793, 'elementary_mathematics': 0.42328042328042326, 'formal_logic': 0.48412698412698413, 'global_facts': 0.3, 'high_school_biology': 0.7903225806451613, 'high_school_chemistry': 0.5467980295566502, 'high_school_computer_science': 0.65, 'high_school_european_history': 0.7696969696969697, 'high_school_geography': 0.8333333333333334, 'high_school_government_and_politics': 0.8911917098445595, 'high_school_macroeconomics': 0.6333333333333333, 'high_school_mathematics': 0.3962962962962963, 'high_school_microeconomics': 0.7100840336134454, 'high_school_physics': 0.4966887417218543, 'high_school_psychology': 0.8348623853211009, 'high_school_statistics': 0.5833333333333334, 'high_school_us_history': 0.8333333333333334, 'high_school_world_history': 0.8143459915611815, 'human_aging': 0.7130044843049327, 'human_sexuality': 0.7786259541984732, 'international_law': 0.8181818181818182, 'jurisprudence': 0.7407407407407407, 'logical_fallacies': 0.7852760736196319, 'machine_learning': 0.49107142857142855, 'management': 0.8640776699029126, 'marketing': 0.8760683760683761, 'medical_genetics': 0.82, 'miscellaneous': 0.8173690932311622, 'moral_disputes': 0.7312138728323699, 'moral_scenarios': 0.28044692737430166, 'nutrition': 0.761437908496732, 'philosophy': 0.7331189710610932, 'prehistory': 0.7283950617283951, 'professional_accounting': 0.48226950354609927, 'professional_law': 0.4602346805736636, 'professional_medicine': 0.6985294117647058, 'professional_psychology': 0.7107843137254902, 'public_relations': 0.7181818181818181, 'security_studies': 0.7306122448979592, 'sociology': 0.8308457711442786, 'us_foreign_policy': 0.9, 'virology': 0.5542168674698795, 'world_religions': 0.8128654970760234}
+accuracy_sybj: {'abstract_algebra': 0.32, 'anatomy': 0.5111111111111111, 'astronomy': 0.5460526315789473, 'business_ethics': 0.54, 'clinical_knowledge': 0.5849056603773585, 'college_biology': 0.5625, 'college_chemistry': 0.41, 'college_computer_science': 0.48, 'college_mathematics': 0.27, 'college_medicine': 0.5260115606936416, 'college_physics': 0.2549019607843137, 'computer_security': 0.67, 'conceptual_physics': 0.43829787234042555, 'econometrics': 0.2631578947368421, 'electrical_engineering': 0.4827586206896552, 'elementary_mathematics': 0.32275132275132273, 'formal_logic': 0.3412698412698413, 'global_facts': 0.37, 'high_school_biology': 0.6806451612903226, 'high_school_chemistry': 0.4975369458128079, 'high_school_computer_science': 0.55, 'high_school_european_history': 0.6303030303030303, 'high_school_geography': 0.6919191919191919, 'high_school_government_and_politics': 0.8031088082901554, 'high_school_macroeconomics': 0.48205128205128206, 'high_school_mathematics': 0.2814814814814815, 'high_school_microeconomics': 0.5462184873949579, 'high_school_physics': 0.3443708609271523, 'high_school_psychology': 0.7486238532110092, 'high_school_statistics': 0.39814814814814814, 'high_school_us_history': 0.7696078431372549, 'high_school_world_history': 0.7383966244725738, 'human_aging': 0.6502242152466368, 'human_sexuality': 0.6030534351145038, 'international_law': 0.6694214876033058, 'jurisprudence': 0.6944444444444444, 'logical_fallacies': 0.6441717791411042, 'machine_learning': 0.26785714285714285, 'management': 0.7087378640776699, 'marketing': 0.7521367521367521, 'medical_genetics': 0.58, 'miscellaneous': 0.7535121328224776, 'moral_disputes': 0.6445086705202312, 'moral_scenarios': 0.24804469273743016, 'nutrition': 0.6176470588235294, 'philosophy': 0.6430868167202572, 'prehistory': 0.6296296296296297, 'professional_accounting': 0.41134751773049644, 'professional_law': 0.42046936114732725, 'professional_medicine': 0.4742647058823529, 'professional_psychology': 0.5571895424836601, 'public_relations': 0.5909090909090909, 'security_studies': 0.6040816326530613, 'sociology': 0.7860696517412935, 'us_foreign_policy': 0.81, 'virology': 0.45180722891566266, 'world_religions': 0.7602339181286549}
 
 example 42
 The following are multiple choice questions (with answers) about abstract algebra.
@@ -50,7 +50,7 @@ B. False, False
 C. True, False
 D. False, True
 Answer: B
-prediction: B
+prediction: C
 
 example 1042
 The following are multiple choice questions (with answers) about college computer science.
@@ -128,7 +128,7 @@ B. 345 torr
 C. 568 torr
 D. 251 torr
 Answer: D
-prediction: D
+prediction: C
 
 example 4042
 The following are multiple choice questions (with answers) about high school macroeconomics.
@@ -153,7 +153,7 @@ B. real GDP falls and the price level rises.
 C. real GDP rises and the price level rises.
 D. real GDP falls and the price level falls.
 Answer: C
-prediction: A
+prediction: B
 
 example 5042
 The following are multiple choice questions (with answers) about high school psychology.
