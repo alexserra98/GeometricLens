@@ -43,6 +43,20 @@ with open("mmlu_decalrative.txt", "w") as f:
 dataset = load_dataset("cais/mmlu", "all", split="test")
 subjects = np.array(dataset["subject"])
 
+
+mask = []
+for i, sub in enumerate(np.unique(subjects)):
+    ind = np.nonzero(sub == subjects)[0]
+    nsamples = min(200, len(ind))
+    chosen = rng.choice(ind, nsamples, replace=False)
+    if sub == "world_religions":
+        chosen = np.where(subjects == "world_religions")[0][: (min(nsamples, 169))]
+    mask.extend(list(np.sort(chosen)))
+
+
+np.save("test_mask_200", np.array(mask))
+
+
 mask = []
 for sub in np.unique(subjects):
     ind = np.nonzero(sub == subjects)[0]

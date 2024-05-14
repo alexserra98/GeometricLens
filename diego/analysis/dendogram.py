@@ -60,7 +60,9 @@ base_dir = "/home/diego/Documents/area_science/ricerca/open/geometric_lens/repo/
 
 mask = np.load("test_mask.npy")
 nshots = "5shot"
-dirpath = f"{base_dir}/mmlu/llama-3-8b/{nshots}"
+
+
+dirpath = f"{base_dir}/evaluated_test/random_order/llama3-70b/4shot"
 
 # finetuned_model
 # dirpath = f"{base_dir}/finetuned_dev/evaluated_test/llama-3-8b/4epochs/epoch_4"
@@ -71,22 +73,21 @@ dirpath = f"{base_dir}/mmlu/llama-3-8b/{nshots}"
 
 # "wrong answers"
 options = ["wrong_answers", "dummy", "random_subject"]
-dirpath = f"{base_dir}/evaluated_test/random_subject/llama-3-8b/5shot"
+dirpath_sub = f"{base_dir}/evaluated_test/random_subject/llama-3-8b/5shot"
 
-with open(f"{dirpath}/statistics_target.pkl", "rb") as f:
+with open(f"{dirpath_sub}/statistics_target.pkl", "rb") as f:
     stats = pickle.load(f)
 
 
 # we need to take just 100 samples per class (for simplicity)
 nsamples_per_subject = 100
 
+
 subjects = np.array(stats["subjects"])
-mask = []
-for sub in np.unique(subjects):
-    ind = np.where(sub == subjects)[0]
-    chosen = np.random.choice(ind, nsamples_per_subject, replace=False)
-    mask.extend(list(np.sort(chosen)))
-np.array(mask)
+base_path_mask = (
+    "/home/diego/Documents/area_science/ricerca/open/geometric_lens/repo/diego/analysis"
+)
+mask = np.load(f"{base_path_mask}/test_mask_100.npy")
 
 frequences = Counter(np.array(stats["subjects"])[mask]).values()
 assert len(np.unique(list(frequences))) == 1
@@ -97,7 +98,10 @@ assert np.unique(list(frequences))[0] == nsamples_per_subject, np.unique(
 
 subjects = np.array(stats["subjects"])[mask]
 gtl = np.repeat(np.arange(57), nsamples_per_subject)
-X = torch.load(f"{dirpath}/l6_target.pt")
+
+print(dirpath)
+
+X = torch.load(f"{dirpath}/l10_target.pt")
 X = X.to(torch.float64).numpy()[mask]
 
 

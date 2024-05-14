@@ -64,6 +64,7 @@ def parse_args():
         "--num_shots",
         type=int,
     )
+    parser.add_argument("--samples_subject", type=int, default=200)
     parser.add_argument("--ckpt", type=int, default=None)
     parser.add_argument("--balanced", action="store_true")
     args = parser.parse_args()
@@ -86,7 +87,12 @@ if args.eval_dataset == "test":
     mask_dir = (
         "/u/area/ddoimo/ddoimo/finetuning_llm/open-instruct/open_instruct/my_utils"
     )
-    dataset_mask = np.load(f"{mask_dir}/test_mask_100.npy")
+    if args.samples_subject == 100:
+        dataset_mask = np.load(f"{mask_dir}/test_mask_100.npy")
+    if args.samples_subject == 200:
+        dataset_mask = np.load(f"{mask_dir}/test_mask_200.npy")
+    else:
+        assert False, "wrong samples subject"
 
 
 # ****************************************************************************************
@@ -125,7 +131,7 @@ for epoch in ckpts[::-1]:
         # balance the test set if asked
         is_balanced = ""
         if dataset_mask is not None:
-            is_balanced = "_balanced"
+            is_balanced = f"_balanced{args.samples_subject}"
             base_repr = base_repr[dataset_mask]
             finetuned_repr = finetuned_repr[dataset_mask]
             subjects = subjects[dataset_mask]
