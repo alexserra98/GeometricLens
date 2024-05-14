@@ -8,12 +8,10 @@ import pickle
 
 import os
 import argparse
-from collections import Counter
 from dadapy import data
 from sklearn.metrics import adjusted_mutual_info_score, adjusted_rand_score
-import warnings
 
-from utils import return_data_overlap, return_label_overlap
+from utils import return_label_overlap
 
 
 def parse_args():
@@ -54,7 +52,7 @@ def parse_args():
 # **************************************************************************
 args = parse_args()
 
-args.results_path += f"/{args.model_name}"
+args.results_path += f"/pretrained/{args.model_name}"
 os.makedirs(args.results_path, exist_ok=True)
 
 base_dir = "/orfeo/cephfs/scratch/area/ddoimo/open/geometric_lens/repo/results"
@@ -108,6 +106,8 @@ else:
     ), f"wrong model name {args.model_name}, expected llama-3-8b or llama-2-13b"
 
 
+assert args.pretrained_mode in ["mmlu", "random_order"]
+
 if dataset_mask is not None:
     is_balanced = f"_balanced{args.samples_subject}"
 
@@ -132,7 +132,7 @@ for epoch in ckpts[::-1]:
             #     base_path = f"{base_dir}/evaluated_test/questions_sampled/{args.model_name}/{args.num_shots}shot"
             #     name = f"base_question_sampled_{args.num_shots}"
             # else:
-            base_path = f"{base_dir}/mmlu/{args.model_name}/{args.num_shots}shot"
+            base_path = f"{base_dir}/{args.pretrained_mode}/{args.model_name}/{args.num_shots}shot"
             # name = f"base_{args.num_shots}"
             name = f"{args.model_name}_{args.pretrained_mode}_eval_{args.eval_dataset}{is_balanced}_0shot"
 
