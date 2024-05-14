@@ -101,7 +101,11 @@ def parse_args():
     )
     parser.add_argument("--finetuned_mode", type=str, default=None)
     parser.add_argument(
-        "--model",
+        "--mask_dir",
+        type=str,
+    )
+    parser.add_argument(
+        "--model_name",
         type=str,
         help="Batch size (per device) for the training dataloader.",
     )
@@ -119,15 +123,14 @@ def parse_args():
         "--eval_dataset",
         type=str,
     )
-    parser.add_argument(
-        "--question_sampled",
-        action="store_true",
-    )
+    parser.add_argument("--samples_subject", type=int, default=200)
     parser.add_argument("--num_shots", type=int, default=None)
     parser.add_argument("--ckpt", type=int, default=None)
-    parser.add_argument("--balanced", action="store_true")
     args = parser.parse_args()
     return args
+
+
+# **************************************************************************
 
 
 args = parse_args()
@@ -143,16 +146,19 @@ print(f"num_shots: {args.num_shots}")
 sys.stdout.flush()
 
 if args.eval_dataset == "test":
-    mask_dir = (
-        "/u/area/ddoimo/ddoimo/finetuning_llm/open-instruct/open_instruct/my_utils"
-    )
-    dataset_mask = np.load(f"{mask_dir}/test_mask_100.npy")
+    mask_dir = args.mask_dir
+    if args.samples_subject == 100:
+        dataset_mask = np.load(f"{mask_dir}/test_mask_100.npy")
+    if args.samples_subject == 200:
+        dataset_mask = np.load(f"{mask_dir}/test_mask_200.npy")
+    else:
+        assert False, "wrong samples subject"
 
 
-# ****************************************************************************************
+# *****************************************************************************
 
 
-if args.fintuned_mode is not None:
+if args.finetuned_mode is not None:
     cpt = ""
     if args.ckpt is not None:
         ckpts = [args.ckpt]
@@ -163,13 +169,21 @@ else:
     ckpts = [0]
 
 
+if args.model_name == "llama3-8b":
+    nlayers = 34
+elif args.model_name == "llama2-13b":
+    nlayers = 42
+else:
+    assert False, "wrong model name"
+
+
 overlaps = defaultdict(list)
 clusters = defaultdict(list)
 intrinsic_dim = defaultdict(list)
 
 for epoch in ckpts[::-1]:
     # layer 0 is all overlapped
-    for layer in range(1, 34):
+    for layer in range(1, nlayers):
         if args.finetuned_mode is not None:
             print(f"processing {args.num_shots} epoch {epoch} layer {layer}")
             sys.stdout.flush()
@@ -178,6 +192,7 @@ for epoch in ckpts[::-1]:
             sys.stdout.flush()
         # ************************************
         if args.num_shots is not None:
+            assert args.finetune_mode is None
             if args.question_sampled:
                 base_path = f"{base_dir}/evaluated_test/questions_sampled/{args.model}/{args.num_shots}shot"
                 name = f"base_question_sampled_{args.num_shots}"
@@ -194,32 +209,39 @@ for epoch in ckpts[::-1]:
 
         with open(f"{base_path}/statistics_target.pkl", "rb") as f:
             stats = pickle.load(f)
-        subjects = np.array(stats["subjects"])
+        subjects = stats["subjects"]
+        subjects_to_int = {sub: i for i, sub in enumerate(np.unique(subjects))}
+        subj_label = np.array([subjects_to_int[sub] for sub in subjects])
+
+        letters = stats["answers"]
+        letters_to_int = {letter: i for i, letter in enumerate(np.unique(letters))}
+        letter_label = np.array([letters_to_int[sub] for sub in letters])
 
         # balance the test set if asked
         is_balanced = ""
         if dataset_mask is not None:
             is_balanced = "_balanced"
             base_repr = base_repr[dataset_mask]
-            subjects = subjects[dataset_mask]
+            subj_label = subj_label[dataset_mask]
+            letter_label = letter_label[dataset_mask]
             # check that all the subjects have the same frequency
-            frequences = Counter(subjects).values()
-            assert len(np.unique(list(frequences))) == 1
-            # check that the frequency is 100
-            assert np.unique(list(frequences))[0] == 100, (
-                np.unique(list(frequences))[0],
-                frequences,
-            )
+            # frequences = Counter(subjects).values()
+            # assert len(np.unique(list(frequences))) == 1
+            # # check that the frequency is 100
+            # assert np.unique(list(frequences))[0] == 100, (
+            #     np.unique(list(frequences))[0],
+            #     frequences,
+            # )
 
-        subjetcs = np.repeat(np.arange(len(subjects)), 100)
+        # subjetcs = np.repeat(np.arange(len(subjects)), 100)
         # remove identical points
         base_unique, base_idx, base_inverse = np.unique(
             base_repr, axis=0, return_index=True, return_inverse=True
         )
         indices = np.sort(base_idx)
         base_repr = base_repr[indices]
-        subjects = subjects[indices]
-
+        subj_label = subj_label[indices]
+        letter_label = letter_label[indices]
         # ***********************************************************************
 
         maxk = 300
@@ -250,20 +272,36 @@ for epoch in ckpts[::-1]:
                 if halo:
                     mask = assignment != -1
 
-                clusters[f"ami-ep{epoch}-z{z}{is_halo}"].append(
-                    adjusted_mutual_info_score(assignment[mask], subjects[mask])
+                clusters[f"subjects-ami-ep{epoch}-z{z}{is_halo}"].append(
+                    adjusted_mutual_info_score(assignment[mask], subj_label[mask])
                 )
 
-                clusters[f"ari-ep{epoch}-z{z}{is_halo}"].append(
-                    adjusted_rand_score(assignment[mask], subjects[mask])
+                clusters[f"subjects-ari-ep{epoch}-z{z}{is_halo}"].append(
+                    adjusted_rand_score(assignment[mask], subj_label[mask])
                 )
 
-        for k in [30, 100]:
-            overlaps[f"ep{epoch}_k{k}"].append(
+                clusters[f"letters-ami-ep{epoch}-z{z}{is_halo}"].append(
+                    adjusted_mutual_info_score(assignment[mask], letter_label[mask])
+                )
+
+                clusters[f"letters-ari-ep{epoch}-z{z}{is_halo}"].append(
+                    adjusted_rand_score(assignment[mask], letter_label[mask])
+                )
+
+        for class_fraction in [0.3, 0.5]:
+            overlaps[f"subjects-ep{epoch}_{class_fraction}"].append(
                 return_label_overlap(
                     dist_indices=dist_index_base,
-                    labels=subjects,
-                    k=k,
+                    labels=subj_label,
+                    class_fraction=class_fraction,
+                )
+            )
+
+            overlaps[f"letters-ep{epoch}_{class_fraction}"].append(
+                return_label_overlap(
+                    dist_indices=dist_index_base,
+                    labels=letter_label,
+                    class_fraction=class_fraction,
                 )
             )
 
