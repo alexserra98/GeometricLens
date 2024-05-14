@@ -111,6 +111,10 @@ else:
     ), f"wrong model name {args.model_name}, expected llama-3-8b or llama-2-13b"
 
 
+if dataset_mask is not None:
+    is_balanced = f"_balanced{args.samples_subject}"
+
+
 overlaps = defaultdict(list)
 clusters = defaultdict(list)
 intrinsic_dim = defaultdict(list)
@@ -132,13 +136,13 @@ for epoch in ckpts[::-1]:
             #     name = f"base_question_sampled_{args.num_shots}"
             # else:
             base_path = f"{base_dir}/mmlu/{args.model_name}/{args.num_shots}shot"
-            name = f"base_{args.num_shots}"
+            # name = f"base_{args.num_shots}"
+            name = f"{args.model_name}_{args.pretrained_mode}_eval_{args.eval_dataset}{is_balanced}_0shot"
 
         else:
             base_path = f"{base_dir}/finetuned_{args.finetuned_mode}/evaluated_{args.eval_dataset}/{args.model_name}/{args.epochs}epochs/epoch_{epoch}"
-
-            base_path = "/home/diego/Documents/area_science/ricerca/open/geometric_lens/repo/repr_tmp"
-            # name = f"finetuned_{args.finetuned_mode}_eval_{args.eval_dataset}_epoch{args.epochs}"
+            # base_path = "/home/diego/Documents/area_science/ricerca/open/geometric_lens/repo/repr_tmp"
+            name = f"{args.model_name}_finetuned_{args.finetuned_mode}_epoch{args.epochs}_eval_{args.eval_dataset}{is_balanced}_0shot"
 
         base_repr = torch.load(f"{base_path}/l{layer}_target.pt")
         base_repr = base_repr.to(torch.float64).numpy()
@@ -156,7 +160,6 @@ for epoch in ckpts[::-1]:
         # balance the test set if asked
         is_balanced = ""
         if dataset_mask is not None:
-            is_balanced = "_balanced"
             base_repr = base_repr[dataset_mask]
             subj_label = subj_label[dataset_mask]
             letter_label = letter_label[dataset_mask]
@@ -241,20 +244,11 @@ for epoch in ckpts[::-1]:
                 )
             )
 
-    with open(
-        f"{args.results_path}/overlap_subject_{args.model_name}_{name}.pkl",
-        "wb",
-    ) as f:
+    with open(f"{args.results_path}/overlap_subject_{name}.pkl", "wb") as f:
         pickle.dump(overlaps, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-    with open(
-        f"{args.results_path}/cluster_subjetcs_{args.model_name}_{name}.pkl",
-        "wb",
-    ) as f:
+    with open(f"{args.results_path}/cluster_subject_{name}.pkl", "wb") as f:
         pickle.dump(clusters, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-    with open(
-        f"{args.results_path}/ids_{args.model_name}_{name}.pkl",
-        "wb",
-    ) as f:
+    with open(f"{args.results_path}/ids_{name}.pkl", "wb") as f:
         pickle.dump(intrinsic_dim, f, protocol=pickle.HIGHEST_PROTOCOL)
