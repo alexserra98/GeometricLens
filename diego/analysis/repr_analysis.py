@@ -139,7 +139,7 @@ os.makedirs(args.results_path, exist_ok=True)
 base_dir = "/orfeo/cephfs/scratch/area/ddoimo/open/geometric_lens/repo/results"
 
 
-print(f"processing model: {args.model}")
+print(f"processing model: {args.model_name}")
 print(f"processing epochs: {args.epochs}")
 print(f"processing daset: {args.eval_dataset}")
 print(f"num_shots: {args.num_shots}")
@@ -191,17 +191,17 @@ for epoch in ckpts[::-1]:
             print(f"processing {args.num_shots} layer {layer}")
             sys.stdout.flush()
         # ************************************
-        if args.num_shots is not None:
-            assert args.finetune_mode is None
-            if args.question_sampled:
-                base_path = f"{base_dir}/evaluated_test/questions_sampled/{args.model}/{args.num_shots}shot"
-                name = f"base_question_sampled_{args.num_shots}"
-            else:
-                base_path = f"{base_dir}/mmlu/{args.model}/{args.num_shots}shot"
-                name = f"base_{args.num_shots}"
+        if args.finetune_mode is None:
+            assert args.num_shots is not None
+            # if args.question_sampled:
+            #     base_path = f"{base_dir}/evaluated_test/questions_sampled/{args.model_name}/{args.num_shots}shot"
+            #     name = f"base_question_sampled_{args.num_shots}"
+            # else:
+            base_path = f"{base_dir}/mmlu/{args.model_name}/{args.num_shots}shot"
+            name = f"base_{args.num_shots}"
 
         else:
-            base_path = f"{base_dir}/finetuned_{args.finetuned_mode}/evaluated_{args.eval_dataset}/{args.model}/{args.epochs}epochs/epoch_{epoch}"
+            base_path = f"{base_dir}/finetuned_{args.finetuned_mode}/evaluated_{args.eval_dataset}/{args.model_name}/{args.epochs}epochs/epoch_{epoch}"
             name = f"finetuned_{args.finetuned_mode}_eval_{args.eval_dataset}_epoch{args.epochs}"
 
         base_repr = torch.load(f"{base_path}/l{layer}_target.pt")
@@ -306,19 +306,19 @@ for epoch in ckpts[::-1]:
             )
 
     with open(
-        f"{args.results_path}/overlap_subject_{args.model}_{name}.pkl",
+        f"{args.results_path}/overlap_subject_{args.model_name}_{name}.pkl",
         "wb",
     ) as f:
         pickle.dump(overlaps, f, protocol=pickle.HIGHEST_PROTOCOL)
 
     with open(
-        f"{args.results_path}/cluster_subjetcs_{args.model}_{name}.pkl",
+        f"{args.results_path}/cluster_subjetcs_{args.model_name}_{name}.pkl",
         "wb",
     ) as f:
         pickle.dump(clusters, f, protocol=pickle.HIGHEST_PROTOCOL)
 
     with open(
-        f"{args.results_path}/ids_{args.model}_{name}.pkl",
+        f"{args.results_path}/ids_{args.model_name}_{name}.pkl",
         "wb",
     ) as f:
         pickle.dump(intrinsic_dim, f, protocol=pickle.HIGHEST_PROTOCOL)
