@@ -34,8 +34,6 @@ def compute_distances(
         rs np.ndarray(float)): the FULL matrix of the distances of the neighbors involved in the mu estimates
     """
 
-    print(n_neighbors, range_scaling)
-    sys.stdout.flush()
     reduce_func = partial(
         _kneighbors_reduce_func,
         n_neighbors=n_neighbors,

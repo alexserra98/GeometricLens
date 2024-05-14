@@ -136,9 +136,8 @@ for epoch in ckpts[::-1]:
 
         else:
             base_path = f"{base_dir}/finetuned_{args.finetuned_mode}/evaluated_{args.eval_dataset}/{args.model_name}/{args.epochs}epochs/epoch_{epoch}"
-
-            base_path = "/home/diego/Documents/area_science/ricerca/open/geometric_lens/repo/repr_tmp"
-            # name = f"finetuned_{args.finetuned_mode}_eval_{args.eval_dataset}_epoch{args.epochs}"
+            #base_path = "/home/diego/Documents/area_science/ricerca/open/geometric_lens/repo/repr_tmp"
+            name = f"finetuned_{args.finetuned_mode}_eval_{args.eval_dataset}_epoch{args.epochs}"
 
         base_repr = torch.load(f"{base_path}/l{layer}_target.pt")
         base_repr = base_repr.to(torch.float64).numpy()
@@ -187,7 +186,7 @@ for epoch in ckpts[::-1]:
             n_neighbors=maxk + 1,
             n_jobs=1,
             working_memory=2048,
-            range_scaling=1024,
+            range_scaling=2048,
             argsort=False,
         )
 
