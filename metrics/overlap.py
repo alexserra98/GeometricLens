@@ -154,19 +154,20 @@ class PointOverlap(HiddenStatesMetrics):
                                 overlap,
                             ]
                         )
-                # Save checkpoint
-                df_temp = pd.DataFrame(
-                    rows,
-                    columns=[
-                        "k",
-                        "couple",
-                        "method",
-                        "shot_i",
-                        "shot_j",
-                        "point_overlap",
-                    ],
-                )
-                df_temp.to_pickle(check_point_dir / f"checkpoint_point_overlap.pkl")
+                        if len(rows) % 3 == 0:
+                            # Save checkpoint
+                            df_temp = pd.DataFrame(
+                                rows,
+                                columns=[
+                                    "k",
+                                    "couple",
+                                    "method",
+                                    "shot_i",
+                                    "shot_j",
+                                    "point_overlap",
+                                ],
+                            )
+                            df_temp.to_pickle(check_point_dir / f"checkpoint_point_overlap.pkl")
 
         df = pd.DataFrame(
             rows,

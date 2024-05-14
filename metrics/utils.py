@@ -293,7 +293,7 @@ class TensorStorageManager:
         except DataNotFoundError as e:
             # Handle missing data but continue the program
             print(e)
-            return None
+            raise
         except UnknownError as e:
             # Handle generic error and stop the program
             print(e)

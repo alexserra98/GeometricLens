@@ -250,75 +250,149 @@ class PointClustering(HiddenStatesMetrics):
         Output
         df: pd.DataFrame (k,dataset,method,train_instances_i,train_instances_j,overlap)
         """
-        # warn("Computing overlap using k with  2 -25- 500")
+        module_logger = logging.getLogger("my_app.point_clustering")
+        module_logger.info("Computing point clustering")
 
-        # iter_list=[2.2,2.5,32.2,2.5,32.2,2.5,3]
+        iter_list = [0.2, 0.5, 1, 1.68]
 
-        iter_list = [0.2, 0.3, 0.5, 0.8, 1.68, 2]
-
+        # Directory to save checkpoints
+        check_point_dir = Path(_OUTPUT_DIR, "checkpoints")
+        check_point_dir.mkdir(exist_ok=True, parents=True)
         rows = []
+
+        couples_list = [
+            ("meta-llama-Llama-3-70b-hf", "meta-llama-Llama-3-70b-hf"),
+            ("meta-llama-Llama-2-70b-hf", "meta-llama-Llama-2-70b-hf"),
+            ("meta-llama-Llama-2-70b-hf", "meta-llama-Llama-2-70b-chat-hf"),
+            ("meta-llama-Llama-3-70b-hf", "meta-llama-Llama-3-70b-chat-hf"),
+            ("meta-llama-Llama-2-13b-hf", "meta-llama-Llama-2-13b-hf"),
+            ("meta-llama-Llama-2-13b-hf", "meta-llama-Llama-2-13b-chat-hf"),
+            ("meta-llama-Llama-2-13b-hf", "meta-llama-Llama-2-13b-hf"),
+            ("meta-llama-Llama-2-13b-hf", "meta-llama-Llama-2-13b-ft-hf"),
+            ("meta-llama-Llama-2-7b-hf", "meta-llama-Llama-2-7b-hf"),
+            ("meta-llama-Llama-2-7b-hf", "meta-llama-Llama-2-7b-chat-hf"),
+            ("meta-llama-Llama-3-8b-hf", "meta-llama-Llama-3-8b-hf"),
+            ("meta-llama-Llama-3-8b-hf", "meta-llama-Llama-3-8b-chat-hf"),
+            ("meta-llama-Llama-3-8b-hf", "meta-llama-Llama-3-8b-ft-hf"),
+        ]
+
+        tsm = self.tensor_storage        
         for z in tqdm.tqdm(iter_list, desc="Computing overlaps k"):
             for couples in self.pair_names(self.df["model_name"].unique().tolist()):
-                # import pdb; pdb.set_trace()
-                if "13" in couples[0] or "13" in couples[1]:
-                    continue
                 for method in ["last"]:  # self.df["method"].unique().tolist():
                     if couples[0] == couples[1]:
                         iterlist = [("0", "0"), ("0", "5")]
                     else:
                         iterlist = [("0", "0"), ("0", "5"), ("5", "5"), ("5", "0")]
-                    for shot in iterlist:
-                        train_instances_i, train_instances_j = shot
+                    module_logger.debug(f"Processing {couples} with k {k}")
+                    shot_number = "4" if "70" in couples[0] else "5"
+                    if couples[0] == couples[1]:
+                        iterlist = [("0", shot_number)]
+                    else:
+                        iterlist = [(shot_number, "0"), ("0", "0")]
+
+                    for shots in iterlist:
+                        shot_i, shot_j = shots
+
                         query_i = DataFrameQuery(
                             {
                                 "method": method,
                                 "model_name": couples[0],
-                                "train_instances": train_instances_i,
-                                "dataset": "mmlu:miscellaneous",
+                                "train_instances": shot_i,
                             }
                         )
+
                         query_j = DataFrameQuery(
                             {
                                 "method": method,
                                 "model_name": couples[1],
-                                "train_instances": train_instances_j,
-                                "dataset": "mmlu:miscellaneous",
+                                "train_instances": shot_j,
                             }
                         )
+                        try:
+                            # Hidden states to compare
+                            hidden_states_i, _, df_i = tsm.retrieve_tensor(
+                                query_i, self.storage_logic
+                            )
+                            hidden_states_j, _, df_j = tsm.retrieve_tensor(
+                                query_j, self.storage_logic
+                            )
+                        except DataNotFoundError as e:
+                            module_logger.error(
+                                f"Data not found for {query_i} or {query_j}. Error: {e}"
+                            )
+                            continue
+                        except UnknownError as e:
+                            module_logger.error(
+                                f"Unknown error for {query_i} or {query_j}. Error: {e}"
+                            )
+                            raise e
 
-                        hidden_states_i, _, df_i = hidden_states_collapse(
-                            self.df, query_i, self.tensor_storage
-                        )
-                        hidden_states_j, _, df_j = hidden_states_collapse(
-                            self.df, query_j, self.tensor_storage
-                        )
-                        # df_i["instance_id"]
-                        # df_i.reset_index(inplace=True)
-                        # df_j.reset_index(inplace=True)
-                        # df_i = df_i.where(df_j.only_ref_pred == df_i.only_ref_pred)
-                        # df_j = df_j.where(df_j.only_ref_pred == df_i.only_ref_pred)
-                        # df_i.dropna(inplace=True)
-                        # df_j.dropna(inplace=True)
-                        # hidden_states_i, _,df_i = hidden_states_collapse(df_i,query_i, self.tensor_storage)
-                        # hidden_states_j, _, df_j = hidden_states_collapse(df_j,query_j, self.tensor_storage)
+                        df_i.reset_index(inplace=True)
+                        df_j.reset_index(inplace=True)
 
-                        clustering_out = self.parallel_compute(
-                            hidden_states_i, hidden_states_j, z
-                        )
+                        if (
+                            self.variations["point_clustering"] == "cosine"
+                            or self.variations["point_clustering"] == "norm"
+                            or self.variations["point_clustering"] == "shared_answers"
+                        ):
+                            df_i["exact_match"] = df_i.apply(
+                                lambda r: exact_match(r["std_pred"], r["letter_gold"]),
+                                axis=1,
+                            )
+                            df_j["exact_match"] = df_j.apply(
+                                lambda r: exact_match(r["std_pred"], r["letter_gold"]),
+                                axis=1,
+                            )
+                            # find the index of rows that have "exact_match" True in both df_i and df_j
+                            indices_i = df_i[df_i["exact_match"] == True].index
+                            indices_j = df_j[df_j["exact_match"] == True].index
+                            # find the intersection of the two sets of indices
+                            indices = indices_i.intersection(indices_j)
+                            hidden_states_i = hidden_states_i[indices]
+                            hidden_states_j = hidden_states_j[indices]
 
-                        rows.append(
-                            [
+                        try:
+                            # pdb.set_trace()
+                            clustering_out = self.parallel_compute(
+                                hidden_states_i, hidden_states_j, z
+                            )
+
+                        except Exception as e:
+                            module_logger.error(
+                                f"Error computing overlap for {couples} with k {k}. Error: {e}"
+                            )
+                            raise e
+                        rows.append([
                                 z,
                                 couples,
                                 method,
-                                train_instances_i,
-                                train_instances_j,
+                                shot_i,
+                                shot_j,
                                 clustering_out["adjusted_rand_score"],
                                 clustering_out["adjusted_mutual_info_score"],
                                 clustering_out["mutual_info_score"],
                                 clustering_out["f1_score"],
                             ]
                         )
+                        if len(rows) % 3 == 0:
+                            # Save checkpoint
+                            df_temp = pd.DataFrame(
+                                rows,
+                                columns=[
+                                    "z",
+                                    "couple",
+                                    "method",
+                                    "train_instances_i",
+                                    "train_instances_j",
+                                    "adjusted_rand_score",
+                                    "adjusted_mutual_info_score",
+                                    "mutual_info_score",
+                                    "f1_score",
+                                ],
+                            )
+                            df_temp.to_pickle(check_point_dir / f"checkpoint_point_overlap.pkl")
+
         df = pd.DataFrame(
             rows,
             columns=[
@@ -334,6 +408,7 @@ class PointClustering(HiddenStatesMetrics):
             ],
         )
         return df
+
 
     def pair_names(self, names_list):
         """
@@ -372,10 +447,15 @@ class PointClustering(HiddenStatesMetrics):
         process_layer = partial(
             self.process_layer, input_i=input_i, input_j=input_j, z=z
         )
-        with Parallel(n_jobs=_NUM_PROC) as parallel:
-            results = parallel(
-                delayed(process_layer)(layer) for layer in range(1, number_of_layers)
-            )
+        if self.parallel:
+            with Parallel(n_jobs=_NUM_PROC) as parallel:
+                results = parallel(
+                    delayed(process_layer)(layer) for layer in range(1, number_of_layers)
+                )
+        else:
+            results = []
+            for layer in range(1, number_of_layers):
+                results.append(process_layer(layer))
 
         # Organize the results
         comparison_output = {key: [] for key in _COMPARISON_METRICS}
@@ -391,22 +471,32 @@ class PointClustering(HiddenStatesMetrics):
         data_i = Data(input_i[:, layer, :])
         data_j = Data(input_j[:, layer, :])
 
-        with HiddenPrints():
-            data_i.remove_identical_points()
-            data_j.remove_identical_points()
 
-        data_i.compute_distances(maxk=100)
-        data_j.compute_distances(maxk=100)
-
-        clusters_i = data_i.compute_clustering_ADP(Z=z)
-        clusters_j = data_j.compute_clustering_ADP(Z=z)
-
+        if self.variations["point_clustering"] == "norm":
+            data_i = data_i / np.linalg.norm(data_i, axis=1, keepdims=True)
+            clusters_i = self.compute_cluster_assignment(data_i, z)
+        
+            data_j = data_j / np.linalg.norm(data_j, axis=1, keepdims=True)
+            clusters_j = self.compute_cluster_assignment(data_j, z)
+        
+        else:
+            clusters_i = self.compute_cluster_assignment(data_i, z)
+            clusters_j = self.compute_cluster_assignment(data_j, z)
+        
         layer_results = {}
+        
         for key, func in _COMPARISON_METRICS.items():
             layer_results[key] = func(clusters_i, clusters_j)
 
         return layer_results
-
+    
+    def compute_cluster_assignment(self, base_repr, z):
+        data = Data(coordinates=base_repr, maxk=100)
+        ids, _, _ = data.return_id_scaling_gride(range_max=100)
+        data.set_id(ids[3])
+        data.compute_density_kNN(k=16)
+        clusters_assignment = data.compute_clustering_ADP(Z=z)
+        return clusters_assignment
 
 def balance_by_label_within_groups(df, group_field, label_field):
     """
