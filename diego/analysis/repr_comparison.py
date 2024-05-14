@@ -74,7 +74,10 @@ def parse_args():
     return args
 
 
+# **************************************************************************************************
+
 args = parse_args()
+args.results_path += f"/{args.model_name}"
 os.makedirs(args.results_path, exist_ok=True)
 
 base_dir = "/orfeo/cephfs/scratch/area/ddoimo/open/geometric_lens/repo/results"
@@ -97,8 +100,6 @@ if args.eval_dataset == "test":
 
 
 # ****************************************************************************************
-
-
 cpt = ""
 if args.ckpt is not None:
     ckpts = [args.ckpt]
@@ -116,6 +117,10 @@ elif args.model_name == "llama-2-13b":
     nlayers = 42
 else:
     assert False, "wrong model name"
+
+
+if dataset_mask is not None:
+    is_balanced = f"_balanced{args.samples_subject}"
 
 
 for epoch in ckpts[::-1]:
@@ -138,21 +143,22 @@ for epoch in ckpts[::-1]:
             stats = pickle.load(f)
         subjects = np.array(stats["subjects"])
 
+        name = f"{args.model_name}_finetuned_{args.finetuned_mode}_epoch{args.epochs}_eval_{args.eval_dataset}{is_balanced}_{args.num_shots}shot"
+
         # balance the test set if asked
         is_balanced = ""
         if dataset_mask is not None:
-            is_balanced = f"_balanced{args.samples_subject}"
             base_repr = base_repr[dataset_mask]
             finetuned_repr = finetuned_repr[dataset_mask]
             subjects = subjects[dataset_mask]
             # check that all the subjects have the same frequency
-            #frequences = Counter(subjects).values()
-            #assert len(np.unique(list(frequences))) == 1
+            # frequences = Counter(subjects).values()
+            # assert len(np.unique(list(frequences))) == 1
             # check that the frequency is 100
-            #assert np.unique(list(frequences))[0] == 100, (
+            # assert np.unique(list(frequences))[0] == 100, (
             #    np.unique(list(frequences))[0],
             #    frequences,
-            #)
+            # )
 
             # remove identical points
             base_unique, base_idx, base_inverse = np.unique(
@@ -246,14 +252,8 @@ for epoch in ckpts[::-1]:
             for subject in np.unique(subjects):
                 ov_repr[f"ep{epoch}_{subject}_k30"].append(ov_repr_tmp[subject])
 
-    with open(
-        f"{args.results_path}/overlaps_{args.model_name}_finetuned_{args.finetuned_mode}_eval_{args.eval_dataset}{is_balanced}_epoch{args.epochs}_{args.num_shots}.pkl",
-        "wb",
-    ) as f:
+    with open(f"{args.results_path}/overlap_repr_{name}.pkl", "wb") as f:
         pickle.dump(ov_repr, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-    with open(
-        f"{args.results_path}/cluster_comparison_{args.model_name}_finetuned_{args.finetuned_mode}_eval_{args.eval_dataset}{is_balanced}_epoch{args.epochs}_{args.num_shots}.pkl",
-        "wb",
-    ) as f:
+    with open(f"{args.results_path}/cluster_repr_{name}.pkl", "wb") as f:
         pickle.dump(cluster_comparison, f, protocol=pickle.HIGHEST_PROTOCOL)
