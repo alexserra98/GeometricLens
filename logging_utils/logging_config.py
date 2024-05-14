@@ -8,7 +8,7 @@ def setup_logging(log_file_name):
 
     # Create handlers (console and file handler for example)
     c_handler = logging.StreamHandler()
-    f_handler = logging.FileHandler(f"log/{log_file_name}.log")
+    f_handler = logging.FileHandler(f"{log_file_name}.log")
     c_handler.setLevel(logging.WARNING)  # Console handles only warnings and above
     f_handler.setLevel(logging.DEBUG)  # File handles all debug logs
 

@@ -12,16 +12,24 @@ from logging_utils.logging_config import setup_logging
 import pdb
 import datetime
 import os
+from metrics.utils import TensorStorageManager
+
 now = datetime.datetime.now()
 
+
 def set_log_name():
-    job_name = os.getenv('SLURM_JOB_ID')
+    job_name = os.getenv("SLURM_JOB_ID")
     if job_name:
         return f"metrics_{job_name}"
-    else: 
+    else:
         return f"metrics_{now.hour}{now.minute}{now.second}"
 
-logger = setup_logging(set_log_name())
+
+# save result in a temporary directory to avoid overwriting
+_TMP_RESULT_DIR = Path(_OUTPUT_DIR_TRANSPOSED) / set_log_name()
+_TMP_RESULT_DIR.mkdir(parents=True, exist_ok=True)
+
+logger = setup_logging(_TMP_RESULT_DIR / set_log_name())
 
 
 class MetricName(Enum):
@@ -29,7 +37,7 @@ class MetricName(Enum):
     LABEL_OVERLAP = ("metrics.overlap", "LabelOverlap")
     POINT_OVERLAP = ("metrics.overlap", "PointOverlap")
     PROBE = ("metrics.probe", "LinearProbe")
-    CLUSTERING = ("metrics.clustering", "LabelClustering")
+    LABEL_CLUSTERING = ("metrics.clustering", "LabelClustering")
 
 
 def metric_function(name):
@@ -46,12 +54,15 @@ def metric_function(name):
 def create_queries(models):
     queries = []
     for model in models:
-        for shot in [0, 2, 5]:
+        for shot in [0, 1, 2, 3, 4, 5]:
+            # for shot in [0, 2, 5]:
             if "70" in model and shot == 5 and "chat" not in model:
-                shot = 4
+                continue
             elif "70" in model and "chat" in model and shot == 5:
                 continue
             elif "ft" in model and shot != 0:
+                continue
+            elif "chat" in model and shot not in [0, 2, 5]:
                 continue
             queries.append(
                 {"method": "last", "model_name": model, "train_instances": shot}
@@ -97,43 +108,53 @@ def main():
         type=str,
         help="Which ground truth to probe",
     )
+    parser.add_argument(
+        "--tensor_storage_location",
+        type=str,
+        help="Folder in which tensors are located",
+    )
     args = parser.parse_args(remaining_argv)
     print(args.variations)
 
     models = args.models
     metrics = args.metrics
     labels = args.labels
+    tensor_storage_location = args.tensor_storage_location[0]
     variations = json.loads(args.variations)
 
     logger.info(
-        f"Metrics computer started\nModels:{models}\nMetrics:{metrics}\nVariations:{variations}"
+        f"Metrics computer started\nModels:{models}\nMetrics:{metrics}\nVariations:{variations}\nTensor Storage Location:{tensor_storage_location}\n"
     )
-    # save result in a temporary directory to avoid overwriting
-    _TMP_RESULT_DIR = Path(_OUTPUT_DIR_TRANSPOSED) / set_log_name()
-    _TMP_RESULT_DIR.mkdir(parents=True, exist_ok=True)
-
+    tsm = TensorStorageManager(tensor_storage_location=tensor_storage_location)
     for metric in metrics:
         metric_class = metric_function(metric)
 
         # Create queries for hidden states
         queries = create_queries(models)
+
         metric_instance = metric_class(
             queries=queries,
-            tensor_storage=None,
+            tensor_storage=tsm,
             variations=variations,
             storage_logic="npy",
+            parallel=True,
         )
         try:
             # Probing like metrics require ground truth
-            if metric == "probe" or metric == "label_overlap":
+            if (
+                metric == "probe"
+                or metric == "label_overlap"
+                or metric == "label_clustering"
+            ):
                 if not labels:
                     raise ValueError(
                         "Probe and LabelOverlap metrics require a label to be specified"
                     )
                 for label_iter in labels:
                     result = metric_instance.main(label=label_iter)
-                    result_path =_TMP_RESULT_DIR / f"{metric}_{label_iter}.pkl"
+                    result_path = _TMP_RESULT_DIR / f"{metric}_{label_iter}.pkl"
                     result.to_pickle(result_path)
+
             else:
                 result = metric_instance.main()
                 result_path = _TMP_RESULT_DIR / f"{metric}.pkl"

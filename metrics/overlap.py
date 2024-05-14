@@ -35,7 +35,7 @@ class PointOverlap(HiddenStatesMetrics):
         module_logger = logging.getLogger("my_app.point_overlap")
         module_logger.info("Computing point overlap")
 
-        iter_list = [5, 10, 100, 500, 1000]
+        iter_list = [100, 500, 1000]
 
         # Directory to save checkpoints
         check_point_dir = Path(_OUTPUT_DIR, "checkpoints")
@@ -43,28 +43,34 @@ class PointOverlap(HiddenStatesMetrics):
         rows = []
 
         couples_list = [
+            ("meta-llama-Llama-3-70b-hf", "meta-llama-Llama-3-70b-hf"),
             ("meta-llama-Llama-2-70b-hf", "meta-llama-Llama-2-70b-hf"),
             ("meta-llama-Llama-2-70b-hf", "meta-llama-Llama-2-70b-chat-hf"),
-            ("meta-llama-Llama-3-70b-hf", "meta-llama-Llama-3-70b-hf"),
             ("meta-llama-Llama-3-70b-hf", "meta-llama-Llama-3-70b-chat-hf"),
             ("meta-llama-Llama-2-13b-hf", "meta-llama-Llama-2-13b-hf"),
             ("meta-llama-Llama-2-13b-hf", "meta-llama-Llama-2-13b-chat-hf"),
+            ("meta-llama-Llama-2-13b-hf", "meta-llama-Llama-2-13b-hf"),
+            ("meta-llama-Llama-2-13b-hf", "meta-llama-Llama-2-13b-ft-hf"),
             ("meta-llama-Llama-2-7b-hf", "meta-llama-Llama-2-7b-hf"),
             ("meta-llama-Llama-2-7b-hf", "meta-llama-Llama-2-7b-chat-hf"),
-        ]
-        couples_list = [
             ("meta-llama-Llama-3-8b-hf", "meta-llama-Llama-3-8b-hf"),
+            ("meta-llama-Llama-3-8b-hf", "meta-llama-Llama-3-8b-chat-hf"),
             ("meta-llama-Llama-3-8b-hf", "meta-llama-Llama-3-8b-ft-hf"),
         ]
-        tsm = TensorStorageManager()
+        #couples_list = [
+        #    ("meta-llama-Llama-3-8b-hf", "meta-llama-Llama-3-8b-chat-hf"),
+        #]
+
+        tsm = self.tensor_storage
         for k in tqdm.tqdm(iter_list, desc="Computing overlaps k"):
             for couples in couples_list:
                 for method in ["last"]:  # self.df["method"].unique().tolist():ù
                     module_logger.debug(f"Processing {couples} with k {k}")
+                    shot_number = "4" if "70" in couples[0] else "5"
                     if couples[0] == couples[1]:
-                        iterlist = [("0", "5")]
+                        iterlist = [("0", shot_number)]
                     else:
-                        iterlist = [("5", "0"), ("0", "0")]
+                        iterlist = [(shot_number, "0"), ("0", "0")]
 
                     for shots in iterlist:
                         shot_i, shot_j = shots
@@ -118,6 +124,7 @@ class PointOverlap(HiddenStatesMetrics):
                             hidden_states_j = hidden_states_j[indices]
 
                         try:
+                            # pdb.set_trace()
                             overlap = self.parallel_compute(
                                 hidden_states_i, hidden_states_j, k
                             )
@@ -209,20 +216,20 @@ class PointOverlap(HiddenStatesMetrics):
         number_of_layers = data_i.shape[1]
 
         process_layer = partial(self.process_layer, data_i=data_i, data_j=data_j, k=k)
-        
+
         if self.parallel:
             with Parallel(n_jobs=_NUM_PROC) as parallel:
                 results = parallel(
                     delayed(process_layer)(layer)
                     for layer in tqdm.tqdm(
-                        range(number_of_layers), desc="Processing layers:"
+                        range(number_of_layers), desc="Processing layers"
                     )
                 )
         else:
             results = []
             for layer in range(number_of_layers):
                 results.append(process_layer(layer))
-        
+
         overlaps = list(results)
 
         return np.stack(overlaps)
@@ -265,13 +272,13 @@ class LabelOverlap(HiddenStatesMetrics):
         # The last token is always the same, thus its first layer activation (embedding) is always the same
         iter_list = [0.05, 0.10, 0.20, 0.50]
 
-        iter_list = [0.10]
+        iter_list = [0.10, 0.20]
         rows = []
 
         check_point_dir = Path(_OUTPUT_DIR, "checkpoints")
         check_point_dir.mkdir(exist_ok=True, parents=True)
 
-        tsm = TensorStorageManager()
+        tsm = self.tensor_storage
         for class_fraction in iter_list:
             for n, query_dict in tqdm.tqdm(
                 enumerate(self.queries), desc="Processing queries"
@@ -371,7 +378,7 @@ class LabelOverlap(HiddenStatesMetrics):
             results = []
             for layer in range(number_of_layers):
                 results.append(process_layer(layer))
-        
+
         end_time = time.time()
         print(f"Label overlap over batch of data took: {end_time-start_time}")
         overlaps = list(results)
@@ -473,5 +480,4 @@ def balance_by_label_within_groups(df, group_field, label_field):
 # df_j = df_j.where(df_j.only_ref_pred == df_i.only_ref_pred)
 # df_i.dropna(inplace=True)
 # df_j.dropna(inplace=True)
-# hidden_states_i, _, df_i = hidden_states_collapse(df_i,query_i, self.tensor_storage)
 # hidden_states_j, _, df_j = hidden_states_collapse(df_j,query_j, self.tensor_storage)

@@ -12,6 +12,7 @@ from pathlib import Path
 from joblib import Parallel, delayed
 from functools import partial
 import logging
+import pdb
 
 
 class IntrinsicDimension(HiddenStatesMetrics):
@@ -25,7 +26,7 @@ class IntrinsicDimension(HiddenStatesMetrics):
         check_point_dir = Path(_OUTPUT_DIR, "checkpoints")
         check_point_dir.mkdir(exist_ok=True, parents=True)
 
-        tsm = TensorStorageManager()
+        tsm = self.tensor_storage
         for query_dict in tqdm.tqdm(self.queries, desc="Processing queries"):
             module_logger.debug(f"Processing query {query_dict}")
             for match in ["correct", "incorrect", "all"]:

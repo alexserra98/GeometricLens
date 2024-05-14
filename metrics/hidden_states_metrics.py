@@ -15,6 +15,7 @@ class HiddenStatesMetrics(ABC):
         variations: dict = None,
         storage_logic: str = "npy",
         parallel: bool = True,
+        instances_per_sub: int = 100,
     ):
         self.queries = queries
         self.df = None

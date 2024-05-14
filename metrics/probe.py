@@ -39,7 +39,7 @@ class LinearProbe(HiddenStatesMetrics):
         # Directory to save checkpoints
         check_point_dir = Path(_OUTPUT_DIR, "checkpoints")
         check_point_dir.mkdir(exist_ok=True, parents=True)
-        tsm = TensorStorageManager()
+        tsm = self.tensor_storage
         for n, query_dict in tqdm.tqdm(
             enumerate(self.queries), desc="Processing queries"
         ):
@@ -126,7 +126,7 @@ class LinearProbe(HiddenStatesMetrics):
             results = []
             for layer in range(number_of_layers):
                 results.append(process_layer(layer))
-        
+
         end_time = time.time()
         print(f"Label overlap over batch of data took: {end_time-start_time}")
         accuracies = list(results)
