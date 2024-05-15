@@ -25,6 +25,7 @@ def parse_args():
     parser.add_argument(
         "--pretrained_mode",
         type=str,
+        default="random_order",
     )
     parser.add_argument(
         "--mask_dir",
@@ -134,8 +135,6 @@ for epoch in ckpts[::-1]:
 
         name = f"{args.model_name}_finetuned_{args.finetuned_mode}_epoch{args.epochs}_eval_{args.eval_dataset}{is_balanced}_{args.num_shots}shot"
 
-        # balance the test set if asked
-        is_balanced = ""
         if dataset_mask is not None:
             base_repr = base_repr[dataset_mask]
             finetuned_repr = finetuned_repr[dataset_mask]

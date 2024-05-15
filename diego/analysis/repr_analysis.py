@@ -18,7 +18,16 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description="Finetune a transformers model on a causal language modeling task"
     )
-    parser.add_argument("--finetuned_mode", type=str, default=None)
+    parser.add_argument(
+        "--finetuned_mode",
+        type=str,
+        default=None,
+    )
+    parser.add_argument(
+        "--pretrained_mode",
+        type=str,
+        default="random_order",
+    )
     parser.add_argument(
         "--mask_dir",
         type=str,
@@ -56,15 +65,6 @@ args.results_path += f"/pretrained/{args.model_name}"
 os.makedirs(args.results_path, exist_ok=True)
 
 base_dir = "/orfeo/cephfs/scratch/area/ddoimo/open/geometric_lens/repo/results"
-
-# args.finetuned_mode = "dev_val_balanced_20samples"
-# args.epochs = 4
-# args.model_name = "llama-3-8b"
-# args.eval_dataset = "test"
-# args.samples_subject = 200
-# args.mask_dir = (
-#     "/home/diego/Documents/area_science/ricerca/open/geometric_lens/repo/diego/analysis"
-# )
 
 print(f"processing model: {args.model_name}")
 print(f"processing epochs: {args.epochs}")
@@ -113,7 +113,7 @@ if dataset_mask is not None:
     is_balanced = f"_balanced{args.samples_subject}"
 
 print(args.samples_subject)
-print(is_balanced
+print(is_balanced)
 
 
 overlaps = defaultdict(list)
