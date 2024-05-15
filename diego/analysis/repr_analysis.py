@@ -108,8 +108,12 @@ else:
 
 assert args.pretrained_mode in ["mmlu", "random_order"]
 
+is_balances = ""
 if dataset_mask is not None:
     is_balanced = f"_balanced{args.samples_subject}"
+
+print(args.samples_subject)
+print(is_balanced
 
 
 overlaps = defaultdict(list)
