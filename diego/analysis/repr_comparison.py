@@ -51,11 +51,19 @@ def parse_args():
         type=str,
     )
     parser.add_argument(
+        "--samples_subject",
+        type=int,
+        default=200,
+    )
+    parser.add_argument(
         "--num_shots",
         type=int,
     )
-    parser.add_argument("--samples_subject", type=int, default=200)
-    parser.add_argument("--ckpt", type=int, default=None)
+    parser.add_argument(
+        "--ckpt",
+        type=int,
+        default=None,
+    )
     args = parser.parse_args()
     return args
 
