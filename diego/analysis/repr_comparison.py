@@ -113,7 +113,7 @@ else:
     assert False, "wrong model name"
 
 
-assert args.pretrained_mode in ["mmlu", "random_order"]
+assert args.pretrained_mode in ["mmlu", "random_order"], args.pretrained_mode
 
 if dataset_mask is not None:
     is_balanced = f"_balanced{args.samples_subject}"
