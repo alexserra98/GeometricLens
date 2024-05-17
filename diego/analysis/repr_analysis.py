@@ -233,7 +233,8 @@ for epoch in ckpts[::-1]:
                 clusters[f"letters-ari-ep{epoch}-z{z}{is_halo}"].append(
                     adjusted_rand_score(assignment[mask], letter_label[mask])
                 )
-        assert len(clusters[f"letters-ari-ep{epoch}-z{z}{is_halo}"]) > 0
+        print(clusters[f"letters-ari-ep{epoch}-z{z}{is_halo}"])
+        sys.stdout.flush()
 
         for class_fraction in [0.3, 0.5]:
             overlaps[f"subjects-ep{epoch}_{class_fraction}"].append(
@@ -256,6 +257,9 @@ for epoch in ckpts[::-1]:
         pickle.dump(overlaps, f, protocol=pickle.HIGHEST_PROTOCOL)
 
     with open(f"{args.results_path}/cluster_{name}.pkl", "wb") as f:
+        assert len(clusters[f"letters-ari-ep{epoch}-z{z}{is_halo}"]) > 0
+        print(clusters[f"letters-ari-ep{epoch}-z{z}{is_halo}"])
+        sys.stdout.flush()
         pickle.dump(clusters, f, protocol=pickle.HIGHEST_PROTOCOL)
 
     with open(f"{args.results_path}/ids_{name}.pkl", "wb") as f:
