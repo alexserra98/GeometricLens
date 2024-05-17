@@ -20,12 +20,13 @@ def parse_args():
     parser.add_argument(
         "--finetuned_mode",
         type=str,
+        default=None,
         help="The maximum total sequence length (prompt+completion) of each training example.",
     )
     parser.add_argument(
         "--pretrained_mode",
         type=str,
-        default="random_order",
+        default=None,
     )
     parser.add_argument(
         "--mask_dir",
