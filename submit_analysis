@@ -25,7 +25,7 @@ export PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"
 
 
 python diego/analysis/repr_analysis.py \
-    --model_name "llama-3-8b" \
+    --model_name "llama-2-13b" \
     --results_path "diego/analysis/results" \
     --mask_dir /orfeo/cephfs/scratch/area/ddoimo/open/geometric_lens/repo/diego/analysis \
     --epochs 4 \
@@ -35,3 +35,4 @@ python diego/analysis/repr_analysis.py \
     --samples_subject 200
     #--pretrained_mode "random_order"
     #--finetuned_mode "test_balanced" \
+    #--finetuned_mode "dev_val_balanced_20samples" \

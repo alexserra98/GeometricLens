@@ -139,9 +139,9 @@ for epoch in ckpts[::-1]:
             #     base_path = f"{base_dir}/evaluated_test/questions_sampled/{args.model_name}/{args.num_shots}shot"
             #     name = f"base_question_sampled_{args.num_shots}"
             # else:
-            base_path = f"{base_dir}/{args.pretrained_mode}/{args.model_name}/{args.num_shots}shot"
+            base_path = f"{base_dir}/evaluated_{args.eval_dataset}/{args.pretrained_mode}/{args.model_name}/{args.num_shots}shot"
             # name = f"base_{args.num_shots}"
-            name = f"{args.model_name}_{args.pretrained_mode}_eval_{args.eval_dataset}{is_balanced}_0shot"
+            name = f"{args.model_name}_{args.pretrained_mode}_eval_{args.eval_dataset}{is_balanced}_{args.num_shots}shot"
 
         else:
             print(f"processing {args.num_shots} epoch {epoch} layer {layer}")
