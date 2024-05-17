@@ -24,4 +24,9 @@ plt.plot(stats["letters-ep4_0.1"])
 stats.keys()
 
 
-stats["letters-ari-ep4_z1.6"]
+plt.plot(stats["letters-ari-ep4-z1.6"])
+
+plt.plot(stats["letters-ari-ep0-z1.6-halo"])
+plt.plot(stats["letters-ari-ep2-z1.6-halo"])
+plt.plot(stats["letters-ari-ep3-z1.6-halo"])
+plt.plot(stats["letters-ari-ep4-z1.6-halo"])

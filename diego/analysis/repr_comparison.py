@@ -175,14 +175,17 @@ for epoch in ckpts[::-1]:
         sys.stdout.flush()
 
         # ************************************
-
-        pretrained_path = (
-            f"{base_dir}/{args.pretrained_mode}/{args.model_name}/{args.num_shots}shot"
-        )
-        base_repr = torch.load(f"{pretrained_path}/l{layer}_target.pt")
-        base_repr = base_repr.to(torch.float64).numpy()
+        if args.pretrainied_mode is None:
+            pretrained_path = f"{base_dir}/{args.pretrained_mode}/{args.model_name}/{args.num_shots}shot"
 
         finetuned_path = f"{base_dir}/finetuned_{args.finetuned_mode}/evaluated_{args.eval_dataset}/{args.model_name}/{args.epochs}epochs/epoch_{epoch}"
+
+        if args.pretrainied_mode is None:
+            pretrained_path = f"{base_dir}/finetuned_{args.finetuned_mode}/evaluated_{args.eval_dataset}/{args.model_name}/{args.epochs}epochs/epoch_0"
+        else:
+            base_repr = torch.load(f"{pretrained_path}/l{layer}_target.pt")
+            base_repr = base_repr.to(torch.float64).numpy()
+
         finetuned_repr = torch.load(f"{finetuned_path}/l{layer}_target.pt")
         finetuned_repr = finetuned_repr.to(torch.float64).numpy()
 

@@ -14,6 +14,9 @@ from sklearn.metrics import adjusted_mutual_info_score, adjusted_rand_score
 from utils import return_label_overlap
 
 
+rng = np.random
+
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Finetune a transformers model on a causal language modeling task"
@@ -115,6 +118,11 @@ if args.eval_dataset == "test":
     else:
         assert False, "wrong samples subject"
     is_balanced = f"_balanced{args.samples_subject}"
+elif args.eval_dataset == "dev+validation":
+    mask_dir = args.mask_dir
+    dataset_mask = np.load(f"{mask_dir}/dev+validation_mask_200.npy")
+else:
+    assert False, "dataset misspecified"
 
 print(args.samples_subject)
 print(is_balanced)
@@ -128,6 +136,7 @@ overlaps = defaultdict(list)
 clusters = defaultdict(list)
 intrinsic_dim = defaultdict(list)
 
+
 for epoch in ckpts[::-1]:
     # layer 0 is all overlapped
     for layer in range(1, nlayers):
@@ -139,9 +148,9 @@ for epoch in ckpts[::-1]:
             #     base_path = f"{base_dir}/evaluated_test/questions_sampled/{args.model_name}/{args.num_shots}shot"
             #     name = f"base_question_sampled_{args.num_shots}"
             # else:
-            base_path = f"{base_dir}/{args.pretrained_mode}/{args.model_name}/{args.num_shots}shot"
+            base_path = f"{base_dir}/{args.pretrained_mode}/evaluated_{args.eval_dataset}/{args.model_name}/{args.num_shots}shot"
             # name = f"base_{args.num_shots}"
-            name = f"{args.model_name}_{args.pretrained_mode}_eval_{args.eval_dataset}{is_balanced}_0shot"
+            name = f"{args.model_name}_{args.pretrained_mode}_eval_{args.eval_dataset}{is_balanced}"
 
         else:
             print(f"processing {args.num_shots} epoch {epoch} layer {layer}")
