@@ -73,40 +73,25 @@ def parse_args():
 # **************************************************************************
 args = parse_args()
 
-args.results_path += f"/pretrained/{args.model_name}"
-os.makedirs(args.results_path, exist_ok=True)
+assert args.finetuned_mode is None or args.pretrained_mode is None
 
-base_dir = "/orfeo/cephfs/scratch/area/ddoimo/open/geometric_lens/repo/results"
-
-print(f"processing model: {args.model_name}")
-print(f"processing epochs: {args.epochs}")
-print(f"processing daset: {args.eval_dataset}")
-print(f"num_shots: {args.num_shots}")
-sys.stdout.flush()
-
-if args.eval_dataset == "test":
-    mask_dir = args.mask_dir
-    if args.samples_subject == 100:
-        dataset_mask = np.load(f"{mask_dir}/test_mask_100.npy")
-    if args.samples_subject == 200:
-        dataset_mask = np.load(f"{mask_dir}/test_mask_200.npy")
-    else:
-        assert False, "wrong samples subject"
-
-
-# *****************************************************************************
-
-
-if args.finetuned_mode is not None:
-    cpt = ""
+if args.pretrained_mode is not None:
+    assert args.pretrained_mode in ["mmlu", "random_order"]
+    args.results_path += f"/pretrained/{args.model_name}"
+    os.makedirs(args.results_path, exist_ok=True)
+    ckpts = [0]
+elif args.finetuned_mode is not None:
+    args.results_path += f"/finetuned/{args.model_name}"
+    os.makedirs(args.results_path, exist_ok=True)
+    ckpts = np.arange(args.epochs + 1)
     if args.ckpt is not None:
         ckpts = [args.ckpt]
-        cpt = "_cpt{args.ckpt}"
-    else:
-        ckpts = np.arange(args.epochs + 1)
 else:
-    ckpts = [0]
+    assert False, "either pretrained mode of finetuned mode must be not None"
 
+
+# base path
+base_dir = "/orfeo/cephfs/scratch/area/ddoimo/open/geometric_lens/repo/results"
 
 if args.model_name == "llama-3-8b":
     nlayers = 34
@@ -118,15 +103,26 @@ else:
     ), f"wrong model name {args.model_name}, expected llama-3-8b or llama-2-13b"
 
 
-assert args.pretrained_mode in ["mmlu", "random_order"]
-
-is_balances = ""
-if dataset_mask is not None:
+# dataset to analyze
+is_balanced = ""
+if args.eval_dataset == "test":
+    assert args.sample_subject is not None
+    mask_dir = args.mask_dir
+    if args.samples_subject == 100:
+        dataset_mask = np.load(f"{mask_dir}/test_mask_100.npy")
+    if args.samples_subject == 200:
+        dataset_mask = np.load(f"{mask_dir}/test_mask_200.npy")
+    else:
+        assert False, "wrong samples subject"
     is_balanced = f"_balanced{args.samples_subject}"
 
 print(args.samples_subject)
 print(is_balanced)
-
+print(f"processing model: {args.model_name}")
+print(f"processing epochs: {args.epochs}")
+print(f"processing daset: {args.eval_dataset}")
+print(f"num_shots: {args.num_shots}")
+sys.stdout.flush()
 
 overlaps = defaultdict(list)
 clusters = defaultdict(list)
@@ -135,14 +131,9 @@ intrinsic_dim = defaultdict(list)
 for epoch in ckpts[::-1]:
     # layer 0 is all overlapped
     for layer in range(1, nlayers):
-        if args.finetuned_mode is not None:
-            print(f"processing {args.num_shots} epoch {epoch} layer {layer}")
-            sys.stdout.flush()
-        else:
+        if args.finetuned_mode is None:
             print(f"processing {args.num_shots} layer {layer}")
             sys.stdout.flush()
-        # ************************************
-        if args.finetuned_mode is None:
             assert args.num_shots is not None
             # if args.question_sampled:
             #     base_path = f"{base_dir}/evaluated_test/questions_sampled/{args.model_name}/{args.num_shots}shot"
@@ -153,6 +144,8 @@ for epoch in ckpts[::-1]:
             name = f"{args.model_name}_{args.pretrained_mode}_eval_{args.eval_dataset}{is_balanced}_0shot"
 
         else:
+            print(f"processing {args.num_shots} epoch {epoch} layer {layer}")
+            sys.stdout.flush()
             base_path = f"{base_dir}/finetuned_{args.finetuned_mode}/evaluated_{args.eval_dataset}/{args.model_name}/{args.epochs}epochs/epoch_{epoch}"
             # base_path = "/home/diego/Documents/area_science/ricerca/open/geometric_lens/repo/repr_tmp"
             name = f"{args.model_name}_finetuned_{args.finetuned_mode}_epoch{args.epochs}_eval_{args.eval_dataset}{is_balanced}_0shot"
