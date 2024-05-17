@@ -155,6 +155,7 @@ for epoch in ckpts[::-1]:
 
         with open(f"{base_path}/statistics_target.pkl", "rb") as f:
             stats = pickle.load(f)
+
         subjects = stats["subjects"]
         subjects_to_int = {sub: i for i, sub in enumerate(np.unique(subjects))}
         subj_label = np.array([subjects_to_int[sub] for sub in subjects])
@@ -232,6 +233,7 @@ for epoch in ckpts[::-1]:
                 clusters[f"letters-ari-ep{epoch}-z{z}{is_halo}"].append(
                     adjusted_rand_score(assignment[mask], letter_label[mask])
                 )
+        assert len(clusters[f"letters-ari-ep{epoch}-z{z}{is_halo}"]) > 0
 
         for class_fraction in [0.3, 0.5]:
             overlaps[f"subjects-ep{epoch}_{class_fraction}"].append(
@@ -250,10 +252,10 @@ for epoch in ckpts[::-1]:
                 )
             )
 
-    with open(f"{args.results_path}/overlap_subject_{name}.pkl", "wb") as f:
+    with open(f"{args.results_path}/overlap_{name}.pkl", "wb") as f:
         pickle.dump(overlaps, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-    with open(f"{args.results_path}/cluster_subject_{name}.pkl", "wb") as f:
+    with open(f"{args.results_path}/cluster_{name}.pkl", "wb") as f:
         pickle.dump(clusters, f, protocol=pickle.HIGHEST_PROTOCOL)
 
     with open(f"{args.results_path}/ids_{name}.pkl", "wb") as f:
