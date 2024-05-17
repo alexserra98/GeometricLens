@@ -1,4 +1,6 @@
 from dadapy.data import Data
+from dadapy.plot import get_dendrogram
+
 import torch
 import numpy as np
 import pickle
@@ -7,6 +9,10 @@ from collections import Counter, defaultdict
 import matplotlib.pyplot as plt
 import scipy as sp
 from sklearn.metrics import adjusted_rand_score, adjusted_mutual_info_score
+import seaborn as sns
+
+
+results_folder = "plots/dendrograms"
 
 
 def get_composition_imbalanced(
@@ -51,7 +57,7 @@ def get_composition_imbalanced(
         ):
             class_to_count.append(clust_subjects[i])
 
-    if len(class_to_count) > 4:
+    if len(class_to_count) > 5:
         class_to_count = [f"mix of {len(class_to_count)} subjects"]
 
     return clust_subjects, subject_fraction, class_to_count
@@ -82,8 +88,8 @@ def get_composition(cluster_indices, index_to_subject, subject_relevance):
         if current_perc > 0.9:
             break
 
-    if clust_percent[0] < 0.3 or len(class_to_count) > 3:
-        class_to_count = [f"mix of {len(class_to_count)} subjects"]
+    # if clust_percent[0] < 0.3 or len(class_to_count) > 3:
+    #     class_to_count = [f"mix of {len(class_to_count)} subjects"]
 
     return clust_subjects, clust_percent, class_to_count
 
@@ -95,7 +101,7 @@ def get_subject_array(base_dir):
     return np.array(stats["subjects"])
 
 
-def get_dataset_mask(base_dir, nsample_subjects=100, subjects=None):
+def get_dataset_mask(base_dir, subjects, nsample_subjects=100):
 
     if nsample_subjects == 100:
         mask_path = f"{base_dir}/diego/analysis"
@@ -108,8 +114,15 @@ def get_dataset_mask(base_dir, nsample_subjects=100, subjects=None):
         assert np.unique(list(frequences))[0] == nsample_subjects, np.unique(
             list(frequences)
         )[0]
+    if nsample_subjects == 200:
+        mask_path = f"{base_dir}/diego/analysis"
+        mask = np.load(f"{mask_path}/test_mask_200.npy")
+        subjects = subjects[mask]
+        sub_to_int = {sub: i for i, sub in enumerate(np.unique(subjects))}
+        gtl = [sub_to_int[sub] for sub in subjects]
 
     else:
+
         mask = []
         gtl = []
         for i, sub in enumerate(np.unique(subjects)):
@@ -140,10 +153,10 @@ subjects = subjects[mask]
 # **************************************************************************
 
 
-model_path = f"{base_dir}/results/evaluated_test/random_order/llama3-70b/4shot"
+model_path = f"{base_dir}/results/evaluated_test/random_order/llama3-70b/0shot"
 # model_path = f"{base_dir}/results/evaluated_test/questions_sampled13/llama3-70b/4shot"
 
-X = torch.load(f"{model_path}/l10_target.pt")
+X = torch.load(f"{model_path}/l21_target.pt")
 X = X.to(torch.float64).numpy()[mask]
 
 # check we do not have opverlapping datapoints in case ramove tham from the relevant arrays
@@ -172,15 +185,18 @@ d.set_id(ids[3])
 
 
 # d.return_id_scaling_gride(range_max=100)
-d.compute_density_PAk()
+# d.compute_density_PAk()
 d.compute_density_kNN(k=16)
-cluster_assignment = d.compute_clustering_ADP(Z=1.0, halo=False)
+cluster_assignment = d.compute_clustering_ADP(Z=1.6, halo=False)
 is_core = cluster_assignment != -1
 
 print("n_clusters", d.N_clusters)
 
-adjusted_rand_score(gtl[is_core], cluster_assignment[is_core])
+print(adjusted_rand_score(gtl[is_core], cluster_assignment[is_core]))
 
+F = [d.log_den[c] for c in d.cluster_centers]
+
+# we filter out the maximum which seems an outplier in density
 
 # **************************************************************
 # we consider only clusters with at least 30 points (this can be relaxed or decreased)
@@ -188,8 +204,8 @@ min_population = 30
 
 cluster_mask = []
 final_clusters_tmp = []
-for cluster_indices in d.cluster_indices:
-    if len(cluster_indices) > min_population:
+for c, cluster_indices in zip(d.cluster_centers, d.cluster_indices):
+    if len(cluster_indices) > min_population and d.log_den[c] < max(F):
         cluster_mask.append(True)
         final_clusters_tmp.append(cluster_indices)
     else:
@@ -197,7 +213,6 @@ for cluster_indices in d.cluster_indices:
 
 cluster_mask = np.array(cluster_mask)
 assert cluster_mask.shape[0] == d.N_clusters
-
 
 final_clusters = final_clusters_tmp
 nclus = len(final_clusters)
@@ -213,7 +228,13 @@ density_peak_indices = np.array(d.cluster_centers)[cluster_mask]
 # key quantity for the dendogram is here: similarity matrix given by the density
 # default from the advanced density peak paper. Other similarities can be tried in a second phase.
 density_peaks = d.log_den[density_peak_indices]
-Fmax = max(density_peaks)
+# the highest density peak is an outlier in density we filter it out
+Fmax = np.sort(F)[-2]
+
+# F = [d.log_den[c] for c in d.cluster_centers]
+peak_y = density_peaks - Fmax
+
+
 Dis = []
 for i in range(nclus):
     for j in range(i + 1, nclus):
@@ -254,28 +275,174 @@ for i in range(len(final_clusters)):
 labels = []
 for i, (clust, subjects) in enumerate(clust_approx_subjects.items()):
     name = ""
-    for sub in subjects:
-        name += f" {sub},"
+    for i, sub in enumerate(subjects):
+        if i < 2:
+            name += f" {sub},"
     labels.append(name.strip()[:-1])
 
 # ****************************************************
-thr = 20  # color threshold
-
-fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7, 15))  # create figure & 1 axis
+# thr = 20  # color threshold
+fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(14, 10))  # create figure & 1 axis
 # truncate_mode: 'lastp', 'level', None
 # labels = lab
+# sns.set_style("whitegrid")
 dn = sp.cluster.hierarchy.dendrogram(
     DD,
-    p=32,
+    p=30,
     truncate_mode=None,
-    color_threshold=thr,
+    color_threshold=14,
     get_leaves=True,
     orientation="left",
-    above_threshold_color="b",
+    above_threshold_color="C5",
     labels=labels,
+    leaf_font_size=10,
 )
-
 plt.tight_layout()
 
 
-fig.savefig(f"./plots/dendogram_llama3-8b_layer_6_{nshots}.png", dpi=150)
+fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(8, 13))  # create figure & 1 axis
+# truncate_mode: 'lastp', 'level', None
+# labels = lab
+# sns.set_style("whitegrid")
+dn = sp.cluster.hierarchy.dendrogram(
+    DD,
+    p=30,
+    truncate_mode=None,
+    color_threshold=14,
+    get_leaves=True,
+    orientation="left",
+    above_threshold_color="C5",
+    labels=labels,
+    leaf_font_size=10,
+)
+ax.set_xticklabels([])
+ax.set_xticks([])
+plt.tight_layout()
+# plt.savefig(f"{results_folder}/llama3-70b-0shot_app.pdf")
+
+# *************************************************************
+
+
+# without labels
+dn = sp.cluster.hierarchy.dendrogram(
+    DD,
+    p=35,
+    truncate_mode=None,
+    color_threshold=24,
+    get_leaves=True,
+    orientation="left",
+    labels=None,
+    above_threshold_color="c5",
+)
+
+
+xcoords = np.array(dn["icoord"]) / 10 - 0.5
+
+# integer label of the leaf nodes (representing the clusters)
+order = np.array([int(dn["ivl"][i]) for i in range(len(dn["ivl"]))])
+
+# density of the peaks
+reordered_peaks = peak_y[order]
+# with this rescoling the integer coordinated are in one to
+# one correspondece with the integer label of the clusters above
+xcoords = np.array(dn["icoord"]) / 10 - 0.5
+ycoords = -np.array(dn["dcoord"])
+
+
+# left_leaf_rows = np.where(ycoords[:, 3] == 0)
+
+# left_leaf_rows = np.where(ycoords[:, 0] == 0)
+# len(left_leaf_rows[0])
+
+# left_leaf_clus_index = xcoords[left_leaf_rows, 3][0]
+# len(left_leaf_clus_index)
+
+# right_leaf_rows = np.where(ycoords[:, 3] == 0)
+# right_leaf_clus_index = xcoords[right_leaf_rows, 3][0]
+# ycoords[left_leaf_rows, 0] = reordered_peaks[(left_leaf_clus_index).astype(int)]
+# ycoords[right_leaf_rows, 3] = reordered_peaks[(right_leaf_clus_index).astype(int)]
+
+ycoords[np.where(ycoords[:, 0] == 0), 0] = reordered_peaks[
+    (xcoords[np.where(ycoords[:, 0] == 0), 0][0]).astype(int)
+]
+ycoords[np.where(ycoords[:, 3] == 0), 3] = reordered_peaks[
+    (xcoords[np.where(ycoords[:, 3] == 0), 3][0]).astype(int)
+]
+
+
+# **************************************************************************
+import matplotlib
+
+gs = fig.add_gridspec(nrows=2, ncols=6)
+
+fig = plt.figure(figsize=(4, 3.5))
+
+ax = fig.add_subplot(gs[1, :])
+
+nlinks = len(final_clusters) - 1
+for i, link in enumerate(range(nlinks)):
+    for i in range(3):
+        x0, y0 = xcoords[link, i], ycoords[link, i]
+        x1, y1 = xcoords[link, i + 1], ycoords[link, i + 1]
+        ax.plot([x0, x1], [y0, y1], color="C5", lw=1.5)
+plt.xticks(
+    [
+        1,
+        6,
+        13.75,
+        23,
+        27.5,
+        32,
+    ],
+    [
+        "history",
+        "accounting,\nlaw",
+        "philosophy,\nlogic",
+        "physics",
+        "STEM",
+        "biology",
+    ],
+    rotation=30,
+    fontsize=7,
+)
+
+xticks = [17, 19, 21, 23, 31, 37]
+xticklabels = [
+    "mix 6",
+    "mix 18",
+    "mix 6",
+    "mix 18",
+    "mix 6",
+    "mix 6",
+]
+colors = [
+    "black",
+    "C3",
+    "black",
+    "C3",
+    "black",
+]
+
+for x, xlabel, c in zip(xticks, xticklabels, colors):
+    ax.text(
+        x=x,
+        y=3,
+        s=f"{xlabel}",
+        va="bottom",
+        ha="center",
+        rotation=90,
+        fontsize=9,
+        fontweight="bold",
+        color=c,
+    )
+
+
+plt.yticks([-18, -12, -6, 0])
+plt.ylabel("log density")
+
+gs.tight_layout(fig)
+
+plt.savefig("final_dendogram_llama3-70b-0shot.png", dpi=400)
+
+
+# **********************************************************
