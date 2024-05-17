@@ -71,19 +71,81 @@ def parse_args():
 # **************************************************************************************************
 
 args = parse_args()
+# args.results_path += f"/finetuned/{args.model_name}"
+# os.makedirs(args.results_path, exist_ok=True)
+
+# base_dir = "/orfeo/cephfs/scratch/area/ddoimo/open/geometric_lens/repo/results"
+
+
+# print(f"processing model: {args.model_name}")
+# print(f"processing epochs: {args.epochs}")
+# print(f"processing daset: {args.eval_dataset}")
+# print(f"num_shots: {args.num_shots}")
+# sys.stdout.flush()
+
+# if args.eval_dataset == "test":
+#     mask_dir = args.mask_dir
+#     if args.samples_subject == 100:
+#         dataset_mask = np.load(f"{mask_dir}/test_mask_100.npy")
+#     if args.samples_subject == 200:
+#         dataset_mask = np.load(f"{mask_dir}/test_mask_200.npy")
+#     else:
+#         assert False, "wrong samples subject"
+
+
+# # ****************************************************************************************
+# cpt = ""
+# if args.ckpt is not None:
+#     ckpts = [args.ckpt]
+#     cpt = "_cpt{args.ckpt}"
+# else:
+#     ckpts = np.arange(args.epochs + 1)
+
+# ov_repr = defaultdict(list)
+# cluster_comparison = defaultdict(list)
+
+
+# if args.model_name == "llama-3-8b":
+#     nlayers = 34
+# elif args.model_name == "llama-2-13b":
+#     nlayers = 42
+# else:
+#     assert False, "wrong model name"
+
+
+# assert args.pretrained_mode in ["mmlu", "random_order"]
+
+# if dataset_mask is not None:
+#     is_balanced = f"_balanced{args.samples_subject}"
+
+
+# ********************************************************************************
+
+assert args.finetuned_mode is None and args.pretrained_mode is None
+
+
 args.results_path += f"/finetuned/{args.model_name}"
 os.makedirs(args.results_path, exist_ok=True)
+ckpts = np.arange(args.epochs + 1)
 
+
+# base path
 base_dir = "/orfeo/cephfs/scratch/area/ddoimo/open/geometric_lens/repo/results"
 
+if args.model_name == "llama-3-8b":
+    nlayers = 34
+elif args.model_name == "llama-2-13b":
+    nlayers = 42
+else:
+    assert (
+        False
+    ), f"wrong model name {args.model_name}, expected llama-3-8b or llama-2-13b"
 
-print(f"processing model: {args.model_name}")
-print(f"processing epochs: {args.epochs}")
-print(f"processing daset: {args.eval_dataset}")
-print(f"num_shots: {args.num_shots}")
-sys.stdout.flush()
 
+# dataset to analyze
+is_balanced = ""
 if args.eval_dataset == "test":
+    assert args.sample_subject is not None
     mask_dir = args.mask_dir
     if args.samples_subject == 100:
         dataset_mask = np.load(f"{mask_dir}/test_mask_100.npy")
@@ -91,32 +153,18 @@ if args.eval_dataset == "test":
         dataset_mask = np.load(f"{mask_dir}/test_mask_200.npy")
     else:
         assert False, "wrong samples subject"
+    is_balanced = f"_balanced{args.samples_subject}"
 
-
-# ****************************************************************************************
-cpt = ""
-if args.ckpt is not None:
-    ckpts = [args.ckpt]
-    cpt = "_cpt{args.ckpt}"
-else:
-    ckpts = np.arange(args.epochs + 1)
+print(args.samples_subject)
+print(is_balanced)
+print(f"processing model: {args.model_name}")
+print(f"processing epochs: {args.epochs}")
+print(f"processing daset: {args.eval_dataset}")
+print(f"num_shots: {args.num_shots}")
+sys.stdout.flush()
 
 ov_repr = defaultdict(list)
 cluster_comparison = defaultdict(list)
-
-
-if args.model_name == "llama-3-8b":
-    nlayers = 34
-elif args.model_name == "llama-2-13b":
-    nlayers = 42
-else:
-    assert False, "wrong model name"
-
-
-assert args.pretrained_mode in ["mmlu", "random_order"]
-
-if dataset_mask is not None:
-    is_balanced = f"_balanced{args.samples_subject}"
 
 
 for epoch in ckpts[::-1]:
