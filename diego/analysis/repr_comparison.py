@@ -146,18 +146,21 @@ else:
 # dataset to analyze
 is_balanced = ""
 if args.eval_dataset == "test":
-    assert args.sample_subject is not None
+    assert args.samples_subject is not None
     mask_dir = args.mask_dir
     if args.samples_subject == 100:
+        print("using 100 test mask")
         dataset_mask = np.load(f"{mask_dir}/test_mask_100.npy")
     if args.samples_subject == 200:
+        print("using 200 test mask")
         dataset_mask = np.load(f"{mask_dir}/test_mask_200.npy")
     else:
         assert False, "wrong samples subject"
     is_balanced = f"_balanced{args.samples_subject}"
 elif args.eval_dataset == "dev+validation":
+    print("using 20 dev+val mask")
     mask_dir = args.mask_dir
-    dataset_mask = np.load(f"{mask_dir}/dev+validation_mask_200.npy")
+    dataset_mask = np.load(f"{mask_dir}/dev+validation_mask_20.npy")
 else:
     assert False, "dataset misspecified"
 
@@ -173,7 +176,6 @@ sys.stdout.flush()
 ov_repr = defaultdict(list)
 cluster_comparison = defaultdict(list)
 
-
 for epoch in ckpts[::-1]:
     # layer 0 is all overlapped
     for layer in range(1, nlayers):
@@ -181,7 +183,7 @@ for epoch in ckpts[::-1]:
         sys.stdout.flush()
 
         # ************************************
-        if args.pretrainied_mode is None:
+        if args.pretrained_mode is None:
             pretrained_path = f"{base_dir}/finetuned_{args.finetuned_mode}/evaluated_{args.eval_dataset}/{args.model_name}/{args.epochs}epochs/epoch_0"
         else:
             pretrained_path = f"{base_dir}/{args.pretrained_mode}/{args.model_name}/{args.num_shots}shot"
@@ -223,7 +225,11 @@ for epoch in ckpts[::-1]:
 
         base_repr = base_repr[indices]
         finetuned_repr = finetuned_repr[indices]
+<<<<<<< HEAD
         # subjects = subjects[indices]
+=======
+        #subjects = subjects[indices]
+>>>>>>> 40a5bedad8d2334d06026f86819a8d8e08d293ce
 
         # ***********************************************************************
 

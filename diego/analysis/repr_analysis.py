@@ -109,7 +109,7 @@ else:
 # dataset to analyze
 is_balanced = ""
 if args.eval_dataset == "test":
-    assert args.sample_subject is not None
+    assert args.samples_subject is not None
     mask_dir = args.mask_dir
     if args.samples_subject == 100:
         dataset_mask = np.load(f"{mask_dir}/test_mask_100.npy")
@@ -120,7 +120,7 @@ if args.eval_dataset == "test":
     is_balanced = f"_balanced{args.samples_subject}"
 elif args.eval_dataset == "dev+validation":
     mask_dir = args.mask_dir
-    dataset_mask = np.load(f"{mask_dir}/dev+validation_mask_200.npy")
+    dataset_mask = np.load(f"{mask_dir}/dev+validation_mask_20.npy")
 else:
     assert False, "dataset misspecified"
 
@@ -145,11 +145,16 @@ for epoch in ckpts[::-1]:
             print(f"processing {args.num_shots} layer {layer}")
             sys.stdout.flush()
             assert args.num_shots is not None
-            base_path = f"{base_dir}/{args.pretrained_mode}/evaluated_{args.eval_dataset}/{args.model_name}/{args.num_shots}shot"
+            # if args.question_sampled:
+            #     base_path = f"{base_dir}/evaluated_test/questions_sampled/{args.model_name}/{args.num_shots}shot"
+            #     name = f"base_question_sampled_{args.num_shots}"
+            # else:
+            base_path = f"{base_dir}/evaluated_{args.eval_dataset}/{args.pretrained_mode}/{args.model_name}/{args.num_shots}shot"
             # name = f"base_{args.num_shots}"
-            name = f"{args.model_name}_{args.pretrained_mode}_eval_{args.eval_dataset}{is_balanced}"
+            name = f"{args.model_name}_{args.pretrained_mode}_eval_{args.eval_dataset}{is_balanced}_{args.num_shots}shot"
 
         else:
+            assert args.num_shots == 0
             print(f"processing {args.num_shots} epoch {epoch} layer {layer}")
             sys.stdout.flush()
             base_path = f"{base_dir}/finetuned_{args.finetuned_mode}/evaluated_{args.eval_dataset}/{args.model_name}/{args.epochs}epochs/epoch_{epoch}"
