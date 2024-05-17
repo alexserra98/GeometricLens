@@ -225,11 +225,6 @@ for epoch in ckpts[::-1]:
 
         base_repr = base_repr[indices]
         finetuned_repr = finetuned_repr[indices]
-<<<<<<< HEAD
-        # subjects = subjects[indices]
-=======
-        #subjects = subjects[indices]
->>>>>>> 40a5bedad8d2334d06026f86819a8d8e08d293ce
 
         # ***********************************************************************
 
