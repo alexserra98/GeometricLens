@@ -26,7 +26,7 @@ def parse_args():
     parser.add_argument(
         "--pretrained_mode",
         type=str,
-        default="random_order",
+        default=None,
     )
     parser.add_argument(
         "--mask_dir",
