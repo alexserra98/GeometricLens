@@ -106,7 +106,7 @@ else:
 # dataset to analyze
 is_balanced = ""
 if args.eval_dataset == "test":
-    assert args.sample_subject is not None
+    assert args.samples_subject is not None
     mask_dir = args.mask_dir
     if args.samples_subject == 100:
         dataset_mask = np.load(f"{mask_dir}/test_mask_100.npy")
