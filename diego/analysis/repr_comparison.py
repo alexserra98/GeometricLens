@@ -223,7 +223,7 @@ for epoch in ckpts[::-1]:
 
         base_repr = base_repr[indices]
         finetuned_repr = finetuned_repr[indices]
-        subjects = subjects[indices]
+        # subjects = subjects[indices]
 
         # ***********************************************************************
 

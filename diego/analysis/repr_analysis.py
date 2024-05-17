@@ -145,10 +145,6 @@ for epoch in ckpts[::-1]:
             print(f"processing {args.num_shots} layer {layer}")
             sys.stdout.flush()
             assert args.num_shots is not None
-            # if args.question_sampled:
-            #     base_path = f"{base_dir}/evaluated_test/questions_sampled/{args.model_name}/{args.num_shots}shot"
-            #     name = f"base_question_sampled_{args.num_shots}"
-            # else:
             base_path = f"{base_dir}/{args.pretrained_mode}/evaluated_{args.eval_dataset}/{args.model_name}/{args.num_shots}shot"
             # name = f"base_{args.num_shots}"
             name = f"{args.model_name}_{args.pretrained_mode}_eval_{args.eval_dataset}{is_balanced}"
