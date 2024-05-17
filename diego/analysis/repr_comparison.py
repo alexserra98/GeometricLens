@@ -122,7 +122,7 @@ args = parse_args()
 
 # ********************************************************************************
 
-assert args.finetuned_mode is None and args.pretrained_mode is None
+assert args.finetuned_mode is not None
 
 
 args.results_path += f"/finetuned/{args.model_name}"
@@ -155,6 +155,12 @@ if args.eval_dataset == "test":
     else:
         assert False, "wrong samples subject"
     is_balanced = f"_balanced{args.samples_subject}"
+elif args.eval_dataset == "dev+validation":
+    mask_dir = args.mask_dir
+    dataset_mask = np.load(f"{mask_dir}/dev+validation_mask_200.npy")
+else:
+    assert False, "dataset misspecified"
+
 
 print(args.samples_subject)
 print(is_balanced)
