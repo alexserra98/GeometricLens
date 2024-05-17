@@ -24,12 +24,13 @@ export OMP_NUM_THREADS=32
 export PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"
 
 
-python diego/analysis/repr_analysis.py \
+#python diego/analysis/repr_analysis.py \
+python diego/analysis/repr_comparison.py \
     --model_name "llama-2-13b" \
     --results_path "diego/analysis/results" \
     --mask_dir /orfeo/cephfs/scratch/area/ddoimo/open/geometric_lens/repo/diego/analysis \
     --epochs 4 \
-    --eval_dataset "test" \
+    --eval_dataset "dev+validation" \
     --num_shots 0 \
     --finetuned_mode "dev_val_balanced_20samples" \
     --samples_subject 200

@@ -122,7 +122,7 @@ args = parse_args()
 
 # ********************************************************************************
 
-assert args.finetuned_mode is None and args.pretrained_mode is None
+assert args.finetuned_mode is not None
 
 
 args.results_path += f"/finetuned/{args.model_name}"
@@ -146,15 +146,24 @@ else:
 # dataset to analyze
 is_balanced = ""
 if args.eval_dataset == "test":
-    assert args.sample_subject is not None
+    assert args.samples_subject is not None
     mask_dir = args.mask_dir
     if args.samples_subject == 100:
+        print("using 100 test mask")
         dataset_mask = np.load(f"{mask_dir}/test_mask_100.npy")
     if args.samples_subject == 200:
+        print("using 200 test mask")
         dataset_mask = np.load(f"{mask_dir}/test_mask_200.npy")
     else:
         assert False, "wrong samples subject"
     is_balanced = f"_balanced{args.samples_subject}"
+elif args.eval_dataset == "dev+validation":
+    print("using 20 dev+val mask")
+    mask_dir = args.mask_dir
+    dataset_mask = np.load(f"{mask_dir}/dev+validation_mask_20.npy")
+else:
+    assert False, "dataset misspecified"
+
 
 print(args.samples_subject)
 print(is_balanced)
@@ -174,14 +183,17 @@ for epoch in ckpts[::-1]:
         sys.stdout.flush()
 
         # ************************************
-
-        pretrained_path = (
-            f"{base_dir}/{args.pretrained_mode}/{args.model_name}/{args.num_shots}shot"
-        )
-        base_repr = torch.load(f"{pretrained_path}/l{layer}_target.pt")
-        base_repr = base_repr.to(torch.float64).numpy()
+        #if args.pretrained_mode is None:
+        #    pretrained_path = f"{base_dir}/{args.pretrained_mode}/{args.model_name}/{args.num_shots}shot"
 
         finetuned_path = f"{base_dir}/finetuned_{args.finetuned_mode}/evaluated_{args.eval_dataset}/{args.model_name}/{args.epochs}epochs/epoch_{epoch}"
+
+        if args.pretrained_mode is None:
+            pretrained_path = f"{base_dir}/finetuned_{args.finetuned_mode}/evaluated_{args.eval_dataset}/{args.model_name}/{args.epochs}epochs/epoch_0"
+        else:
+            base_repr = torch.load(f"{pretrained_path}/l{layer}_target.pt")
+            base_repr = base_repr.to(torch.float64).numpy()
+
         finetuned_repr = torch.load(f"{finetuned_path}/l{layer}_target.pt")
         finetuned_repr = finetuned_repr.to(torch.float64).numpy()
 

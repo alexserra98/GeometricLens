@@ -9,6 +9,25 @@ from datasets import load_dataset, concatenate_datasets
 rng = np.random.default_rng(42)
 
 
+dataset = load_dataset("cais/mmlu", "all", split="dev+validation")
+
+
+subjects = np.array(dataset["subject"])
+mask = []
+for sub in np.unique(subjects):
+    ind = np.nonzero(sub == subjects)[0]
+    nsamples = min(20, len(ind))
+    chosen = rng.choice(ind, nsamples, replace=False)
+    mask.extend(list(np.sort(chosen)))
+
+mask = np.array(mask)
+
+np.save("dev+validation_mask_20.npy", mask)
+
+
+# -------------------------------------------------
+
+
 dev_set = load_dataset("cais/mmlu", "all", split="dev")
 
 val_set = load_dataset("cais/mmlu", "all", split="validation")
@@ -27,9 +46,6 @@ final = concatenate_datasets([dev_set, val_set_balanced])
 counts = Counter(final["subject"])
 assert len(np.unique(list(counts.values()))) == 1
 assert np.unique(list(counts.values()))[0] == 13
-
-final
-13 * 57
 
 
 with open("mmlu_decalrative.txt", "w") as f:
