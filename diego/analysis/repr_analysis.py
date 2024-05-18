@@ -96,6 +96,8 @@ is_balanced = ""
 if args.eval_dataset == "test":
     assert args.samples_subject is not None
     mask_dir = args.mask_dir
+    print(args.samples_subject)
+    sys.stdout.flush()
     if args.samples_subject == 100:
         dataset_mask = np.load(f"{mask_dir}/test_mask_100.npy")
     if args.samples_subject == 200:
@@ -110,13 +112,18 @@ else:
     assert False, "dataset misspecified"
 
 
+print(args.eval_dataset)
+sys.stdout.flush()
+
+
 overlaps = defaultdict(list)
 clusters = defaultdict(list)
 intrinsic_dim = defaultdict(list)
 
 
 if args.finetuned_mode is not None:
-
+    print(args.finetuned_mode)
+    sys.stdout.flush()
     args.results_path += f"/finetuned/{args.model_name}"
     os.makedirs(args.results_path, exist_ok=True)
     ckpts = np.arange(args.epochs + 1)
@@ -127,8 +134,13 @@ if args.finetuned_mode is not None:
         base_path = f"{base_dir}/finetuned_{args.finetuned_mode}/evaluated_{args.eval_dataset}/{args.model_name}/{args.epochs}epochs/epoch_{epoch}"
         name = f"{args.model_name}_finetuned_{args.finetuned_mode}_epoch{args.epochs}_eval_{args.eval_dataset}{is_balanced}_0shot"
 
+        print("epoch:", epoch)
+        sys.stdout.flush()
+
         for layer in range(1, nlayers):
             print("layer:", layer)
+            sys.stdout.flush()
+
 
             clusters, intrinsic_dim, overlaps = analyze(
                 base_path,
@@ -143,15 +155,16 @@ if args.finetuned_mode is not None:
     with open(f"{args.results_path}/overlap_{name}.pkl", "wb") as f:
         pickle.dump(overlaps, f, protocol=pickle.HIGHEST_PROTOCOL)
 
+        
     with open(f"{args.results_path}/cluster_{name}.pkl", "wb") as f:
-        sys.stdout.flush()
-        pickle.dump(clusters, f, protocol=pickle.HIGHEST_PROTOCOL)
+            sys.stdout.flush()
+            pickle.dump(clusters, f, protocol=pickle.HIGHEST_PROTOCOL)
 
     with open(f"{args.results_path}/ids_{name}.pkl", "wb") as f:
         pickle.dump(intrinsic_dim, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 elif args.pretrained_mode is not None:
-
+    print(args.pretrained_mode)
     args.results_path += f"/pretrained/{args.model_name}"
     os.makedirs(args.results_path, exist_ok=True)
     num_shots = np.arange(6)
@@ -161,9 +174,13 @@ elif args.pretrained_mode is not None:
     for shot in num_shots[::-1]:
         base_path = f"{base_dir}/evaluated_{args.eval_dataset}/{args.pretrained_mode}/{args.model_name}/{shot}shot"
         name = f"{args.model_name}_{args.pretrained_mode}_eval_{args.eval_dataset}{is_balanced}_{shot}shot"
+        print("num_shot:", shot)
+        sys.stdout.flush()
 
         for layer in range(1, nlayers):
             print("layer:", layer)
+            sys.stdout.flush()
+        
 
             clusters, intrinsic_dim, overlaps = analyze(
                 base_path,

@@ -219,8 +219,8 @@ def analyze(
             clusters[f"letters-most_common-{spec}-z{z}{is_halo}"].append(most_commons)
             # ************************************************************************************
 
-    print(clusters[f"letters-ari-{spec}-z{z}{is_halo}"])
-    sys.stdout.flush()
+    #print(clusters[f"letters-ari-{spec}-z{z}{is_halo}"])
+    #sys.stdout.flush()
 
     for class_fraction in [0.3, 0.5]:
         overlaps[f"subjects-{spec}-{class_fraction}"].append(
