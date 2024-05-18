@@ -164,15 +164,6 @@ elif args.eval_dataset == "dev+validation":
 else:
     assert False, "dataset misspecified"
 
-
-print(args.samples_subject)
-print(is_balanced)
-print(f"processing model: {args.model_name}")
-print(f"processing epochs: {args.epochs}")
-print(f"processing daset: {args.eval_dataset}")
-print(f"num_shots: {args.num_shots}")
-sys.stdout.flush()
-
 ov_repr = defaultdict(list)
 cluster_comparison = defaultdict(list)
 
@@ -194,24 +185,11 @@ for epoch in ckpts[::-1]:
         finetuned_repr = torch.load(f"{finetuned_path}/l{layer}_target.pt")
         finetuned_repr = finetuned_repr.to(torch.float64).numpy()
 
-        # with open(f"{finetuned_path}/statistics_target.pkl", "rb") as f:
-        #     stats = pickle.load(f)
-        # subjects = np.array(stats["subjects"])
-
         name = f"{args.model_name}_finetuned_{args.finetuned_mode}_epoch{args.epochs}_eval_{args.eval_dataset}{is_balanced}_{args.num_shots}shot"
 
         if dataset_mask is not None:
             base_repr = base_repr[dataset_mask]
             finetuned_repr = finetuned_repr[dataset_mask]
-            # subjects = subjects[dataset_mask]
-            # check that all the subjects have the same frequency
-            # frequences = Counter(subjects).values()
-            # assert len(np.unique(list(frequences))) == 1
-            # check that the frequency is 100
-            # assert np.unique(list(frequences))[0] == 100, (
-            #    np.unique(list(frequences))[0],
-            #    frequences,
-            # )
 
         # remove identical points
         base_unique, base_idx, base_inverse = np.unique(
@@ -293,16 +271,6 @@ for epoch in ckpts[::-1]:
                     subjects=None,
                 )
             )
-
-        # ov_repr_tmp = return_data_overlap(
-        #     indices_base=dist_index_base,
-        #     indices_other=dist_index_finetuned,
-        #     k=30,
-        #     subjects=subjects,
-        # )
-
-        # for subject in np.unique(subjects):
-        #     ov_repr[f"ep{epoch}_{subject}_k30"].append(ov_repr_tmp[subject])
 
     with open(f"{args.results_path}/overlap_repr_{name}.pkl", "wb") as f:
         pickle.dump(ov_repr, f, protocol=pickle.HIGHEST_PROTOCOL)
