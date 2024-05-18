@@ -116,7 +116,6 @@ intrinsic_dim = defaultdict(list)
 
 
 if args.finetuned_mode is not None:
-    assert args.num_shots == 0
 
     args.results_path += f"/finetuned/{args.model_name}"
     os.makedirs(args.results_path, exist_ok=True)
@@ -129,6 +128,7 @@ if args.finetuned_mode is not None:
         name = f"{args.model_name}_finetuned_{args.finetuned_mode}_epoch{args.epochs}_eval_{args.eval_dataset}{is_balanced}_0shot"
 
         for layer in range(1, nlayers):
+            print("layer:", layer)
 
             clusters, intrinsic_dim, overlaps = analyze(
                 base_path,
@@ -163,6 +163,7 @@ elif args.pretrained_mode is not None:
         name = f"{args.model_name}_{args.pretrained_mode}_eval_{args.eval_dataset}{is_balanced}_{shot}shot"
 
         for layer in range(1, nlayers):
+            print("layer:", layer)
 
             clusters, intrinsic_dim, overlaps = analyze(
                 base_path,

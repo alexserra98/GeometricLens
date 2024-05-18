@@ -174,7 +174,7 @@ def analyze(
             population = []
             for clus in d.cluster_indices:
                 population.append(len(clus))
-                clusters[f"population-{spec}-z{z}{is_halo}"].append(most_commons)
+            clusters[f"population-{spec}-z{z}{is_halo}"].append(population)
 
             clusters[f"subjects-ami-{spec}-z{z}{is_halo}"].append(
                 adjusted_mutual_info_score(assignment[mask], subj_label[mask])
