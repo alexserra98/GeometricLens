@@ -31,7 +31,8 @@ def get_composition_imbalanced(
         )
     }
     population_fraction = {
-        k: v / len(cluster_indices)
+        # k: v / len(cluster_indices)
+        k: v / len(final_clusters)
         for k, v in sorted(
             cluster_subject_samples.items(), key=lambda item: item[1], reverse=True
         )
@@ -136,13 +137,13 @@ def get_dataset_mask(base_dir, subjects, nsample_subjects=100):
     return np.array(mask), np.array(gtl)
 
 
-# *******************************************************************************************************
+# **********************************************************
+# **********************************************************
+
 
 base_dir = "/home/diego/Documents/area_science/ricerca/open/geometric_lens/repo"
 
-
 subjects = get_subject_array(base_dir)
-
 mask, gtl = get_dataset_mask(base_dir, nsample_subjects=200, subjects=subjects)
 subjects = subjects[mask]
 

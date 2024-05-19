@@ -50,7 +50,8 @@ torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
     --finetuned_path  "/u/area/ddoimo/ddoimo/finetuning_llm/open-instruct/results" \
     --finetuned_mode "dev_val_balanced_20samples" \
     --finetuned_epochs 4 \
-    --ckpt_epoch 4  
+    --step $step
+    #--ckpt_epoch 4  
     #--split "test" \
     #--prompt_search
     #--random_order \

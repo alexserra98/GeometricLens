@@ -189,10 +189,8 @@ def parse_args():
         type=str,
         default=None,
     )
-    parser.add_argument(
-        "--ckpt_epoch",
-        type=int,
-    )
+    parser.add_argument("--ckpt_epoch", type=int, default=None)
+    parser.add_argument("--step", type=int, default=None)
     parser.add_argument("--dummy", action="store_true")
     parser.add_argument("--gibberish", action="store_true")
     parser.add_argument("--random_subject", action="store_true")
@@ -281,14 +279,19 @@ def main():
     )
     is_finetuned = False
     if args.finetuned_path:
-
+        assert args.step is None or args.ckpt_epoch is None
         from peft import PeftModel
 
         is_finetuned = True
         accelerator.print("loading pretrained peft models")
-        epoch_ckpt = f"epoch_{args.ckpt_epoch}"
-        finetune_details = f"{model_name}/{args.finetuned_mode}/{args.finetuned_epochs}epochs/{epoch_ckpt}"
+        if args.ckpt_epoch is not None:
+            ckpt = f"epoch_{args.ckpt_epoch}"
+            finetune_details = f"{model_name}/{args.finetuned_mode}/{args.finetuned_epochs}epochs/{ckpt}"
+        elif args.step is not None:
+            assert args.split == "dev+validation"
 
+            ckpt = f"10ckpts/step_{args.step}"
+            finetune_details = f"{model_name}/{args.finetuned_mode}/{args.finetuned_epochs}epochs/{ckpt}"
         path = f"{args.finetuned_path}/{finetune_details}"
         model = PeftModel.from_pretrained(model, path)
         model.print_trainable_parameters()
@@ -342,9 +345,9 @@ def main():
 
     time_stamp = None
     if args.prompt_search:
-        #mask = np.load("diego/analysis/test_mask_100.npy")
-        #dataset = dataset.select(mask)
-        #assert len(dataset) == 5700
+        # mask = np.load("diego/analysis/test_mask_100.npy")
+        # dataset = dataset.select(mask)
+        # assert len(dataset) == 5700
 
         time_stamp = datetime.datetime.now().__str__().split(" ")[1][:8]
         with open(f"prompt_search_{time_stamp}.txt", "w") as f:
@@ -427,7 +430,7 @@ def main():
             f"evaluated_{args.split}/declarative/{model_name}/{args.num_few_shots}shot"
         )
     elif args.finetuned_path:
-        inner_path = f"finetuned_{args.finetuned_mode}/evaluated_{args.split}/{model_name}/{args.finetuned_epochs}epochs/{epoch_ckpt}"
+        inner_path = f"finetuned_{args.finetuned_mode}/evaluated_{args.split}/{model_name}/{args.finetuned_epochs}epochs/{ckpt}"
 
     dirpath = args.out_dir + f"/{inner_path}"
     compute_id(
