@@ -68,6 +68,10 @@ def parse_args():
         type=int,
         default=None,
     )
+    parser.add_argument(
+        "--do_with_steps",
+        action="store_true",
+    )
     args = parser.parse_args()
     return args
 
@@ -80,7 +84,7 @@ assert args.finetuned_mode is None or args.pretrained_mode is None
 # base path
 base_dir = "/orfeo/cephfs/scratch/area/ddoimo/open/geometric_lens/repo/results"
 
-if args.model_name == "llama-3-8b":
+if args.model_name in ["llama-3-8b", "mistral-1-7b"]:
     nlayers = 34
 elif args.model_name == "llama-2-13b":
     nlayers = 42
@@ -126,39 +130,61 @@ if args.finetuned_mode is not None:
     sys.stdout.flush()
     args.results_path += f"/finetuned/{args.model_name}"
     os.makedirs(args.results_path, exist_ok=True)
-    ckpts = np.arange(args.epochs + 1)
-    if args.ckpt is not None:
-        ckpts = [args.ckpt]
 
-    for epoch in ckpts[::-1]:
-        base_path = f"{base_dir}/finetuned_{args.finetuned_mode}/evaluated_{args.eval_dataset}/{args.model_name}/{args.epochs}epochs/epoch_{epoch}"
-        name = f"{args.model_name}_finetuned_{args.finetuned_mode}_epoch{args.epochs}_eval_{args.eval_dataset}{is_balanced}_0shot"
-
-        print("epoch:", epoch)
-        sys.stdout.flush()
-
-        for layer in range(1, nlayers):
-            print("layer:", layer)
+    if args.do_with_steps:
+        ckpts = [1, 2, 3, 6, 12, 22, 42, 77, 144, 268]
+        for i_step, step in enumerate(ckpts[::-1]):
+            print("step:", step, f"{i_step+1}/{len(ckpts)}")
             sys.stdout.flush()
 
+            base_path = f"{base_dir}/finetuned_{args.finetuned_mode}/evaluated_{args.eval_dataset}/{args.model_name}/{args.epochs}epochs/10ckpts/step_{step}"
+            name = f"{args.model_name}_finetuned_{args.finetuned_mode}_epoch{args.epochs}_10ckpts_eval_{args.eval_dataset}{is_balanced}_0shot"
 
-            clusters, intrinsic_dim, overlaps = analyze(
-                base_path,
-                layer,
-                dataset_mask,
-                clusters,
-                intrinsic_dim,
-                overlaps,
-                spec=f"ep-{epoch}",
-            )
+            for layer in range(1, nlayers):
+                print("layer:", layer)
+                sys.stdout.flush()
+
+                clusters, intrinsic_dim, overlaps = analyze(
+                    base_path,
+                    layer,
+                    dataset_mask,
+                    clusters,
+                    intrinsic_dim,
+                    overlaps,
+                    spec=f"step-{step}",
+                )
+    else:
+        ckpts = np.arange(args.epochs + 1)
+        if args.ckpt is not None:
+            ckpts = [args.ckpt]
+
+        for epoch in ckpts[::-1]:
+            base_path = f"{base_dir}/finetuned_{args.finetuned_mode}/evaluated_{args.eval_dataset}/{args.model_name}/{args.epochs}epochs/epoch_{epoch}"
+            name = f"{args.model_name}_finetuned_{args.finetuned_mode}_epoch{args.epochs}_eval_{args.eval_dataset}{is_balanced}_0shot"
+
+            print("epoch:", epoch)
+            sys.stdout.flush()
+
+            for layer in range(1, nlayers):
+                print("layer:", layer)
+                sys.stdout.flush()
+
+                clusters, intrinsic_dim, overlaps = analyze(
+                    base_path,
+                    layer,
+                    dataset_mask,
+                    clusters,
+                    intrinsic_dim,
+                    overlaps,
+                    spec=f"ep-{epoch}",
+                )
 
     with open(f"{args.results_path}/overlap_{name}.pkl", "wb") as f:
         pickle.dump(overlaps, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-        
     with open(f"{args.results_path}/cluster_{name}.pkl", "wb") as f:
-            sys.stdout.flush()
-            pickle.dump(clusters, f, protocol=pickle.HIGHEST_PROTOCOL)
+        sys.stdout.flush()
+        pickle.dump(clusters, f, protocol=pickle.HIGHEST_PROTOCOL)
 
     with open(f"{args.results_path}/ids_{name}.pkl", "wb") as f:
         pickle.dump(intrinsic_dim, f, protocol=pickle.HIGHEST_PROTOCOL)
@@ -180,7 +206,6 @@ elif args.pretrained_mode is not None:
         for layer in range(1, nlayers):
             print("layer:", layer)
             sys.stdout.flush()
-        
 
             clusters, intrinsic_dim, overlaps = analyze(
                 base_path,
