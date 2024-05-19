@@ -80,7 +80,7 @@ assert args.finetuned_mode is None or args.pretrained_mode is None
 # base path
 base_dir = "/orfeo/cephfs/scratch/area/ddoimo/open/geometric_lens/repo/results"
 
-if args.model_name == "llama-3-8b":
+if args.model_name in ["llama-3-8b", "mistral-1-7b"]:
     nlayers = 34
 elif args.model_name == "llama-2-13b":
     nlayers = 42
@@ -141,7 +141,6 @@ if args.finetuned_mode is not None:
             print("layer:", layer)
             sys.stdout.flush()
 
-
             clusters, intrinsic_dim, overlaps = analyze(
                 base_path,
                 layer,
@@ -155,10 +154,9 @@ if args.finetuned_mode is not None:
     with open(f"{args.results_path}/overlap_{name}.pkl", "wb") as f:
         pickle.dump(overlaps, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-        
     with open(f"{args.results_path}/cluster_{name}.pkl", "wb") as f:
-            sys.stdout.flush()
-            pickle.dump(clusters, f, protocol=pickle.HIGHEST_PROTOCOL)
+        sys.stdout.flush()
+        pickle.dump(clusters, f, protocol=pickle.HIGHEST_PROTOCOL)
 
     with open(f"{args.results_path}/ids_{name}.pkl", "wb") as f:
         pickle.dump(intrinsic_dim, f, protocol=pickle.HIGHEST_PROTOCOL)
@@ -180,7 +178,6 @@ elif args.pretrained_mode is not None:
         for layer in range(1, nlayers):
             print("layer:", layer)
             sys.stdout.flush()
-        
 
             clusters, intrinsic_dim, overlaps = analyze(
                 base_path,
