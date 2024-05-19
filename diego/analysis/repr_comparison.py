@@ -134,6 +134,7 @@ os.makedirs(args.results_path, exist_ok=True)
 
 if args.do_with_steps:
     ckpts = np.array([1, 2, 3, 6, 12, 22, 42, 77, 144, 268])
+    assert args.num_shots == 0
 else:
     ckpts = np.arange(args.epochs + 1)
 
@@ -155,6 +156,8 @@ else:
 is_balanced = ""
 if args.eval_dataset == "test":
     assert args.samples_subject is not None
+    assert args.do_with_steps == False
+
     mask_dir = args.mask_dir
     if args.samples_subject == 100:
         print("using 100 test mask")
@@ -165,12 +168,14 @@ if args.eval_dataset == "test":
     else:
         assert False, "wrong samples subject"
     is_balanced = f"_balanced{args.samples_subject}"
+
 elif args.eval_dataset == "dev+validation":
     print("using 20 dev+val mask")
     mask_dir = args.mask_dir
     dataset_mask = np.load(f"{mask_dir}/dev+validation_mask_20.npy")
 else:
     assert False, "dataset misspecified"
+
 
 ov_repr = defaultdict(list)
 cluster_comparison = defaultdict(list)
