@@ -59,6 +59,7 @@ def parse_args():
     parser.add_argument(
         "--num_shots",
         type=int,
+        default=0,
     )
     parser.add_argument(
         "--ckpt",
