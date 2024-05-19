@@ -179,15 +179,15 @@ if args.finetuned_mode is not None:
                     spec=f"ep-{epoch}",
                 )
 
-    with open(f"{args.results_path}/overlap_{name}.pkl", "wb") as f:
-        pickle.dump(overlaps, f, protocol=pickle.HIGHEST_PROTOCOL)
+            with open(f"{args.results_path}/overlap_{name}.pkl", "wb") as f:
+                pickle.dump(overlaps, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-    with open(f"{args.results_path}/cluster_{name}.pkl", "wb") as f:
-        sys.stdout.flush()
-        pickle.dump(clusters, f, protocol=pickle.HIGHEST_PROTOCOL)
+            with open(f"{args.results_path}/cluster_{name}.pkl", "wb") as f:
+                sys.stdout.flush()
+                pickle.dump(clusters, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-    with open(f"{args.results_path}/ids_{name}.pkl", "wb") as f:
-        pickle.dump(intrinsic_dim, f, protocol=pickle.HIGHEST_PROTOCOL)
+            with open(f"{args.results_path}/ids_{name}.pkl", "wb") as f:
+                pickle.dump(intrinsic_dim, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 elif args.pretrained_mode is not None:
     print(args.pretrained_mode)
@@ -217,15 +217,15 @@ elif args.pretrained_mode is not None:
                 spec=f"{shot}shot",
             )
 
-    with open(f"{args.results_path}/overlap_{name}.pkl", "wb") as f:
-        pickle.dump(overlaps, f, protocol=pickle.HIGHEST_PROTOCOL)
+        with open(f"{args.results_path}/overlap_{name}.pkl", "wb") as f:
+            pickle.dump(overlaps, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-    with open(f"{args.results_path}/cluster_{name}.pkl", "wb") as f:
-        sys.stdout.flush()
-        pickle.dump(clusters, f, protocol=pickle.HIGHEST_PROTOCOL)
+        with open(f"{args.results_path}/cluster_{name}.pkl", "wb") as f:
+            sys.stdout.flush()
+            pickle.dump(clusters, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-    with open(f"{args.results_path}/ids_{name}.pkl", "wb") as f:
-        pickle.dump(intrinsic_dim, f, protocol=pickle.HIGHEST_PROTOCOL)
+        with open(f"{args.results_path}/ids_{name}.pkl", "wb") as f:
+            pickle.dump(intrinsic_dim, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 else:
     assert False, "either pretrained mode of finetuned mode must be not None"
