@@ -143,7 +143,7 @@ else:
 # base path
 base_dir = "/orfeo/cephfs/scratch/area/ddoimo/open/geometric_lens/repo/results"
 
-if args.model_name in ["llama-3-8b", "mistral"]:
+if args.model_name in ["llama-3-8b", "mistral-1-7b"]:
     nlayers = 34
 elif args.model_name == "llama-2-13b":
     nlayers = 42
