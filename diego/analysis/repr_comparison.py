@@ -65,6 +65,10 @@ def parse_args():
         type=int,
         default=None,
     )
+    parser.add_argument(
+        "--do_with_steps",
+        action="store_true",
+    )
     args = parser.parse_args()
     return args
 
@@ -127,13 +131,17 @@ assert args.finetuned_mode is not None
 
 args.results_path += f"/finetuned/{args.model_name}"
 os.makedirs(args.results_path, exist_ok=True)
-ckpts = np.arange(args.epochs + 1)
+
+if args.do_with_steps:
+    ckpts = np.array([1, 2, 3, 6, 12, 22, 42, 77, 144, 268])
+else:
+    ckpts = np.arange(args.epochs + 1)
 
 
 # base path
 base_dir = "/orfeo/cephfs/scratch/area/ddoimo/open/geometric_lens/repo/results"
 
-if args.model_name == "llama-3-8b":
+if args.model_name in ["llama-3-8b", "mistral"]:
     nlayers = 34
 elif args.model_name == "llama-2-13b":
     nlayers = 42
@@ -167,11 +175,14 @@ else:
 ov_repr = defaultdict(list)
 cluster_comparison = defaultdict(list)
 
-for epoch in ckpts[::-1]:
+print(f"processing {args.num_shots}")
+for i_cpt, cpt in enumerate(ckpts[::-1]):
     # layer 0 is all overlapped
+    print("step:", cpt, f"{i_cpt+1}/{len(ckpts)}")
+    sys.stdout.flush()
     for layer in range(1, nlayers):
-        print(f"processing {args.num_shots} epoch {epoch} layer {layer}")
-        sys.stdout.flush()
+        print(f"layer {layer}")
+        # sys.stdout.flush()
 
         # ************************************
         if args.pretrained_mode is None:
@@ -181,11 +192,17 @@ for epoch in ckpts[::-1]:
         base_repr = torch.load(f"{pretrained_path}/l{layer}_target.pt")
         base_repr = base_repr.to(torch.float64).numpy()
 
-        finetuned_path = f"{base_dir}/finetuned_{args.finetuned_mode}/evaluated_{args.eval_dataset}/{args.model_name}/{args.epochs}epochs/epoch_{epoch}"
+        if args.do_with_steps:
+            finetuned_path = f"{base_dir}/finetuned_{args.finetuned_mode}/evaluated_{args.eval_dataset}/{args.model_name}/{args.epochs}epochs/10ckpts/step_{cpt}"
+            name = f"{args.model_name}_finetuned_{args.finetuned_mode}_epoch{args.epochs}_10ckpts_eval_{args.eval_dataset}{is_balanced}_{args.num_shots}shot"
+            spec = f"step-{cpt}"
+        else:
+            finetuned_path = f"{base_dir}/finetuned_{args.finetuned_mode}/evaluated_{args.eval_dataset}/{args.model_name}/{args.epochs}epochs/epoch_{cpt}"
+            name = f"{args.model_name}_finetuned_{args.finetuned_mode}_epoch{args.epochs}_eval_{args.eval_dataset}{is_balanced}_{args.num_shots}shot"
+            spec = f"ep-{cpt}"
+
         finetuned_repr = torch.load(f"{finetuned_path}/l{layer}_target.pt")
         finetuned_repr = finetuned_repr.to(torch.float64).numpy()
-
-        name = f"{args.model_name}_finetuned_{args.finetuned_mode}_epoch{args.epochs}_eval_{args.eval_dataset}{is_balanced}_{args.num_shots}shot"
 
         if dataset_mask is not None:
             base_repr = base_repr[dataset_mask]
@@ -250,20 +267,20 @@ for epoch in ckpts[::-1]:
                     is_core2 = assignment_finetuned != -1
                     mask = np.logical_and(is_core1, is_core2)
 
-                cluster_comparison[f"ami-ep{epoch}-z{z}{is_halo}"].append(
+                cluster_comparison[f"ami-{spec}-z{z}{is_halo}"].append(
                     adjusted_mutual_info_score(
                         assignment_base[mask], assignment_finetuned[mask]
                     )
                 )
 
-                cluster_comparison[f"ari-ep{epoch}-z{z}{is_halo}"].append(
+                cluster_comparison[f"ari-{spec}-z{z}{is_halo}"].append(
                     adjusted_rand_score(
                         assignment_base[mask], assignment_finetuned[mask]
                     )
                 )
 
         for k in [30, 100, 300]:
-            ov_repr[f"ep{epoch}_k{k}"].append(
+            ov_repr[f"{spec}_k{k}"].append(
                 return_data_overlap(
                     indices_base=dist_index_base,
                     indices_other=dist_index_finetuned,
