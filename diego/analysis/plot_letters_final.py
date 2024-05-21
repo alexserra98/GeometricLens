@@ -67,7 +67,7 @@ clus_test_mis_ft, ov_test_mis_ft = get_repr_for_test(
     results_dir=results_dir,
     folder="finetuned",
     mode="finetuned_dev_val_balanced_20samples",
-    model="mistral",
+    model="mistral-1-7b",
     dataset="test_balanced200",
     spec="_epoch4",
 )
@@ -76,7 +76,7 @@ clus_test_mis_pt, ov_test_mis_pt = get_repr_for_test(
     results_dir=results_dir,
     folder="pretrained",
     mode="random_order",
-    model="mistral",
+    model="mistral-1-7b",
     dataset="test_balanced200",
 )
 

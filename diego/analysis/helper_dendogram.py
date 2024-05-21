@@ -15,6 +15,7 @@ def get_clusters(
     mask,
     gtl,
     subjects,
+    Z=1.6,
 ):
 
     X = torch.load(f"{model_path}/l{layer}_target.pt")
@@ -42,7 +43,7 @@ def get_clusters(
     ids, _, _ = d.return_id_scaling_gride(range_max=300)
     d.set_id(ids[3])
     d.compute_density_kNN(k=16)
-    cluster_assignment = d.compute_clustering_ADP(Z=1.6, halo=False)
+    cluster_assignment = d.compute_clustering_ADP(Z=Z, halo=False)
     is_core = cluster_assignment != -1
 
     print("n_clusters", d.N_clusters)
@@ -301,7 +302,12 @@ def get_dataset_mask(base_dir, subjects, nsample_subjects=100):
 
 
 def plot_with_labels(
-    dis, final_clusters, ground_truth_labels, index_to_subject, ori="left"
+    dis,
+    final_clusters,
+    ground_truth_labels,
+    index_to_subject,
+    ori="left",
+    path=None,
 ):
     # ****************************************************************************************************************
     DD = sp.cluster.hierarchy.linkage(dis, method="weighted")
@@ -328,7 +334,7 @@ def plot_with_labels(
         labels.append(name.strip()[:-1])
 
     # ************************************
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(15, 8))
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(9, 14))
     dn = sp.cluster.hierarchy.dendrogram(
         DD,
         p=30,
@@ -341,3 +347,5 @@ def plot_with_labels(
         leaf_font_size=10,
     )
     plt.tight_layout()
+    if path is not None:
+        plt.savefig(f"{path}", dpi=200)

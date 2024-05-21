@@ -13,7 +13,7 @@ from helper_dendogram import (
 )
 from collections import defaultdict
 
-
+results_path = "/home/diego/Documents/area_science/ricerca/open/geometric_lens/repo/diego/analysis/plots/final/dendrograms"
 base_dir = "/home/diego/Documents/area_science/ricerca/open/geometric_lens/repo"
 subjects = get_subject_array(base_dir)
 mask, ground_truth_labels = get_dataset_mask(
@@ -39,6 +39,7 @@ d, index_to_subject = get_clusters(
     mask=mask,
     gtl=ground_truth_labels,
     subjects=subjects,
+    Z=1.6,
 )
 
 
@@ -51,7 +52,8 @@ plot_with_labels(
     final_clusters,
     ground_truth_labels,
     index_to_subject,
-    ori="bottom",
+    ori="left",
+    path=f"{results_path}/llama-3-8b-5shot-Z=1.6.png",
 )
 
 xcoords_5shot, ycoords_5shot = get_xy_coords(
@@ -82,9 +84,9 @@ d_0s, index_to_subject_0s = get_clusters(
 )
 
 
-# F = [d.log_den[c] for c in d.cluster_centers]
+# F = [d_0s.log_den[c] for c in d_0s.cluster_centers]
 # plt.plot(F, marker=".")
-dis_0s, peak_y_0s, final_clusters_0s = get_dissimilarity(d_0s, threshold=-14)
+dis_0s, peak_y_0s, final_clusters_0s = get_dissimilarity(d_0s, threshold=-15)
 
 plot_with_labels(
     dis_0s,
@@ -173,8 +175,7 @@ plt.xticks(
         26.5,
         33,
         36.5,
-        41,
-        45,
+        43,
         52,
         57.5,
         61,
@@ -186,17 +187,16 @@ plt.xticks(
         "medicine",
         "marketing\nmanagement\npsychology",
         "law\npolicy",
-        "geography\nglobal facts",
+        "geography",
         "economics",
-        "phylosophy\njurisprudence",
-        "moral disputes\nsexuality",
+        "phylosophy\njurisprudence\nmoral disputes",
         "math\nphysics\nchemistry",
         "logic",
         "machine learning\ncomputer science\neconometrics",
         "abstract algebra",
     ],
     rotation=30,
-    fontsize=8,
+    fontsize=10,
 )
 
 gs0.tight_layout(fig, rect=[0, 0.35, 1, 0.69])
@@ -436,11 +436,28 @@ for i, link in enumerate(range(nlinks)):
         x1, y1 = xcoords_0shot[link, i + 1], ycoords_0shot[link, i + 1]
         ax.plot([x0, x1], [y0, y1], color="C5", lw=1.5)
 
+ax.scatter(30, -11, s=50, color="C3")
+ax.scatter(26, -7, s=700, color="C3")
+ax.scatter(25, -11, s=50, color="C3")
+ax.scatter(24, -11, s=100, color="C3")
+ax.scatter(20, -11, s=50, color="C3")
+ax.scatter(18.8, -10, s=300, color="C3")
+ax.scatter(15, -10, s=80, color="C3")
+
+ax.text(26, 4, "mix 26", rotation=90, fontsize=10, fontweight="bold")
+ax.text(18, 4, "mix 11", rotation=90, fontsize=10, fontweight="bold")
+ax.text(24, 4, "mix 7", rotation=90, fontsize=10, fontweight="bold")
+ax.text(30, 4, "mix 5", rotation=90, fontsize=10, fontweight="bold")
+ax.text(15, 4, "mix 6", rotation=90, fontsize=10, fontweight="bold")
+
+
 ax.set_xticks([])
 ax.set_xticklabels([])
 ax.set_ylabel("log density")
-gs5.tight_layout(fig, rect=[0.02, 0.05, 0.48, 0.25])
+gs5.tight_layout(fig, rect=[0.02, 0.05, 0.48, 0.40])
 fig.text(0.25, 0.03, "0 shot", fontsize=14, fontweight="bold")
+
+
 ##########################################################
 
 # FINETUNED
