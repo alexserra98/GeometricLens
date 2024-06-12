@@ -52,23 +52,42 @@ def metric_function(name):
         raise ImportError(f"Could not import the specified class from the module")
 
 
-def create_queries(models):
+def create_queries(models, couples):
     queries = []
+    queries_repr_comparison = []
     for model in models:
-        for shot in [0, 1, 2, 3, 4, 5]:
-            # for shot in [0, 2, 5]:
-            if "70" in model and shot == 5 and "chat" not in model:
-                continue
-            elif "70" in model and "chat" in model and shot == 5:
-                continue
-            elif "ft" in model and shot != 0:
-                continue
-            elif "chat" in model and shot not in [0, 2, 5]:
+        #for shot in [0, 1, 2, 3, 4, 5]:
+        for shot in [0,1, 2,4, 5]:
+            if (
+                ("70" in model and shot == 5 and "chat" not in model)
+                or ("70" in model and "chat" in model and shot == 5)
+                or ("ft" in model and shot != 0)
+                or ("chat" in model and "llama" in model and shot not in [0, 2, 5])
+                or ("mistral" in model and "chat" in model and shot != 0)
+            ):
                 continue
             queries.append(
                 {"method": "last", "model_name": model, "train_instances": shot}
             )
-    return queries
+    for couple in couples:
+        couple = [couple.split("/")[0], couple.split("/")[1]]
+        shot_number = "4" if "70" in couples[0] else "5"
+        if couple[0] == couple[1]:
+            shots_list = [("0", shot_number)]
+        else:
+            shots_list = [(shot_number, "0"), ("0", "0")]
+            for shots in shots_list:
+                shot_i, shot_j = shots
+                queries_repr_comparison.append(
+                    {
+                        "method": "last",
+                        "couple": couple,
+                        "shot_i": shot_i,
+                        "shot_j": shot_j,
+                    }
+                )
+
+    return queries, queries_repr_comparison
 
 
 def main():
@@ -114,6 +133,13 @@ def main():
         type=str,
         help="Folder in which tensors are located",
     )
+    parser.add_argument(
+        "--couples_list",
+        nargs="+",
+        action="append",
+        type=str,
+        help="Couples to use in representation comparisons",
+    )
     args = parser.parse_args(remaining_argv)
     print(args.variations)
 
@@ -121,24 +147,33 @@ def main():
     metrics = args.metrics
     labels = args.labels
     tensor_storage_location = args.tensor_storage_location[0]
+    couples_list = args.couples_list
     variations = json.loads(args.variations)
 
+    if tensor_storage_location not in ["std", "questions_sampled13"]:
+        logger.error(
+            f"Tensor storage location {tensor_storage_location} not recognized. Please use 'std' or 'questions_sampled13'"
+        )
+        raise 
     logger.info(
         f"Metrics computer started\nModels:{models}\nMetrics:{metrics}\nVariations:{variations}\nTensor Storage Location:{tensor_storage_location}\n"
     )
-    tsm = TensorStorageManager(tensor_storage_location=tensor_storage_location)
+    tsm = TensorStorageManager(tensor_storage_location=tensor_storage_location,instances_per_sub=200)
+
+    queries, queries_repr_comparison = create_queries(models, couples_list)
+
     for metric in metrics:
         metric_class = metric_function(metric)
 
         # Create queries for hidden states
-        queries = create_queries(models)
+        query_iter = queries_repr_comparison if "point" in metric else queries
 
         metric_instance = metric_class(
-            queries=queries,
+            queries=query_iter,
             tensor_storage=tsm,
             variations=variations,
             storage_logic="npy",
-            parallel=True,
+            parallel= True,
         )
         try:
             # Probing like metrics require ground truth

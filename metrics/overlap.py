@@ -19,7 +19,10 @@ from pathlib import Path
 from functools import partial
 from joblib import Parallel, delayed
 import logging
-import pdb
+from jaxtyping import Float, Int, Str
+from typing import Optional, Callable, Union, List, Tuple
+from numpy.typing import Array
+
 
 
 class PointOverlap(HiddenStatesMetrics):
@@ -43,134 +46,105 @@ class PointOverlap(HiddenStatesMetrics):
         check_point_dir.mkdir(exist_ok=True, parents=True)
         rows = []
 
-        couples_list = [
-            ("llama-3-70b", "llama-3-70b"),
-            ("llama-2-70b", "llama-2-70b"),
-            ("llama-2-70b", "llama-2-70b-chat"),
-            ("llama-3-70b", "llama-3-70b-chat"),
-            ("llama-2-13b", "llama-2-13b-hf"),
-            ("llama-2-13b", "llama-2-13b-chat"),
-            ("llama-2-13b", "llama-2-13b"),
-            ("llama-2-13b", "llama-2-13b-ft"),
-            ("llama-2-7b", "llama-2-7b"),
-            ("llama-2-7b", "llama-2-7b-chat"),
-            ("llama-3-8b", "llama-3-8b"),
-            ("llama-3-8b", "llama-3-8b-chat"),
-            ("llama-3-8b", "llama-3-8b-ft"),
-        ]
-
-        # couples_list = [
-        #    ("meta-llama-Llama-3-8b-hf", "meta-llama-Llama-3-8b-chat-hf"),
-        # ]
-
         tsm = self.tensor_storage
         for k in tqdm.tqdm(iter_list, desc="Computing overlaps k"):
-            for couples in couples_list:
-                for method in ["last"]:  # self.df["method"].unique().tolist():ù
-                    module_logger.debug(f"Processing {couples} with k {k}")
-                    shot_number = "4" if "70" in couples[0] else "5"
-                    if couples[0] == couples[1]:
-                        iterlist = [("0", shot_number)]
-                    else:
-                        iterlist = [(shot_number, "0"), ("0", "0")]
+            for n, query_dict in tqdm.tqdm(
+                enumerate(self.queries), desc="Processing queries"
+            ):
+                couple = query_dict["couple"]
+                shot_i = query_dict["shot_i"]
+                shot_j = query_dict["shot_j"]
+                method = query_dict["method"]
+                module_logger.debug(f"Processing query {query_dict}")
+                query_i = DataFrameQuery(
+                    {
+                        "method": method,
+                        "model_name": couple[0],
+                        "train_instances": shot_i,
+                    }
+                )
 
-                    for shots in iterlist:
-                        shot_i, shot_j = shots
+                query_j = DataFrameQuery(
+                    {
+                        "method": method,
+                        "model_name": couple[1],
+                        "train_instances": shot_j,
+                    }
+                )
+                try:
+                    # Hidden states to compare
+                    hidden_states_i, _, df_i = tsm.retrieve_tensor(
+                        query_i, self.storage_logic
+                    )
+                    hidden_states_j, _, df_j = tsm.retrieve_tensor(
+                        query_j, self.storage_logic
+                    )
+                except DataNotFoundError as e:
+                    module_logger.error(
+                        f"Data not found for {query_i} or {query_j}. Error: {e}"
+                    )
+                    continue
+                except UnknownError as e:
+                    module_logger.error(
+                        f"Unknown error for {query_i} or {query_j}. Error: {e}"
+                    )
+                    raise e
 
-                        query_i = DataFrameQuery(
-                            {
-                                "method": method,
-                                "model_name": couples[0],
-                                "train_instances": shot_i,
-                            }
-                        )
+                df_i.reset_index(inplace=True)
+                df_j.reset_index(inplace=True)
 
-                        query_j = DataFrameQuery(
-                            {
-                                "method": method,
-                                "model_name": couples[1],
-                                "train_instances": shot_j,
-                            }
-                        )
-                        try:
-                            # Hidden states to compare
-                            hidden_states_i, _, df_i = tsm.retrieve_tensor(
-                                query_i, self.storage_logic
-                            )
-                            hidden_states_j, _, df_j = tsm.retrieve_tensor(
-                                query_j, self.storage_logic
-                            )
-                        except DataNotFoundError as e:
-                            module_logger.error(
-                                f"Data not found for {query_i} or {query_j}. Error: {e}"
-                            )
-                            continue
-                        except UnknownError as e:
-                            module_logger.error(
-                                f"Unknown error for {query_i} or {query_j}. Error: {e}"
-                            )
-                            raise e
+                # if (
+                #    self.variations["point_overlap"] == "cosine"
+                #    or self.variations["point_overlap"] == "norm"
+                #    or self.variations["point_overlap"] == "shared_answers"
+                # ):
+                #    df_i["exact_match"] = df_i.apply(
+                #        lambda r: exact_match(r["std_pred"], r["letter_gold"]),
+                #        axis=1,
+                #    )
+                #    df_j["exact_match"] = df_j.apply(
+                #        lambda r: exact_match(r["std_pred"], r["letter_gold"]),
+                #        axis=1,
+                #    )
+                #    # find the index of rows that have "exact_match" True in both df_i and df_j
+                #    indices_i = df_i[df_i["exact_match"] == True].index
+                #    indices_j = df_j[df_j["exact_match"] == True].index
+                #    # find the intersection of the two sets of indices
+                #    indices = indices_i.intersection(indices_j)
+                #    hidden_states_i = hidden_states_i[indices]
+                #    hidden_states_j = hidden_states_j[indices]
 
-                        df_i.reset_index(inplace=True)
-                        df_j.reset_index(inplace=True)
-
-                        if (
-                            self.variations["point_overlap"] == "cosine"
-                            or self.variations["point_overlap"] == "norm"
-                            or self.variations["point_overlap"] == "shared_answers"
-                        ):
-                            df_i["exact_match"] = df_i.apply(
-                                lambda r: exact_match(r["std_pred"], r["letter_gold"]),
-                                axis=1,
-                            )
-                            df_j["exact_match"] = df_j.apply(
-                                lambda r: exact_match(r["std_pred"], r["letter_gold"]),
-                                axis=1,
-                            )
-                            # find the index of rows that have "exact_match" True in both df_i and df_j
-                            indices_i = df_i[df_i["exact_match"] == True].index
-                            indices_j = df_j[df_j["exact_match"] == True].index
-                            # find the intersection of the two sets of indices
-                            indices = indices_i.intersection(indices_j)
-                            hidden_states_i = hidden_states_i[indices]
-                            hidden_states_j = hidden_states_j[indices]
-
-                        try:
-                            # pdb.set_trace()
-                            overlap = self.parallel_compute(
-                                hidden_states_i, hidden_states_j, k
-                            )
-                        except Exception as e:
-                            module_logger.error(
-                                f"Error computing overlap for {couples} with k {k}. Error: {e}"
-                            )
-                            raise e
-                        rows.append(
-                            [
-                                k,
-                                couples,
-                                method,
-                                shot_i,
-                                shot_j,
-                                overlap,
-                            ]
-                        )
-                        if len(rows) % 3 == 0:
-                            # Save checkpoint
-                            df_temp = pd.DataFrame(
-                                rows,
-                                columns=[
-                                    "k",
-                                    "couple",
-                                    "method",
-                                    "shot_i",
-                                    "shot_j",
-                                    "point_overlap",
-                                ],
-                            )
-                            df_temp.to_pickle(
-                                check_point_dir / f"checkpoint_point_overlap.pkl"
-                            )
+                try:
+                    overlap = self.parallel_compute(hidden_states_i, hidden_states_j, k)
+                except Exception as e:
+                    module_logger.error(
+                        f"Error computing overlap for {couple} with k {k}. Error: {e}"
+                    )
+                    raise e
+                rows.append(
+                    [
+                        k,
+                        couple,
+                        method,
+                        shot_i,
+                        shot_j,
+                        overlap,
+                    ]
+                )
+                if len(rows) % 3 == 0:
+                    # Save checkpoint
+                    df_temp = pd.DataFrame(
+                        rows,
+                        columns=[
+                            "k",
+                            "couple",
+                            "method",
+                            "shot_i",
+                            "shot_j",
+                            "point_overlap",
+                        ],
+                    )
+                    df_temp.to_pickle(check_point_dir / f"checkpoint_point_overlap.pkl")
 
         df = pd.DataFrame(
             rows,
@@ -185,15 +159,20 @@ class PointOverlap(HiddenStatesMetrics):
         )
         return df
 
-    def pair_names(self, names_list):
+    def pair_names(
+            self, 
+            names_list: List[str]
+        ) -> List[Tuple[str, str]]:
         """
         Pairs base names with their corresponding 'chat' versions.
 
-        Args:
-        names_list (list): A list of strings containing names.
+        Inputs:
+            names_list: List[str]
+            A list of strings containing names.
 
         Returns:
-        list: A list of tuples, each containing a base name and its 'chat' version.
+            list: List[Tuple[str, str]] 
+            A list of tuples, each containing a base name and its 'chat' version.
         """
         # Separating base names and 'chat' names
         difference = "chat"
@@ -210,26 +189,26 @@ class PointOverlap(HiddenStatesMetrics):
         return pairs
 
     def parallel_compute(
-        self, data_i: np.ndarray, data_j: np.ndarray, k: int
-    ) -> np.ndarray:
+            self,
+            data_i: Array[Float, "num_instances, num_layers, model_dim"],
+            data_j:  Array[Float, "num_instances, num_layers, model_dim"], 
+            k: Int
+        ) -> Array[Float, "num_layers"]:
         """
-        Compute the overlap between two runs
+        Compute the overlap between two set of representations for each layer.
 
-        Parameters
-        ----------
-        data_i: np.ndarray(num_instances, num_layers, model_dim)
-        data_j: np.ndarray(num_instances, num_layers, model_dim)
-        k: int
-
-        Output
-        ----------
-        Array(num_layers)
+        Inputs:
+            data_i: Array[Float, "num_instances, num_layers, model_dim"]
+            data_j: Array[Float, "num_instances, num_layers, model_dim"]
+            k: Int
+        
+        Returns:
+            Array[Float, "num_layers"]
         """
         assert (
             data_i.shape[1] == data_j.shape[1]
         ), "The two runs must have the same number of layers"
         number_of_layers = data_i.shape[1]
-
         process_layer = partial(self.process_layer, data_i=data_i, data_j=data_j, k=k)
 
         if self.parallel:
@@ -249,9 +228,22 @@ class PointOverlap(HiddenStatesMetrics):
 
         return np.stack(overlaps)
 
-    def process_layer(self, layer, data_i, data_j, k) -> np.ndarray:
+    def process_layer(
+            self,
+            layer: Int,
+            data_i: Array[Float, "num_instances, num_layers, model_dim"],
+            data_j:  Array[Float, "num_instances, num_layers, model_dim"],
+            k: Int
+        ) -> Float:
         """
-        Process a single layer.
+        Process a single layer
+        Inputs:
+            layer: Int
+            data_i: Array[Float, "num_instances, num_layers, model_dim"]
+            data_j: Array[Float, "num_instances, num_layers, model_dim"]
+            k: Int
+        Returns:
+            Float
         """
 
         data_i = data_i[:, layer, :]
@@ -273,12 +265,17 @@ class PointOverlap(HiddenStatesMetrics):
 
 
 class LabelOverlap(HiddenStatesMetrics):
-    def main(self, label) -> pd.DataFrame:
+    def main(
+            self, label: Str
+        ) -> pd.DataFrame:
         """
-        Compute the overlap between the layers of instances in which the model answered with the same letter
-        Output
-        ----------
-        Dict[layer: List[Array(num_layers, num_layers)]]
+        Compute overlap between a set of representations and a given label
+        Inputs:
+            label: Str
+            The label to compute the overlap with.
+        Returns:
+            pd.DataFrame
+            Dataframe containing results 
         """
 
         module_logger = logging.getLogger("my_app.label_overlap")
@@ -359,8 +356,18 @@ class LabelOverlap(HiddenStatesMetrics):
         return df
 
     def constructing_labels(
-        self, hidden_states_df: pd.DataFrame, hidden_states: np.ndarray
-    ) -> np.ndarray:
+            self, 
+            hidden_states_df: pd.DataFrame, 
+            hidden_states: Array[Float, "num_instances, num_layers, model_dim"]
+        ) -> Array[Int, "num_instances"]:
+        """
+        Map the labels to integers and return the labels for each instance in the hidden states.
+        Inputs:
+            hidden_states_df: pd.DataFrame
+            hidden_states: Array[Float, "num_instances, num_layers, model_dim"]
+        Returns:
+            Array[Int, "num_instances"]
+        """
         labels_literals = hidden_states_df[self.label].unique()
         labels_literals.sort()
 
@@ -374,7 +381,10 @@ class LabelOverlap(HiddenStatesMetrics):
         return label_per_row
 
     def parallel_compute(
-        self, hidden_states: np.ndarray, labels: np.array, class_fraction: float
+        self, 
+        hidden_states: np.ndarray, 
+        labels: np.array, 
+        class_fraction: float
     ) -> np.ndarray:
         overlaps = []
         if class_fraction is None:

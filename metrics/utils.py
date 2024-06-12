@@ -44,7 +44,6 @@ class Layer(Enum):
     SUM = "sum"
 
 
-
 def softmax(logits):
     # Exponentiate each element
     exp_logits = np.exp(logits - np.max(logits, axis=1, keepdims=True))
@@ -146,13 +145,19 @@ class TensorStorageManager:
         try:
             query_dict = query.query
             model_name = query_dict["model_name"]
-      
+
             if "ft" in model_name:
                 # folder = "finetuned_dev_val_balanced/evaluated_test"
-                folder = "finetuned_test_balanced/evaluated_test"
+                folder = "finetuned_dev_val_balanced_20samples/evaluated_test"
                 # storage_path=Path(f"/orfeo/cephfs/scratch/area/ddoimo/open/"\
                 #                 f"geometric_lens/repo/results/{folder}/"\
                 #                 f"{adapted_name[:-3]}/epoch_2_2904")
+                # storage_path = Path(
+                #    f"/orfeo/cephfs/scratch/area/ddoimo/open"
+                #    f"/geometric_lens/repo/results/{folder}"
+                #    f"/{model_name[:-3]}/{num_of_epochs}epochs"
+                #    f"/epoch_{num_of_epochs}"
+                # )
                 num_of_epochs = 4
                 storage_path = Path(
                     f"/orfeo/cephfs/scratch/area/ddoimo/open"
@@ -162,18 +167,26 @@ class TensorStorageManager:
                 )
 
             elif "chat" in model_name:
-                storage_path = Path(
+                if "llama" in model_name:
+                    storage_path = Path(
                         f"/orfeo/cephfs/scratch/area/ddoimo/open"
-                        f"/geometric_lens/repo/results/mmlu"
+                        f"/geometric_lens/repo/results/"
+                        f"/evaluated_test/random_order"
                         f"/{model_name}/{query_dict['train_instances']}shot"
+                    )
+                elif "mistral" in model_name:
+                    storage_path = Path(
+                        f"/orfeo/cephfs/scratch/area/ddoimo/open/"
+                        f"geometric_lens/repo/results"
+                        f"/evaluated_test/mistral-1-7b-chat/{query_dict['train_instances']}shot"
                     )
             else:
                 # some of the followin location doesn't have all the models
-                storage_path_std = Path(
-                    f"/orfeo/cephfs/scratch/area/ddoimo/open"
-                    f"/geometric_lens/repo/results/mmlu"
-                    f"/{model_name}/{query_dict['train_instances']}shot"
-                )
+                # storage_path_std = Path(
+                #    f"/orfeo/cephfs/scratch/area/ddoimo/open"
+                #    f"/geometric_lens/repo/results/mmlu"
+                #    f"/{model_name}/{query_dict['train_instances']}shot"
+                # )
 
                 if self.tensor_storage_location == "std":
                     storage_path = Path(
@@ -195,8 +208,6 @@ class TensorStorageManager:
                         f"/evaluated_test/random_order"
                         f"/{model_name}/{query_dict['train_instances']}shot"
                     )
-                if "llama2-70" in model_name or "llama3-70b" in model_name:
-                    storage_path = storage_path_std
 
             # If the path does not exist, the program wont' crash but raise an error
             if not storage_path.exists() or not storage_path.is_dir():
@@ -248,37 +259,32 @@ class TensorStorageManager:
             df["train_instances"] = query_dict["train_instances"]
             df["model_name"] = query_dict["model_name"]  # "meta-llama-Llama-2-7b-hf"
             df["method"] = "last"
+
+            if self.instances_per_sub:
+                path_mask = Path(
+                    f"/orfeo/scratch/dssc/zenocosini/mmlu_result/test_mask_{self.instances_per_sub}.npy"
+                )
+                if not path_mask.exists():
+                    raise DataNotFoundError(f"Mask path does not exist: {path_mask}")
+
+                mask = np.load(path_mask)
+                stacked_tensor = stacked_tensor.float().numpy()[:14040][mask]
+                logits = logits.float().numpy()[:14040][mask]
+                df = df.iloc[mask]
+                df.reset_index(inplace=True, drop=True)
+
+            else:
+                stacked_tensor = stacked_tensor.float().numpy()[:14040]
+                logits = logits.float().numpy()[:14040]
+                df = df.iloc[:14040]
+                df.reset_index(inplace=True, drop=True)
         except DataNotFoundError as e:
             # Handle missing data but continue the program
             print(e)
-            raise e 
+            raise e
         except UnknownError as e:
             print(e)
             raise e
-
-        if self.instances_per_sub == 100:
-            mask = np.load(
-                "/orfeo/scratch/dssc/zenocosini/mmlu_result/test_mask_100.npy"
-            )
-            stacked_tensor = stacked_tensor.float().numpy()[:14040][mask]
-            logits = logits.float().numpy()[:14040][mask]
-            df = df.iloc[mask]
-            df.reset_index(inplace=True, drop=True)
-        elif self.instances_per_sub is not None:
-
-            def select_rows(group):
-                return group.head(min(len(group), self.instances_per_sub))
-
-            df = df.groupby("dataset").apply(select_rows)
-            index = df.index
-            stacked_tensor = stacked_tensor.float().numpy()[:14040][index]
-            logits = logits.float().numpy()[:14040][index]
-            df.reset_index(inplace=True, drop=True)
-        else:
-            stacked_tensor = stacked_tensor.float().numpy()[:14040]
-            logits = logits.float().numpy()[:14040]
-            df = df.iloc[:14040]
-            df.reset_index(inplace=True, drop=True)
 
         return stacked_tensor, logits, df
         # return stacked_tensor.float().numpy(), logits.float().numpy(), df
