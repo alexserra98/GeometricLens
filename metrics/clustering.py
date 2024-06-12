@@ -1,15 +1,11 @@
 from metrics.hidden_states_metrics import HiddenStatesMetrics
-from .utils import (
-    exact_match,
-    angular_distance,
-    TensorStorageManager,
-)
 from metrics.query import DataFrameQuery
 from common.globals_vars import _NUM_PROC, _OUTPUT_DIR
 from common.error import DataNotFoundError, UnknownError
 from dadapy.data import Data
 from sklearn.metrics import mutual_info_score
-from sklearn.metrics.cluster import adjusted_rand_score, adjusted_mutual_info_score
+from sklearn.metrics.cluster import adjusted_rand_score, \
+                                    adjusted_mutual_info_score
 from sklearn.metrics import f1_score
 
 import tqdm
@@ -18,8 +14,10 @@ import numpy as np
 from joblib import Parallel, delayed
 from functools import partial
 import logging
-import einops
 from pathlib import Path
+from jaxtyping import Float, Int, Str
+from typing import Dict
+from numpy.typing import Array
 
 
 f1_score_micro = partial(f1_score, average="micro")
@@ -32,7 +30,8 @@ _COMPARISON_METRICS = {
 
 
 class LabelClustering(HiddenStatesMetrics):
-    def main(self, label) -> pd.DataFrame:
+    def main(self, 
+             label: Str) -> pd.DataFrame:
         """
         Compute the overlap between the layers of instances in which the model answered with the same letter
         Output
@@ -49,7 +48,7 @@ class LabelClustering(HiddenStatesMetrics):
 
         iter_list = [0, 0.5, 1, 1.6, 2.1]
 
-        #iter_list = [1,1.6]
+        # iter_list = [1,1.6]
 
         rows = []
         tsm = self.tensor_storage
@@ -149,12 +148,24 @@ class LabelClustering(HiddenStatesMetrics):
         return df
 
     def constructing_labels(
-        self, hidden_states_df: pd.DataFrame, hidden_states: np.ndarray
-    ) -> np.ndarray:
+        self, 
+        hidden_states_df: pd.DataFrame, 
+        hidden_states: Array[Float, "num_instances, num_layers, model_dim"],
+    ) -> Array[Float, "num_instances"]:
+        """
+        Map the labels to integers and return the labels for each instance 
+        in the hidden states.
+        Inputs:
+            hidden_states_df: pd.DataFrame
+            hidden_states: Array[Float, "num_instances, num_layers, model_dim"]
+        Returns:
+            Array[Int, "num_instances"]
+        """
         labels_literals = hidden_states_df[self.label].unique()
         labels_literals.sort()
 
-        map_labels = {class_name: n for n, class_name in enumerate(labels_literals)}
+        map_labels = {class_name: n 
+                      for n, class_name in enumerate(labels_literals)}
 
         label_per_row = hidden_states_df[self.label].reset_index(drop=True)
         label_per_row = np.array(
@@ -164,8 +175,25 @@ class LabelClustering(HiddenStatesMetrics):
         return label_per_row
 
     def parallel_compute(
-        self, hidden_states: np.ndarray, label: np.array, z: float
-    ) -> dict:
+        self, 
+        hidden_states: Array[Float, "num_instances, num_layers, model_dim"],
+        label: Array[Int, "num_instances"],
+        z: Float
+    ) -> Dict[str, Array[Float, "num_layers"]]:
+        """
+        Compute the overlap between a set of representations and a given label.
+        Inputs:
+            hidden_states: Array[Float, "num_instances, num_layers, model_dim"]
+            labels: Array[Int, "num_instances"]
+            z: Float
+                merging parameter for the clustering algorithm
+                M.dErrico, E. Facco, A. Laio, A. Rodriguez, Automatic 
+                topography of high-dimensional data sets by
+                non-parametric density peak clustering, Information Sciences 
+                560 (2021) 476492
+        Returns:
+            Dict[str, Array[Float, "num_layers"]]
+        """
         assert (
             hidden_states.shape[0] == label.shape[0]
         ), "Label lenght don't mactch the number of instances"
@@ -197,7 +225,26 @@ class LabelClustering(HiddenStatesMetrics):
                 output[key].append(layer_result[key])
         return output
 
-    def process_layer(self, layer, hidden_states, label, z) -> dict:
+    def process_layer(
+            self, 
+            layer: Int, 
+            hidden_states: Array[Float, "num_instances, num_layers, model_dim"],
+            label: Array[Int, "num_instances"],
+            z: Float
+    ) -> Dict[str, Array[Float, "num_layers"]]:
+        """
+        Process a single layer.
+        Inputs:
+            layer: Int
+            hidden_states: Array[Float, "num_instances, num_layers, model_dim"]
+            labels: Array[Int, "num_instances"]
+            z: Float
+                merging parameter for the clustering algorithm
+                M.dErrico, E. Facco, A. Laio, A. Rodriguez, Automatic topography of high-dimensional data sets by
+                non-parametric density peak clustering, Information Sciences 560 (2021) 476492
+        Returns:
+            Dict[str, Array[Float, "num_layers"]]
+        """
         layer_results = {}
         hidden_states = hidden_states[:, layer, :]
         base_unique, base_idx, base_inverse = np.unique(
@@ -241,28 +288,50 @@ class LabelClustering(HiddenStatesMetrics):
         #     layer_results[key] = func(clusters_assignment, label)
         return layer_results
 
-    def concatenate_layers(self, input_array, window_size=2):
+    def concatenate_layers(self, 
+                           input_array: Array[Float, "num_instances, \
+                                                     num_layers, model_dim"],
+                           window_size: Int = 2):
+        """
+        Concatenate the hidden states of successive layers in a window of size 
+        `window_size`.
+        For example for window_size=2:
+            output[0] will be the concatenation of layer [0,1],
+            output[1] will be the concatenation of layer [1,2],
+            ...
+        Inputs:
+            input_array: Array[Float, "num_instances, num_layers, model_dim"]
+            window_size: Int
+        Returns:
+            Array[Float, "num_instances, num_layers, window_size*model_dim"]
+        """
         # Ensure input_array is a numpy array
         if not isinstance(input_array, np.ndarray):
             input_array = np.array(input_array)
         
         # Prepare output array
         num_windows = input_array.shape[1] - window_size + 1
-        output_shape = (input_array.shape[0], input_array.shape[1], window_size * input_array.shape[2])
+        output_shape = (input_array.shape[0], input_array.shape[1],
+                        window_size * input_array.shape[2])
         output = np.zeros(output_shape, dtype=input_array.dtype)
         
         # Create all windows for each position that fits the full window size
-        windows = np.lib.stride_tricks.sliding_window_view(input_array, (1, window_size, input_array.shape[2]))
+        window_shape = (1, window_size, input_array.shape[2])
+        windows = np.lib.stride_tricks.sliding_window_view(input_array, 
+                                                           window_shape)
         windows = windows.reshape(input_array.shape[0], num_windows, -1)
         
         # Assign these windows to the output
         output[:, :num_windows] = windows
         
         # Handling the last layers by concatenating backwards
-        # We need to handle the case where the indices fall out of the bounds normally handled by the first loop
+        # We need to handle the case where the indices fall out of the bounds 
+        # normally handled by the first loop
         if window_size > 1:
             for i in range(num_windows, input_array.shape[1]):
-                output[:, i, :] = input_array[:, i - window_size + 1:i + 1].reshape(input_array.shape[0], -1)
+                input_array_sliced = input_array[:, i - window_size + 1:i + 1]
+                output[:, i, :] = input_array_sliced.reshape(
+                    input_array.shape[0], -1)
         
         return output
 
@@ -270,13 +339,11 @@ class LabelClustering(HiddenStatesMetrics):
 class PointClustering(HiddenStatesMetrics):
     def main(self) -> pd.DataFrame:
         """
-        Compute the overlap between same dataset, same train instances, different models (pretrained and finetuned)
+        Compute overlap between two sets of representations.
 
-        Parameters
-        ----------
-        data: Dict[model, Dict[dataset, Dict[train_instances, Dict[method, Dict[match, Dict[layer, np.ndarray]]]]]]
-        Output
-        df: pd.DataFrame (k,dataset,method,train_instances_i,train_instances_j,overlap)
+        Returns:
+            pd.DataFrame
+            Dataframe containing results
         """
         module_logger = logging.getLogger("my_app.point_clustering")
         module_logger.info("Computing point clustering")
@@ -333,72 +400,74 @@ class PointClustering(HiddenStatesMetrics):
                     )
                     raise e
 
-                    df_i.reset_index(inplace=True)
-                    df_j.reset_index(inplace=True)
+                df_i.reset_index(inplace=True)
+                df_j.reset_index(inplace=True)
 
-                    # if (
-                    #    self.variations["point_clustering"] == "cosine"
-                    #    or self.variations["point_clustering"] == "norm"
-                    #    or self.variations["point_clustering"] == "shared_answers"
-                    # ):
-                    #    df_i["exact_match"] = df_i.apply(
-                    #        lambda r: exact_match(r["std_pred"], r["letter_gold"]),
-                    #        axis=1,
-                    #    )
-                    #    df_j["exact_match"] = df_j.apply(
-                    #        lambda r: exact_match(r["std_pred"], r["letter_gold"]),
-                    #        axis=1,
-                    #    )
-                    #    # find the index of rows that have "exact_match" True in both df_i and df_j
-                    #    indices_i = df_i[df_i["exact_match"] == True].index
-                    #    indices_j = df_j[df_j["exact_match"] == True].index
-                    #    # find the intersection of the two sets of indices
-                    #    indices = indices_i.intersection(indices_j)
-                    #    hidden_states_i = hidden_states_i[indices]
-                    #    hidden_states_j = hidden_states_j[indices]
+                # if (
+                #    self.variations["point_clustering"] == "cosine"
+                #    or self.variations["point_clustering"] == "norm"
+                #    or self.variations["point_clustering"] == "shared_answers"
+                # ):
+                #    df_i["exact_match"] = df_i.apply(
+                #        lambda r: exact_match(r["std_pred"], r["letter_gold"]),
+                #        axis=1,
+                #    )
+                #    df_j["exact_match"] = df_j.apply(
+                #        lambda r: exact_match(r["std_pred"], r["letter_gold"]),
+                #        axis=1,
+                #    )
+                #    # find the index of rows that have "exact_match" True in
+                # both df_i and df_j
+                #    indices_i = df_i[df_i["exact_match"] == True].index
+                #    indices_j = df_j[df_j["exact_match"] == True].index
+                #    # find the intersection of the two sets of indices
+                #    indices = indices_i.intersection(indices_j)
+                #    hidden_states_i = hidden_states_i[indices]
+                #    hidden_states_j = hidden_states_j[indices]
 
-                    try:
-                        clustering_out = self.parallel_compute(
-                            hidden_states_i, hidden_states_j, z
-                        )
-
-                    except Exception as e:
-                        module_logger.error(
-                            f"Error computing overlap for {couple} with k {z}. Error: {e}"
-                        )
-                        raise e
-                    rows.append(
-                        [
-                            z,
-                            couple,
-                            method,
-                            shot_i,
-                            shot_j,
-                            clustering_out["adjusted_rand_score"],
-                            clustering_out["adjusted_mutual_info_score"],
-                            clustering_out["mutual_info_score"],
-                            clustering_out["f1_score"],
-                        ]
+                try:
+                    clustering_out = self.parallel_compute(
+                        hidden_states_i, hidden_states_j, z
                     )
-                    if len(rows) % 3 == 0:
-                        # Save checkpoint
-                        df_temp = pd.DataFrame(
-                            rows,
-                            columns=[
-                                "z",
-                                "couple",
-                                "method",
-                                "train_instances_i",
-                                "train_instances_j",
-                                "adjusted_rand_score",
-                                "adjusted_mutual_info_score",
-                                "mutual_info_score",
-                                "f1_score",
-                            ],
-                        )
-                        df_temp.to_pickle(
-                            check_point_dir / f"checkpoint_point_overlap.pkl"
-                        )
+
+                except Exception as e:
+                    module_logger.error(
+                        f"Error computing overlap for {couple} with k {z}."\
+                        f"Error: {e}"
+                    )
+                    raise e
+                rows.append(
+                    [
+                        z,
+                        couple,
+                        method,
+                        shot_i,
+                        shot_j,
+                        clustering_out["adjusted_rand_score"],
+                        clustering_out["adjusted_mutual_info_score"],
+                        clustering_out["mutual_info_score"],
+                        clustering_out["f1_score"],
+                    ]
+                )
+                if len(rows) % 3 == 0:
+                    # Save checkpoint
+                    df_temp = pd.DataFrame(
+                        rows,
+                        columns=[
+                            "z",
+                            "couple",
+                            "method",
+                            "train_instances_i",
+                            "train_instances_j",
+                            "adjusted_rand_score",
+                            "adjusted_mutual_info_score",
+                            "mutual_info_score",
+                            "f1_score",
+                        ],
+                    )
+                    df_temp.to_pickle(
+                        check_point_dir / f"checkpoint_point_overlap.pkl"
+                    )
 
         df = pd.DataFrame(
             rows,
@@ -415,34 +484,29 @@ class PointClustering(HiddenStatesMetrics):
             ],
         )
         return df
-
-    def pair_names(self, names_list):
-        """
-        Pairs base names with their corresponding 'chat' versions.
-
-        Args:
-        names_list (list): A list of strings containing names.
-
-        Returns:
-        list: A list of tuples, each containing a base name and its 'chat' version.
-        """
-        # Separating base names and 'chat' names
-        difference = "chat"
-        base_names = [name for name in names_list if difference not in name]
-        chat_names = [name for name in names_list if difference in name]
-        base_names.sort()
-        chat_names.sort()
-        # Pairing base names with their corresponding 'chat' versions
-        pairs = []
-        for base_name, chat_name in zip(base_names, chat_names):
-            pairs.append((base_name, base_name))
-            pairs.append((chat_name, chat_name))
-            pairs.append((base_name, chat_name))
-        return pairs
-
+    
     def parallel_compute(
-        self, input_i: np.ndarray, input_j: np.ndarray, z: int
-    ) -> np.ndarray:
+        self, 
+        input_i: Array[Float, "num_instances, num_layers, model_dim"],
+        input_j: Array[Float, "num_instances, num_layers, model_dim"],
+        z: Float,
+    ) -> Dict[str, Array[Float, "num_layers"]]:
+        """
+        Compute the overlap between two set of representations for each layer.
+
+        Inputs:
+            data_i: Array[Float, "num_instances, num_layers, model_dim"]
+            data_j: Array[Float, "num_instances, num_layers, model_dim"]
+            z: Float
+                merging parameter for the clustering algorithm
+                M.dErrico, E. Facco, A. Laio, A. Rodriguez, Automatic
+                topography of high-dimensional data sets by
+                non-parametric density peak clustering, Information Sciences
+                560 (2021) 476492
+        
+        Returns:
+            Array[Float, "num_layers"]
+        """
         assert (
             input_i.shape[1] == input_j.shape[1]
         ), "The two runs must have the same number of layers"
@@ -473,9 +537,26 @@ class PointClustering(HiddenStatesMetrics):
                 comparison_output[key].append(layer_result[key])
         return comparison_output
 
-    def process_layer(self, layer, input_i, input_j, z):
+    def process_layer(self, 
+                      layer: Int, 
+                      input_i: Array[Float, "num_instances, num_layers, model_dim"],
+                      input_j: Array[Float, "num_instances, num_layers, model_dim"],
+                      z: Float
+        ) -> Dict[str, Array[Float, "num_layers"]]:
         """
         Process a single layer.
+        Inputs:
+            layer: Int
+            input_i: Array[Float, "num_instances, num_layers, model_dim"]
+            input_j: Array[Float, "num_instances, num_layers, model_dim"]
+            z: Float
+                merging parameter for the clustering algorithm
+                M.dErrico, E. Facco, A. Laio, A. Rodriguez, Automatic
+                topography of high-dimensional data sets by
+                non-parametric density peak clustering, Information Sciences
+                560 (2021) 476492
+        Returns:
+            Dict[str, Array[Float, "num_layers"]]
         """
         data_i = input_i[:, layer, :]
         data_j = input_j[:, layer, :]
@@ -506,23 +587,25 @@ class PointClustering(HiddenStatesMetrics):
         return clusters_assignment
 
 
-def balance_by_label_within_groups(df, group_field, label_field):
+def balance_by_label_within_groups(
+        df: pd.DataFrame, 
+        group_field: Str, 
+        label_field: Str):
     """
     Balance the number of elements for each value of `label_field` within each group defined by `group_field`.
 
-    Parameters
-    ----------
-    df : pd.DataFrame
-        The dataframe to balance.
-    group_field : str
-        The column name to group by.
-    label_field : str
-        The column name whose values need to be balanced within each group.
+    Inputs
+        df : pd.DataFrame
+            The dataframe to balance.
+        group_field : str
+            The column name to group by.
+        label_field : str
+            The column name whose values need to be balanced within each group.
 
     Returns
-    -------
-    pd.DataFrame
-        A new dataframe where each group defined by `group_field` is balanced according to `label_field`.
+        pd.DataFrame
+            A new dataframe where each group defined by `group_field` is 
+            balanced according to `label_field`.
     """
 
     # Function to balance each group

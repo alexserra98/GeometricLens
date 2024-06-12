@@ -1,5 +1,5 @@
 from metrics.hidden_states_metrics import HiddenStatesMetrics
-from .utils import exact_match, TensorStorageManager
+from .utils import exact_match
 from metrics.query import DataFrameQuery
 from common.globals_vars import _NUM_PROC, _OUTPUT_DIR
 from common.error import DataNotFoundError, UnknownError
@@ -13,11 +13,18 @@ from pathlib import Path
 from joblib import Parallel, delayed
 from functools import partial
 import logging
-import pdb
+from jaxtyping import Float, Int, Str
+from numpy.typing import Array
 
 
 class IntrinsicDimension(HiddenStatesMetrics):
     def main(self) -> pd.DataFrame:
+        """
+        Compute the intrinsic dimension of the hidden states of a model
+        Returns
+            pd.DataFrame
+                DataFrame with the intrinsic dimension of the hidden states
+        """
         module_logger = logging.getLogger("my_app.id")
         module_logger.info("Computing ID")
 
@@ -31,7 +38,8 @@ class IntrinsicDimension(HiddenStatesMetrics):
         for query_dict in tqdm.tqdm(self.queries, desc="Processing queries"):
             module_logger.debug(f"Processing query {query_dict}")
             for match in ["correct", "incorrect", "all"]:
-                if not self.variations or not self.variations.get("intrisic_dimension"):
+                if not self.variations\
+                   or not self.variations.get("intrisic_dimension"):
                     query = DataFrameQuery(query_dict)
                 elif self.variations["intrinsic_dimension"] == "misc":
                     query_dict["dataset"] = "mmlu:miscellaneous"
@@ -45,15 +53,18 @@ class IntrinsicDimension(HiddenStatesMetrics):
                         query, self.storage_logic
                     )
                 except DataNotFoundError as e:
-                    module_logger.error(f"Error processing query {query_dict} data not found: {e}")
+                    module_logger.error(f"Error processing query {query_dict}"
+                                        f"data not found: {e}")
                     continue
                 except UnknownError as e:
-                    module_logger.error(f"Error processing query {query_dict}: {e}")
+                    module_logger.error(f"Error processing query {query_dict}:"
+                                        f"{e}")
                     raise
                 if match == "correct":
                     hidden_states_df = hidden_states_df[
                         hidden_states_df.apply(
-                            lambda r: exact_match(r["std_pred"], r["letter_gold"]),
+                            lambda r: exact_match(r["std_pred"],
+                                                  r["letter_gold"]),
                             axis=1,
                         )
                     ]
@@ -61,7 +72,8 @@ class IntrinsicDimension(HiddenStatesMetrics):
                 elif match == "incorrect":
                     hidden_states_df = hidden_states_df[
                         hidden_states_df.apply(
-                            lambda r: not exact_match(r["std_pred"], r["letter_gold"]),
+                            lambda r: not exact_match(r["std_pred"],
+                                                      r["letter_gold"]),
                             axis=1,
                         )
                     ]
@@ -73,7 +85,8 @@ class IntrinsicDimension(HiddenStatesMetrics):
                     )
                 except Exception as e:
                     module_logger.error(
-                        f"Error computing ID for {query_dict} with match {match}. Error: {e}"
+                        f"Error computing ID for {query_dict}"
+                        f"with match {match}. Error: {e}"
                     )
                     continue
 
@@ -102,7 +115,7 @@ class IntrinsicDimension(HiddenStatesMetrics):
                 ],
             )
 
-            df_temp.to_pickle(check_point_dir / f"checkpoint_id.pkl")
+            df_temp.to_pickle(check_point_dir / "checkpoint_id.pkl")
 
         return pd.DataFrame(
             rows,
@@ -117,23 +130,25 @@ class IntrinsicDimension(HiddenStatesMetrics):
             ],
         )
 
-    def parallel_compute(self, hidden_states: np.ndarray) -> np.ndarray:
+    def parallel_compute(
+            self, 
+            hidden_states: Array[Float, "num_instances, num_layers, model_dim"]
+    ) -> Array[Float, "order of nearest neighbour, num_layers"]:
         """
         Collect hidden states of all instances and compute ID
-        we employ two different approaches: the one of the last token, the sum of all tokens
-        Parameters
-        ----------
-        hidden_states: np.array(num_instances, num_layers, model_dim)
-        algorithm: 2nn or gride --> what algorithm to use to compute ID
-
-        Output
-        ----------
-        Dict np.array(num_layers)
+        we employ two different approaches: the one of the last token, 
+        the sum of all tokens
+        
+        Inputs
+            hidden_states: Array[Float, "num_instances, num_layers, model_dim"]
+        Returns
+            Array[Float, "order of nearest neighbour, num_layers"]
+                Array with the ID of each layer,
+                for each order of nearest neighbour
         """
 
         id_per_layer_gride = []
-        id_per_layer_lpca = []
-        id_per_layer_danco = []
+
         num_layers = hidden_states.shape[1]
         process_layer = partial(
             self.process_layer, hidden_states=hidden_states, algorithm="gride"
@@ -143,21 +158,39 @@ class IntrinsicDimension(HiddenStatesMetrics):
             with Parallel(n_jobs=_NUM_PROC) as parallel:
                 id_per_layer_gride = parallel(
                     delayed(process_layer)(i)
-                    for i in tqdm.tqdm(range(1, num_layers), desc="Processing layers")
+                    for i in tqdm.tqdm(range(1, num_layers),
+                                       desc="Processing layers")
                 )
-                # id_per_layer_lpca = parallel(delayed(process_layer)(i, hidden_states, "lpca") for i in range(1, num_layers))
-                # id_per_layer_danco = parallel(delayed(process_layer)(i, hidden_states, "DANco") for i in range(1, num_layers))
+                # id_per_layer_lpca = parallel(delayed(process_layer)
+                # (i, hidden_states, "lpca") for i in range(1, num_layers))
+                # id_per_layer_danco = parallel(delayed(process_layer)
+                # (i, hidden_states, "DANco") for i in range(1, num_layers))
         else:
             # Sequential version
             for layer in range(1, num_layers):
                 id_per_layer_gride.append(process_layer(layer))
         id_per_layer_gride.insert(0, np.ones(id_per_layer_gride[-1].shape[0]))
-        return np.stack(id_per_layer_gride), id_per_layer_lpca, id_per_layer_danco
-
-    def process_layer(self, i, hidden_states: np.array, algorithm: str):
-        # Function to replace the loop body
-
-        data = Data(hidden_states[:, i, :])
+        # TODO fix output
+        return np.stack(id_per_layer_gride), [], []
+               
+    def process_layer(
+            self, 
+            layer: Int, 
+            hidden_states: Array[Float, "num_instances, num_layers, model_dim"],
+            algorithm: Str = "gride"
+    ) -> Array[Float, "order of nearest neighbour"]:
+        """
+        Process a single layer
+        Inputs
+            layer: Int
+                Layer to process
+            hidden_states: Array[Float, "num_instances, num_layers, model_dim"]
+                Hidden states of the model
+            algorithm: Str
+                Algorithm to compute the ID
+        Returns
+        """
+        data = Data(hidden_states[:, layer, :])
 
         # with HiddenPrints():
         data.remove_identical_points()
@@ -167,11 +200,9 @@ class IntrinsicDimension(HiddenStatesMetrics):
         elif algorithm == "gride":
             return data.return_id_scaling_gride(range_max=1000)[0]
         elif algorithm == "DANco":
-            return skdim.id.DANCo().fit(hidden_states[:, i, :])
+            raise NotImplementedError
         elif algorithm == "lPCA":
-            return skdim.id.lPCA().fit_pw(
-                hidden_states[:, i, :], n_neighbors=100, n_jobs=4
-            )
+            raise NotImplementedError
 
 
 # datasets = ['mmlu:clinical_knowledge',

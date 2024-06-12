@@ -3,7 +3,7 @@ from metrics.query import DataFrameQuery
 from metrics.intrinisic_dimension import IntrinsicDimension
 from metrics.clustering import LabelClustering, PointClustering
 from metrics.overlap import PointOverlap, LabelOverlap
-from metrics.cka import CenteredKernelAlignement
+from metrics.cka.cka import CenteredKernelAlignement
 from common.tensor_storage import TensorStorage
 
 # from sklearn.feature_selection import mutual_info_regression MISSIN?

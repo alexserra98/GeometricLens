@@ -1,5 +1,5 @@
 from metrics.hidden_states_metrics import HiddenStatesMetrics
-from .utils import  hidden_states_collapse, exact_match, angular_distance
+from ..utils import  hidden_states_collapse, exact_match, angular_distance
 from metrics.query import DataFrameQuery
 from common.globals_vars import _NUM_PROC
 from .utils_cka import *

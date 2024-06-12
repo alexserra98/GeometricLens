@@ -1,8 +1,6 @@
 from metrics.hidden_states_metrics import HiddenStatesMetrics
 from .utils import (
-    exact_match,
     angular_distance,
-    TensorStorageManager,
 )
 from metrics.query import DataFrameQuery
 from common.globals_vars import _NUM_PROC, _OUTPUT_DIR
@@ -20,21 +18,17 @@ from functools import partial
 from joblib import Parallel, delayed
 import logging
 from jaxtyping import Float, Int, Str
-from typing import Optional, Callable, Union, List, Tuple
+from typing import  List, Tuple
 from numpy.typing import Array
-
-
 
 class PointOverlap(HiddenStatesMetrics):
     def main(self) -> pd.DataFrame:
         """
-        Compute the overlap between same dataset, same train instances, different models (pretrained and finetuned)
+        Compute overlap between two sets of representations.
 
-        Parameters
-        ----------
-        data: Dict[model, Dict[dataset, Dict[train_instances, Dict[method, Dict[match, Dict[layer, np.ndarray]]]]]]
-        Output
-        df: pd.DataFrame (k,dataset,method,train_instances_i,train_instances_j,overlap)
+        Returns:
+            pd.DataFrame
+                Dataframe containing results
         """
         module_logger = logging.getLogger("my_app.point_overlap")
         module_logger.info("Computing point overlap")
@@ -115,10 +109,13 @@ class PointOverlap(HiddenStatesMetrics):
                 #    hidden_states_j = hidden_states_j[indices]
 
                 try:
-                    overlap = self.parallel_compute(hidden_states_i, hidden_states_j, k)
+                    overlap = self.parallel_compute(hidden_states_i,
+                                                    hidden_states_j,
+                                                    k)
                 except Exception as e:
                     module_logger.error(
-                        f"Error computing overlap for {couple} with k {k}. Error: {e}"
+                        f"Error computing overlap for {couple} with k {k}." \
+                        f"Error: {e}"
                     )
                     raise e
                 rows.append(
@@ -144,7 +141,8 @@ class PointOverlap(HiddenStatesMetrics):
                             "point_overlap",
                         ],
                     )
-                    df_temp.to_pickle(check_point_dir / f"checkpoint_point_overlap.pkl")
+                    df_temp.to_pickle(
+                        check_point_dir / "checkpoint_point_overlap.pkl")
 
         df = pd.DataFrame(
             rows,
@@ -172,7 +170,8 @@ class PointOverlap(HiddenStatesMetrics):
 
         Returns:
             list: List[Tuple[str, str]] 
-            A list of tuples, each containing a base name and its 'chat' version.
+            A list of tuples, each containing a base name
+            and its 'chat' version.
         """
         # Separating base names and 'chat' names
         difference = "chat"
@@ -201,7 +200,7 @@ class PointOverlap(HiddenStatesMetrics):
             data_i: Array[Float, "num_instances, num_layers, model_dim"]
             data_j: Array[Float, "num_instances, num_layers, model_dim"]
             k: Int
-        
+                the number of neighbours considered for the overlap
         Returns:
             Array[Float, "num_layers"]
         """
@@ -209,7 +208,10 @@ class PointOverlap(HiddenStatesMetrics):
             data_i.shape[1] == data_j.shape[1]
         ), "The two runs must have the same number of layers"
         number_of_layers = data_i.shape[1]
-        process_layer = partial(self.process_layer, data_i=data_i, data_j=data_j, k=k)
+        process_layer = partial(self.process_layer,
+                                data_i=data_i,
+                                data_j=data_j,
+                                k=k)
 
         if self.parallel:
             with Parallel(n_jobs=_NUM_PROC) as parallel:
@@ -242,6 +244,7 @@ class PointOverlap(HiddenStatesMetrics):
             data_i: Array[Float, "num_instances, num_layers, model_dim"]
             data_j: Array[Float, "num_instances, num_layers, model_dim"]
             k: Int
+                the number of neighbours considered for the overlap
         Returns:
             Float
         """
@@ -281,7 +284,8 @@ class LabelOverlap(HiddenStatesMetrics):
         module_logger = logging.getLogger("my_app.label_overlap")
         module_logger.info(f"Computing label overlap with label {label}")
         self.label = label
-        # The last token is always the same, thus its first layer activation (embedding) is always the same
+        # The last token is always the same, thus its first layer activation 
+        # (embedding) is always the same
         iter_list = [0.05, 0.10, 0.20, 0.50]
 
         iter_list = [0.10, 0.20]
@@ -327,11 +331,13 @@ class LabelOverlap(HiddenStatesMetrics):
 
                 try:
                     overlap = self.parallel_compute(
-                        hidden_states, label_per_row, class_fraction=class_fraction
+                        hidden_states, label_per_row, 
+                        class_fraction=class_fraction
                     )
                 except Exception as e:
                     module_logger.error(
-                        f"Error computing overlap for {query_dict} with class_fraction {class_fraction}. Error: {e}"
+                        f"Error computing overlap for {query_dict} with" \
+                        f"class_fraction {class_fraction}. Error: {e}"
                     )
                     raise e
 
@@ -348,7 +354,8 @@ class LabelOverlap(HiddenStatesMetrics):
                             "overlap",
                         ],
                     )
-                    df_temp.to_pickle(check_point_dir / f"checkpoint_label_overlap.pkl")
+                    df_temp.to_pickle(
+                        check_point_dir / "checkpoint_label_overlap.pkl")
         df = pd.DataFrame(
             rows,
             columns=["model", "method", "shot", "class_fraction", "overlap"],
@@ -371,7 +378,8 @@ class LabelOverlap(HiddenStatesMetrics):
         labels_literals = hidden_states_df[self.label].unique()
         labels_literals.sort()
 
-        map_labels = {class_name: n for n, class_name in enumerate(labels_literals)}
+        map_labels = {class_name: n 
+                      for n, class_name in enumerate(labels_literals)}
 
         label_per_row = hidden_states_df[self.label].reset_index(drop=True)
         label_per_row = np.array(
@@ -381,11 +389,22 @@ class LabelOverlap(HiddenStatesMetrics):
         return label_per_row
 
     def parallel_compute(
-        self, 
-        hidden_states: np.ndarray, 
-        labels: np.array, 
-        class_fraction: float
-    ) -> np.ndarray:
+            self, 
+            hidden_states: Array[Float, "num_instances, num_layers, model_dim"],
+            labels: Array[Int, "num_instances"],
+            class_fraction: Float
+        ) -> Array[Float, "num_layers"]:
+        """
+        Compute the overlap between a set of representations and a given label.
+        Inputs:
+            hidden_states: Array[Float, "num_instances, num_layers, model_dim"]
+            labels: Array[Int, "num_instances"]
+            class_fraction: Float
+                Similar as k in PointOverlap, but here is the fraction of 
+                nearest neighbors considered for each group of instances with same label
+        Returns:
+            Array[Float, "num_layers"]
+        """
         overlaps = []
         if class_fraction is None:
             raise ValueError("You must provide either k or class_fraction")
@@ -417,9 +436,23 @@ class LabelOverlap(HiddenStatesMetrics):
 
         return np.stack(overlaps)
 
-    def process_layer(self, num_layer, hidden_states, labels, class_fraction):
+    def process_layer(
+            self, 
+            num_layer: Int, 
+            hidden_states: Array[Float, "num_instances, num_layers, model_dim"],
+            labels: Array[Int, "num_instances"],
+            class_fraction: Float) -> Float:
         """
         Process a single layer.
+        Inputs:
+            num_layer: Int
+            hidden_states: Array[Float, "num_instances, num_layers, model_dim"]
+            labels: Array[Int, "num_instances"]
+            class_fraction: Float
+                Fraction of nearest neighbors considered for each group of 
+                instances with same label
+        Returns:
+            Float
         """
 
         if self.variations["label_overlap"] == "norm":
@@ -432,28 +465,32 @@ class LabelOverlap(HiddenStatesMetrics):
 
         data = Data(hidden_states, maxk=maxk)
 
-        overlap = data.return_label_overlap(labels, class_fraction=class_fraction)
+        overlap = data.return_label_overlap(labels, 
+                                            class_fraction=class_fraction)
 
         return overlap
 
 
-def balance_by_label_within_groups(df, group_field, label_field):
+def balance_by_label_within_groups(
+        df: pd.DataFrame, 
+        group_field: Str, 
+        label_field: Str):
     """
-    Balance the number of elements for each value of `label_field` within each group defined by `group_field`.
+    Balance the number of elements for each value of `label_field` within each 
+    group defined by `group_field`.
 
-    Parameters
-    ----------
-    df : pd.DataFrame
-        The dataframe to balance.
-    group_field : str
-        The column name to group by.
-    label_field : str
-        The column name whose values need to be balanced within each group.
+    Inputs
+        df : pd.DataFrame
+            The dataframe to balance.
+        group_field : str
+            The column name to group by.
+        label_field : str
+            The column name whose values need to be balanced within each group.
 
     Returns
-    -------
-    pd.DataFrame
-        A new dataframe where each group defined by `group_field` is balanced according to `label_field`.
+        pd.DataFrame
+            A new dataframe where each group defined by `group_field` is 
+            balanced according to `label_field`.
     """
 
     # Function to balance each group
@@ -461,7 +498,8 @@ def balance_by_label_within_groups(df, group_field, label_field):
         # Count instances of each label within the group
         class_counts = group[label_field].value_counts()
         min_count = class_counts.min()  # Find the minimum count
-        # Sample each subset to have the same number of instances as the minimum count
+        # Sample each subset to have the same number of instances as 
+        # the minimum count
         return (
             group.groupby(label_field)
             .apply(lambda x: x.sample(min_count))
@@ -490,7 +528,8 @@ def balance_by_label_within_groups(df, group_field, label_field):
 #    id_instance_i = sorted(id_instance_i)
 #    id_instance_j = sorted(id_instance_j)
 #    print(f'{couples}--{shot}--{k}')
-#    assert id_instance_i == id_instance_j, "The two runs must have the same instances"
+#    assert id_instance_i == id_instance_j, "The two runs must
+#  have the same instances"
 
 # id_instance_i = list(
 #    map(lambda k: k[:64], df_i["id_instance"].tolist())
@@ -512,4 +551,5 @@ def balance_by_label_within_groups(df, group_field, label_field):
 # df_j = df_j.where(df_j.only_ref_pred == df_i.only_ref_pred)
 # df_i.dropna(inplace=True)
 # df_j.dropna(inplace=True)
-# hidden_states_j, _, df_j = hidden_states_collapse(df_j,query_j, self.tensor_storage)
+# hidden_states_j, _, df_j = hidden_states_collapse(df_j,query_j,
+# self.tensor_storage)
