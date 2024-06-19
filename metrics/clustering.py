@@ -1,6 +1,6 @@
 from metrics.hidden_states_metrics import HiddenStatesMetrics
 from metrics.query import DataFrameQuery
-from common.globals_vars import _NUM_PROC, _OUTPUT_DIR
+from common.globals_vars import _NUM_PROC, _OUTPUT_DIR, Array
 from common.error import DataNotFoundError, UnknownError
 from dadapy.data import Data
 from sklearn.metrics import mutual_info_score
@@ -15,9 +15,8 @@ from joblib import Parallel, delayed
 from functools import partial
 import logging
 from pathlib import Path
-from jaxtyping import Float, Int, Str
+from jaxtyping import Float, Int
 from typing import Dict
-from numpy.typing import Array
 
 
 f1_score_micro = partial(f1_score, average="micro")
@@ -31,12 +30,12 @@ _COMPARISON_METRICS = {
 
 class LabelClustering(HiddenStatesMetrics):
     def main(self, 
-             label: Str) -> pd.DataFrame:
+             label: str) -> pd.DataFrame:
         """
         Compute the overlap between the layers of instances in which the model answered with the same letter
         Output
         ----------
-        Dict[layer: List[Array(num_layers, num_layers)]]
+        Dict[layer: List[Float(num_layers, num_layers)]]
         """
         module_logger = logging.getLogger("my_app.label_cluster")
         module_logger.info(f"Computing label cluster with label {label}")
@@ -150,16 +149,16 @@ class LabelClustering(HiddenStatesMetrics):
     def constructing_labels(
         self, 
         hidden_states_df: pd.DataFrame, 
-        hidden_states: Array[Float, "num_instances, num_layers, model_dim"],
-    ) -> Array[Float, "num_instances"]:
+        hidden_states: Float[Array, "num_instances num_layers model_dim"],
+    ) -> Float[Array, "num_instances"]:
         """
         Map the labels to integers and return the labels for each instance 
         in the hidden states.
         Inputs:
             hidden_states_df: pd.DataFrame
-            hidden_states: Array[Float, "num_instances, num_layers, model_dim"]
+            hidden_states: Float[Array, "num_instances, num_layers, model_dim"]
         Returns:
-            Array[Int, "num_instances"]
+            Float[Int, "num_instances"]
         """
         labels_literals = hidden_states_df[self.label].unique()
         labels_literals.sort()
@@ -176,29 +175,29 @@ class LabelClustering(HiddenStatesMetrics):
 
     def parallel_compute(
         self, 
-        hidden_states: Array[Float, "num_instances, num_layers, model_dim"],
-        label: Array[Int, "num_instances"],
+        hidden_states: Float[Array, "num_instances num_layers model_dim"],
+        label: Int[Array, "num_instances"],
         z: Float
-    ) -> Dict[str, Array[Float, "num_layers"]]:
+    ) -> Dict[str, Float[Array, "num_layers"]]:
         """
         Compute the overlap between a set of representations and a given label.
         Inputs:
-            hidden_states: Array[Float, "num_instances, num_layers, model_dim"]
-            labels: Array[Int, "num_instances"]
-            z: Float
+            hidden_states: Float[Array, "num_instances, num_layers, model_dim"]
+            labels: Float[Int, "num_instances"]
+            z: Array
                 merging parameter for the clustering algorithm
                 M.dErrico, E. Facco, A. Laio, A. Rodriguez, Automatic 
                 topography of high-dimensional data sets by
                 non-parametric density peak clustering, Information Sciences 
                 560 (2021) 476492
         Returns:
-            Dict[str, Array[Float, "num_layers"]]
+            Dict[str, Float[Array, "num_layers"]]
         """
         assert (
             hidden_states.shape[0] == label.shape[0]
         ), "Label lenght don't mactch the number of instances"
         number_of_layers = hidden_states.shape[1]
-        if self.variations["label_clustering"] == "concat":
+        if "concat" in self.variations["label_clustering"]:
             hidden_states = self.concatenate_layers(hidden_states,
                                                     window_size=3)
         process_layer = partial(
@@ -228,22 +227,23 @@ class LabelClustering(HiddenStatesMetrics):
     def process_layer(
             self, 
             layer: Int, 
-            hidden_states: Array[Float, "num_instances, num_layers, model_dim"],
-            label: Array[Int, "num_instances"],
-            z: Float
-    ) -> Dict[str, Array[Float, "num_layers"]]:
+            hidden_states: Float[Array, "num_instances num_layers model_dim"],
+            label: Float[Int, "num_instances"],
+            z: Array
+    ) -> Dict[str, Float[Array, "num_layers"]]:
         """
         Process a single layer.
         Inputs:
             layer: Int
-            hidden_states: Array[Float, "num_instances, num_layers, model_dim"]
-            labels: Array[Int, "num_instances"]
-            z: Float
+            hidden_states: Float[Array, "num_instances, num_layers, model_dim"]
+            labels: Float[Int, "num_instances"]
+            z: Array
                 merging parameter for the clustering algorithm
-                M.dErrico, E. Facco, A. Laio, A. Rodriguez, Automatic topography of high-dimensional data sets by
-                non-parametric density peak clustering, Information Sciences 560 (2021) 476492
+                M.dErrico, E. Facco, A. Laio, A. Rodriguez, Automatic
+                topography of high-dimensional data sets by non-parametric
+                density peak clustering, Information Sciences 560 (2021) 476492
         Returns:
-            Dict[str, Array[Float, "num_layers"]]
+            Dict[str, Float[Array, "num_layers"]]
         """
         layer_results = {}
         hidden_states = hidden_states[:, layer, :]
@@ -260,7 +260,7 @@ class LabelClustering(HiddenStatesMetrics):
         data.set_id(ids[3])
         data.compute_density_kNN(k=16)
 
-        halo = True if self.variations["label_clustering"] == "halo" else False
+        halo = True if "halo" in self.variations["label_clustering"] else False
         clusters_assignment = data.compute_clustering_ADP(Z=z, halo=halo)
 
         layer_results["bincount"] = []
@@ -277,10 +277,12 @@ class LabelClustering(HiddenStatesMetrics):
         # clusters_assignement = data.compute_clustering_ADP(Z=z)
 
         # #Bincount
-        # unique_clusters, cluster_counts = np.unique(clusters_assignement, return_counts=True)
+        # unique_clusters, cluster_counts = np.unique(clusters_assignement,
+        # return_counts=True)
         # bincount = np.zeros((len(unique_clusters), len(np.unique(label))))
         # for unique_cluster in unique_clusters:
-        #     bincount[unique_cluster] = np.bincount(label[clusters_assignement == unique_cluster], minlength=len(np.unique(label)))
+        #     bincount[unique_cluster] = np.bincount(label
+        #  [clusters_assignement == unique_cluster], minlength=len(np.unique(label)))
         # layer_results["bincount"] = bincount
         # layer_results["bincount"] = []
         # #Comparison metrics
@@ -289,8 +291,8 @@ class LabelClustering(HiddenStatesMetrics):
         return layer_results
 
     def concatenate_layers(self, 
-                           input_array: Array[Float, "num_instances, \
-                                                     num_layers, model_dim"],
+                           input_array: Float[Array, "num_instances \
+                                                     num_layers model_dim"],
                            window_size: Int = 2):
         """
         Concatenate the hidden states of successive layers in a window of size 
@@ -300,16 +302,16 @@ class LabelClustering(HiddenStatesMetrics):
             output[1] will be the concatenation of layer [1,2],
             ...
         Inputs:
-            input_array: Array[Float, "num_instances, num_layers, model_dim"]
+            input_Float: Float[Array, "num_instances, num_layers, model_dim"]
             window_size: Int
         Returns:
-            Array[Float, "num_instances, num_layers, window_size*model_dim"]
+            Float[Array, "num_instances, num_layers, window_size*model_dim"]
         """
-        # Ensure input_array is a numpy array
+        # Ensure input_Float is a numpy Float
         if not isinstance(input_array, np.ndarray):
-            input_array = np.array(input_array)
+            input_array = np.ndarray(input_array)
         
-        # Prepare output array
+        # Prepare output Float
         num_windows = input_array.shape[1] - window_size + 1
         output_shape = (input_array.shape[0], input_array.shape[1],
                         window_size * input_array.shape[2])
@@ -391,7 +393,8 @@ class PointClustering(HiddenStatesMetrics):
                     )
                 except DataNotFoundError as e:
                     module_logger.error(
-                        f"Data not found for {query_i} or {query_j}. Error: {e}"
+                        f"Data not found for {query_i} or"
+                        f"{query_j}. Error: {e}"
                     )
                     continue
                 except UnknownError as e:
@@ -432,7 +435,7 @@ class PointClustering(HiddenStatesMetrics):
 
                 except Exception as e:
                     module_logger.error(
-                        f"Error computing overlap for {couple} with k {z}."\
+                        f"Error computing overlap for {couple} with k {z}."
                         f"Error: {e}"
                     )
                     raise e
@@ -466,7 +469,7 @@ class PointClustering(HiddenStatesMetrics):
                         ],
                     )
                     df_temp.to_pickle(
-                        check_point_dir / f"checkpoint_point_overlap.pkl"
+                        check_point_dir / "checkpoint_point_overlap.pkl"
                     )
 
         df = pd.DataFrame(
@@ -487,17 +490,17 @@ class PointClustering(HiddenStatesMetrics):
     
     def parallel_compute(
         self, 
-        input_i: Array[Float, "num_instances, num_layers, model_dim"],
-        input_j: Array[Float, "num_instances, num_layers, model_dim"],
-        z: Float,
-    ) -> Dict[str, Array[Float, "num_layers"]]:
+        input_i: Float[Array, "num_instances num_layers model_dim"],
+        input_j: Float[Array, "num_instances num_layers model_dim"],
+        z: Array,
+    ) -> Dict[str, Float[Array, "num_layers"]]:
         """
         Compute the overlap between two set of representations for each layer.
 
         Inputs:
-            data_i: Array[Float, "num_instances, num_layers, model_dim"]
-            data_j: Array[Float, "num_instances, num_layers, model_dim"]
-            z: Float
+            data_i: Float[Array, "num_instances, num_layers, model_dim"]
+            data_j: Float[Array, "num_instances, num_layers, model_dim"]
+            z: Array
                 merging parameter for the clustering algorithm
                 M.dErrico, E. Facco, A. Laio, A. Rodriguez, Automatic
                 topography of high-dimensional data sets by
@@ -505,7 +508,7 @@ class PointClustering(HiddenStatesMetrics):
                 560 (2021) 476492
         
         Returns:
-            Array[Float, "num_layers"]
+            Float[Array, "num_layers"]
         """
         assert (
             input_i.shape[1] == input_j.shape[1]
@@ -539,24 +542,24 @@ class PointClustering(HiddenStatesMetrics):
 
     def process_layer(self, 
                       layer: Int, 
-                      input_i: Array[Float, "num_instances, num_layers, model_dim"],
-                      input_j: Array[Float, "num_instances, num_layers, model_dim"],
-                      z: Float
-        ) -> Dict[str, Array[Float, "num_layers"]]:
+                      input_i: Float[Array, "num_instances num_layers model_dim"],
+                      input_j: Float[Array, "num_instances num_layers model_dim"],
+                      z: Array
+        ) -> Dict[str, Float[Array, "num_layers"]]:
         """
         Process a single layer.
         Inputs:
             layer: Int
-            input_i: Array[Float, "num_instances, num_layers, model_dim"]
-            input_j: Array[Float, "num_instances, num_layers, model_dim"]
-            z: Float
+            input_i: Float[Array, "num_instances, num_layers, model_dim"]
+            input_j: Float[Array, "num_instances, num_layers, model_dim"]
+            z: Array
                 merging parameter for the clustering algorithm
                 M.dErrico, E. Facco, A. Laio, A. Rodriguez, Automatic
                 topography of high-dimensional data sets by
                 non-parametric density peak clustering, Information Sciences
                 560 (2021) 476492
         Returns:
-            Dict[str, Array[Float, "num_layers"]]
+            Dict[str, Float[Array, "num_layers"]]
         """
         data_i = input_i[:, layer, :]
         data_j = input_j[:, layer, :]
@@ -589,8 +592,8 @@ class PointClustering(HiddenStatesMetrics):
 
 def balance_by_label_within_groups(
         df: pd.DataFrame, 
-        group_field: Str, 
-        label_field: Str):
+        group_field: str, 
+        label_field: str):
     """
     Balance the number of elements for each value of `label_field` within each group defined by `group_field`.
 

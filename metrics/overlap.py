@@ -3,7 +3,7 @@ from .utils import (
     angular_distance,
 )
 from metrics.query import DataFrameQuery
-from common.globals_vars import _NUM_PROC, _OUTPUT_DIR
+from common.globals_vars import _NUM_PROC, _OUTPUT_DIR, Array
 from common.error import DataNotFoundError, UnknownError
 
 from dadapy import Data
@@ -17,9 +17,9 @@ from pathlib import Path
 from functools import partial
 from joblib import Parallel, delayed
 import logging
-from jaxtyping import Float, Int, Str
+from jaxtyping import Float, Int
 from typing import  List, Tuple
-from numpy.typing import Array
+
 
 class PointOverlap(HiddenStatesMetrics):
     def main(self) -> pd.DataFrame:
@@ -189,20 +189,20 @@ class PointOverlap(HiddenStatesMetrics):
 
     def parallel_compute(
             self,
-            data_i: Array[Float, "num_instances, num_layers, model_dim"],
-            data_j:  Array[Float, "num_instances, num_layers, model_dim"], 
+            data_i: Float[Array, "num_instances num_layers model_dim"],
+            data_j:  Float[Array, "num_instances num_layers model_dim"], 
             k: Int
-        ) -> Array[Float, "num_layers"]:
+        ) -> Float[Array, "num_layers"]:
         """
         Compute the overlap between two set of representations for each layer.
 
         Inputs:
-            data_i: Array[Float, "num_instances, num_layers, model_dim"]
-            data_j: Array[Float, "num_instances, num_layers, model_dim"]
+            data_i: Float[Array, "num_instances, num_layers, model_dim"]
+            data_j: Float[Array, "num_instances, num_layers, model_dim"]
             k: Int
                 the number of neighbours considered for the overlap
         Returns:
-            Array[Float, "num_layers"]
+            Float[Array, "num_layers"]
         """
         assert (
             data_i.shape[1] == data_j.shape[1]
@@ -233,20 +233,20 @@ class PointOverlap(HiddenStatesMetrics):
     def process_layer(
             self,
             layer: Int,
-            data_i: Array[Float, "num_instances, num_layers, model_dim"],
-            data_j:  Array[Float, "num_instances, num_layers, model_dim"],
+            data_i: Float[Array, "num_instances num_layers model_dim"],
+            data_j:  Float[Array, "num_instances num_layers model_dim"],
             k: Int
-        ) -> Float:
+        ) -> Array:
         """
         Process a single layer
         Inputs:
             layer: Int
-            data_i: Array[Float, "num_instances, num_layers, model_dim"]
-            data_j: Array[Float, "num_instances, num_layers, model_dim"]
+            data_i: Float[Array, "num_instances, num_layers, model_dim"]
+            data_j: Float[Array, "num_instances, num_layers, model_dim"]
             k: Int
                 the number of neighbours considered for the overlap
         Returns:
-            Float
+            Array
         """
 
         data_i = data_i[:, layer, :]
@@ -269,12 +269,12 @@ class PointOverlap(HiddenStatesMetrics):
 
 class LabelOverlap(HiddenStatesMetrics):
     def main(
-            self, label: Str
+            self, label: str
         ) -> pd.DataFrame:
         """
         Compute overlap between a set of representations and a given label
         Inputs:
-            label: Str
+            label: str
             The label to compute the overlap with.
         Returns:
             pd.DataFrame
@@ -365,15 +365,15 @@ class LabelOverlap(HiddenStatesMetrics):
     def constructing_labels(
             self, 
             hidden_states_df: pd.DataFrame, 
-            hidden_states: Array[Float, "num_instances, num_layers, model_dim"]
-        ) -> Array[Int, "num_instances"]:
+            hidden_states: Float[Array, "num_instances num_layers model_dim"]
+        ) -> Float[Int, "num_instances"]:
         """
         Map the labels to integers and return the labels for each instance in the hidden states.
         Inputs:
             hidden_states_df: pd.DataFrame
-            hidden_states: Array[Float, "num_instances, num_layers, model_dim"]
+            hidden_states: Float[Array, "num_instances, num_layers, model_dim"]
         Returns:
-            Array[Int, "num_instances"]
+            Float[Int, "num_instances"]
         """
         labels_literals = hidden_states_df[self.label].unique()
         labels_literals.sort()
@@ -382,7 +382,7 @@ class LabelOverlap(HiddenStatesMetrics):
                       for n, class_name in enumerate(labels_literals)}
 
         label_per_row = hidden_states_df[self.label].reset_index(drop=True)
-        label_per_row = np.array(
+        label_per_row = np.Float(
             [map_labels[class_name] for class_name in label_per_row]
         )[: hidden_states.shape[0]]
 
@@ -390,20 +390,20 @@ class LabelOverlap(HiddenStatesMetrics):
 
     def parallel_compute(
             self, 
-            hidden_states: Array[Float, "num_instances, num_layers, model_dim"],
-            labels: Array[Int, "num_instances"],
-            class_fraction: Float
-        ) -> Array[Float, "num_layers"]:
+            hidden_states: Float[Array, "num_instances num_layers model_dim"],
+            labels: Float[Int, "num_instances"],
+            class_fraction: Array
+        ) -> Float[Array, "num_layers"]:
         """
         Compute the overlap between a set of representations and a given label.
         Inputs:
-            hidden_states: Array[Float, "num_instances, num_layers, model_dim"]
-            labels: Array[Int, "num_instances"]
-            class_fraction: Float
+            hidden_states: Float[Array, "num_instances, num_layers, model_dim"]
+            labels: Float[Int, "num_instances"]
+            class_fraction: Array
                 Similar as k in PointOverlap, but here is the fraction of 
                 nearest neighbors considered for each group of instances with same label
         Returns:
-            Array[Float, "num_layers"]
+            Float[Array, "num_layers"]
         """
         overlaps = []
         if class_fraction is None:
@@ -439,20 +439,20 @@ class LabelOverlap(HiddenStatesMetrics):
     def process_layer(
             self, 
             num_layer: Int, 
-            hidden_states: Array[Float, "num_instances, num_layers, model_dim"],
-            labels: Array[Int, "num_instances"],
-            class_fraction: Float) -> Float:
+            hidden_states: Float[Array, "num_instances num_layers model_dim"],
+            labels: Float[Int, "num_instances"],
+            class_fraction: Array) -> Array:
         """
         Process a single layer.
         Inputs:
             num_layer: Int
-            hidden_states: Array[Float, "num_instances, num_layers, model_dim"]
-            labels: Array[Int, "num_instances"]
-            class_fraction: Float
+            hidden_states: Float[Array, "num_instances, num_layers, model_dim"]
+            labels: Float[Int, "num_instances"]
+            class_fraction: Array
                 Fraction of nearest neighbors considered for each group of 
                 instances with same label
         Returns:
-            Float
+            Array
         """
 
         if self.variations["label_overlap"] == "norm":
@@ -473,8 +473,8 @@ class LabelOverlap(HiddenStatesMetrics):
 
 def balance_by_label_within_groups(
         df: pd.DataFrame, 
-        group_field: Str, 
-        label_field: Str):
+        group_field: str, 
+        label_field: str):
     """
     Balance the number of elements for each value of `label_field` within each 
     group defined by `group_field`.
@@ -543,7 +543,7 @@ def balance_by_label_within_groups(
 #        id_instance_j.index(id_instance_i[k])
 #        for k in range(len(id_instance_i))
 #    ]
-#    hidden_states_i = hidden_states_i[np.array(indices)]
+#    hidden_states_i = hidden_states_i[np.Float(indices)]
 # df_i.reset_index(inplace=True)
 # df_j.reset_indiex(inplace=True):q
 

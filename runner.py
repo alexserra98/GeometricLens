@@ -25,19 +25,20 @@ def create_bash_script(script_name, arguments, config_path):
         )
         script_file.write(f"cd /u/dssc/zenocosini/helm_suite/MCQA_Benchmark\n")
         script_file.write(f"module load cuda/11.8\n")
-        script_file.write(f'eval "$(conda shell.bash hook)"\n')
-        script_file.write(f"conda activate mcqa\n")
+        #script_file.write(f'eval "$(conda shell.bash hook)"\n')
+        script_file.write(f"poetry shell\n")
+        #script_file.write(f"conda activate mcqa\n")
         script_file.write(
             f"export PYTHONPATH=/u/dssc/zenocosini/helm_suite/MCQA_Benchmark\n"
         )
         script_file.write(f"export CUDA_VISIBLE_DEVICES=0,1,2,3\n")
         # script_file.write(f'export OMP_NUM_THREADS=1\n')
         if arguments.job_type == "inference":
-            script_file.write(f"python inference.py --conf-path {config_path}\n")
+            script_file.write(f"poetry run python inference.py --conf-path {config_path}\n")
         elif arguments.job_type == "metrics":
-            script_file.write(f"python metrics_computer.py --conf-path {config_path}\n")
+            script_file.write(f"poetry run python metrics_computer.py --conf-path {config_path}\n")
         elif arguments.job_type == "metrics_light":
-            script_file.write(f"python metrics_computer_light.py --conf-path {config_path}\n")
+            script_file.write(f"poetry run python metrics_computer_light.py --conf-path {config_path}\n")
 
         # Example command to run
         script_file.write(f'echo "Running job: {arguments.job_name}"\n')

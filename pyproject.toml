@@ -4,9 +4,11 @@ version = "0.1.0"
 description = "Geometric Interpretability for Q&A task in LLMs"
 authors = ["alexserra98 <s280586@ds.units.it>"]
 readme = "README.md"
+package-mode = false
+
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = "^3.11"
 tokenizers = "^0.19.1"
 tqdm = "^4.66.4"
 wheel = "^0.43.0"
@@ -18,6 +20,11 @@ torch = "^2.3.1"
 torchvision = "^0.18.1"
 torchaudio = "^2.3.1"
 jaxtyping = "^0.2.29"
+jupyter = "^1.0.0"
+rich = "^13.7.1"
+h5py = "^3.11.0"
+einops = "^0.8.0"
+numpy = "^1.26.4"
 
 
 [build-system]

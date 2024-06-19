@@ -1,7 +1,7 @@
 from metrics.hidden_states_metrics import HiddenStatesMetrics
 from .utils import exact_match
 from metrics.query import DataFrameQuery
-from common.globals_vars import _NUM_PROC, _OUTPUT_DIR
+from common.globals_vars import _NUM_PROC, _OUTPUT_DIR, Array
 from common.error import DataNotFoundError, UnknownError
 
 from dadapy.data import Data
@@ -13,8 +13,7 @@ from pathlib import Path
 from joblib import Parallel, delayed
 from functools import partial
 import logging
-from jaxtyping import Float, Int, Str
-from numpy.typing import Array
+from jaxtyping import Float, Int
 
 
 class IntrinsicDimension(HiddenStatesMetrics):
@@ -132,17 +131,17 @@ class IntrinsicDimension(HiddenStatesMetrics):
 
     def parallel_compute(
             self, 
-            hidden_states: Array[Float, "num_instances, num_layers, model_dim"]
-    ) -> Array[Float, "order of nearest neighbour, num_layers"]:
+            hidden_states: Float[Array, "num_instances num_layers model_dim"]
+    ) -> Float[Array, "order_of_nearest_neighbour num_layers"]:
         """
         Collect hidden states of all instances and compute ID
         we employ two different approaches: the one of the last token, 
         the sum of all tokens
         
         Inputs
-            hidden_states: Array[Float, "num_instances, num_layers, model_dim"]
+            hidden_states: Float[Float, "num_instances, num_layers, model_dim"]
         Returns
-            Array[Float, "order of nearest neighbour, num_layers"]
+            Float[Array, "order of nearest neighbour, num_layers"]
                 Array with the ID of each layer,
                 for each order of nearest neighbour
         """
@@ -153,7 +152,10 @@ class IntrinsicDimension(HiddenStatesMetrics):
         process_layer = partial(
             self.process_layer, hidden_states=hidden_states, algorithm="gride"
         )
-
+        if "concat" in self.variations["intrinsic_dimension"]:
+            print("I'm working")
+            hidden_states = self.concatenate_layers(hidden_states,
+                                                    window_size=2)
         if self.parallel:
             with Parallel(n_jobs=_NUM_PROC) as parallel:
                 id_per_layer_gride = parallel(
@@ -176,17 +178,17 @@ class IntrinsicDimension(HiddenStatesMetrics):
     def process_layer(
             self, 
             layer: Int, 
-            hidden_states: Array[Float, "num_instances, num_layers, model_dim"],
-            algorithm: Str = "gride"
-    ) -> Array[Float, "order of nearest neighbour"]:
+            hidden_states: Float[Array, "num_instances num_layers model_dim"],
+            algorithm: str = "gride"
+    ) -> Float[Array, "order_of_nearest neighbour"]:
         """
         Process a single layer
         Inputs
             layer: Int
                 Layer to process
-            hidden_states: Array[Float, "num_instances, num_layers, model_dim"]
+            hidden_states: Float[Float, "num_instances, num_layers, model_dim"]
                 Hidden states of the model
-            algorithm: Str
+            algorithm: str
                 Algorithm to compute the ID
         Returns
         """
