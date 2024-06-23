@@ -1,11 +1,7 @@
 from metrics.hidden_states_metrics import HiddenStatesMetrics
-from .utils import (
-    TensorStorageManager,
-)
 from metrics.query import DataFrameQuery
-from common.globals_vars import _NUM_PROC, _OUTPUT_DIR
+from common.global_vars import _NUM_PROC, _OUTPUT_DIR, Array, Str
 from common.error import DataNotFoundError, UnknownError
-
 
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split, StratifiedKFold
@@ -19,16 +15,19 @@ import time
 from pathlib import Path
 from functools import partial
 from joblib import Parallel, delayed
+from jaxtyping import Float, Int
+from typing import Dict, List, Tuple, Union
 import logging
 
 
 class LinearProbe(HiddenStatesMetrics):
     def main(self, label) -> pd.DataFrame:
         """
-        Compute the overlap between the layers of instances in which the model answered with the same letter
-        Output
-        ----------
-        Dict[layer: List[Array(num_layers, num_layers)]]
+        Compute the overlap between the layers of instances in which the model
+        answered with the same letter
+        Returns:
+            df: DataFrame with the results of the probe
+        
         """
         module_logger = logging.getLogger("my_app.probe")
         module_logger.info(f"Computing linear probe with label {label}")
@@ -53,47 +52,24 @@ class LinearProbe(HiddenStatesMetrics):
                     query, self.storage_logic
                 )
             except DataNotFoundError as e:
-                module_logger.error(f"Error processing query {query_dict}: {e}")
+                module_logger.error(f"Error processing query"
+                                    f"{query_dict}: {e}")
                 continue
             except UnknownError as e:
-                module_logger.error(f"Error processing query {query_dict}: {e}")
+                module_logger.error(f"Error retrieving query"
+                                    f"{query_dict}: {e}")
                 raise
             target = np.asarray(hidden_states_df[label].tolist())
 
-            skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=42)
-
-            train_folds = []
-            test_folds = []
-            class_weight_folds = []
-
-            # Split the data into train and test sets for each fold
-            for train_index, test_index in skf.split(hidden_states, target):
-                X_train, y_train = hidden_states[train_index], target[train_index]
-                X_test, y_test = hidden_states[test_index], target[test_index]
-
-                class_weight = compute_class_weight(
-                    "balanced", classes=np.unique(y_train), y=y_train
-                )
-
-                train_folds.append((X_train, y_train))
-                test_folds.append((X_test, y_test))
-                class_weight_folds.append(dict(zip(np.unique(y_train), class_weight)))
-
-            try:
-                accuracies = self.parallel_compute(
-                    train_folds, test_folds, class_weight_folds, n_folds
-                )
-            except Exception as e:
-                module_logger.error(f"Error processing query {query_dict}: {e}")
-                accuracies = np.nan
-
-            row = [
-                query_dict["model_name"],
-                query_dict["method"],
-                query_dict["train_instances"],
-                accuracies,
-            ]
-            rows.append(row)
+            skf = StratifiedKFold(n_splits=n_folds,
+                                  shuffle=True,
+                                  random_state=42)
+            rows.append(self.compute_fold(hidden_states,
+                                          target,
+                                          skf,
+                                          n_folds,
+                                          module_logger,
+                                          query_dict))
 
             if n % 3 == 0:
                 # Save checkpoint
@@ -107,11 +83,99 @@ class LinearProbe(HiddenStatesMetrics):
             rows,
             columns=["model", "method", "shot", "accuracies"],
         )
+
+        df = pd.DataFrame(
+            rows,
+            columns=["model", "method", "shot", "accuracies"],
+        )
         return df
 
+    def compute_fold(self,
+                     hidden_states: Float[Array, "num_instances num_layers model_dim"],
+                     target: Int[Array, "num_instances num_layers"],
+                     skf: StratifiedKFold,
+                     n_folds: Int,
+                     module_logger: logging.Logger,
+                     query_dict: Dict[Str, Str]) -> pd.DataFrame:
+        """
+        Compute the linear probe accuracy for each fold.
+        Inputs:
+            hidden_states: Float[Array, "num_instances num_layers model_dim"]
+            target: Int[Array, "num_instances num_layers"]
+            skf: StratifiedKFold
+            n_folds: Int
+        Returns:
+            df: DataFrame with the results of the probe
+        """
+        train_folds = []
+        test_folds = []
+        class_weight_folds = []
+
+        # Split the data into train and test sets for each fold
+        for train_index, test_index in skf.split(hidden_states, target):
+            X_train, y_train = hidden_states[train_index], \
+                target[train_index]
+            X_test, y_test = hidden_states[test_index], \
+                target[test_index]
+
+            class_weight = compute_class_weight(
+                "balanced", classes=np.unique(y_train), y=y_train
+            )
+
+            train_folds.append((X_train, y_train))
+            test_folds.append((X_test, y_test))
+            class_weight_folds.append(dict(zip(np.unique(y_train),
+                                               class_weight)))
+
+        try:
+            accuracies = self.parallel_compute(
+                train_folds, test_folds, class_weight_folds, n_folds
+            )
+        except Exception as e:
+            module_logger.error(f"Error processing query {query_dict}: {e}")
+            accuracies = np.nan
+
+        row = [
+            query_dict["model_name"],
+            query_dict["method"],
+            query_dict["train_instances"],
+            accuracies,
+        ]
+        return row
+
     def parallel_compute(
-        self, train_folds, test_folds, class_weights_folds, n_folds=5
-    ) -> np.ndarray:
+            self,
+            train_folds: List[Union[Float[Array, "num_instances num_layers model_dim"],
+                                    Int[Array, "num_instances num_layers"]]],
+            test_folds: List[Union[Float[Array, "num_instances num_layers model_dim"],
+                                   Int[Array, "num_instances num_layers"]]],
+            class_weights_folds: List[
+                                Dict[Int[Array, "num_instances num_layers"], 
+                                Float[Array, "num_instances num_layers"]]],
+            n_folds: Int = 5
+    ) -> Float[Array, "num_instances num_layers"]:
+
+        """
+        Compute the linear probe accuracy for each layer in parallel.
+        Inputs:
+            train_folds: List[Union[Float[Array, "num_instances num_layers model_dim"],
+                                    Int[Array, "num_instances num_layers"]]],
+                List of tuples of hidden states and labels for training
+
+            test_folds: List[Union[Float[Array, "num_instances num_layers model_dim"],
+                                   Int[Array, "num_instances num_layers"]]],
+                List of tuples of hidden states and labels for testing
+            class_weights_folds: List[
+                                Dict[Int[Array, "num_instances num_layers"], 
+                                Float[Array, "num_instances num_layers"]]],
+                List of dictionaries with class weights for
+                each fold
+            n_folds: Int = 5
+            
+        Returns:    
+            accuracies: Float[Array, "num_instances num_layers"]
+            Array of accuracies for each layer
+        """
         start_time = time.time()
 
         process_layer = partial(
@@ -145,10 +209,38 @@ class LinearProbe(HiddenStatesMetrics):
         return np.stack(accuracies)
 
     def process_layer(
-        self, num_layer, train_folds, test_folds, class_weights_folds, n_folds=5
-    ):
+            self,
+            num_layer: Int,
+            train_folds: List[Union[Float[Array, "num_instances num_layers model_dim"],
+                                    Int[Array, "num_instances num_layers"]]],
+            test_folds: List[Union[Float[Array, "num_instances num_layers model_dim"],
+                                   Int[Array, "num_instances num_layers"]]],
+            class_weights_folds: List[
+                                Dict[Int[Array, "num_instances num_layers"], 
+                                Float[Array, "num_instances num_layers"]]],
+            n_folds: Int = 5
+    ) -> Tuple[Int, Float, List[Float]]:
         """
         Process a single layer.
+        Inputs:
+            num_layer: Layer to process
+            train_folds: List[Union[Float[Array, "num_instances num_layers model_dim"],
+                                    Float[Array, "num_instances num_layers"]]],
+                List of tuples of hidden states and labels for training
+
+            test_folds: List[Union[Float[Array, "num_instances num_layers model_dim"],
+                                   Int[Array, "num_instances num_layers"]]],
+                List of tuples of hidden states and labels for testing
+            class_weights_folds: List[
+                                Dict[Int[Array, "num_instances num_layers"], 
+                                Float[Array, "num_instances num_layers"]]],
+                List of dictionaries with class weights for
+                each fold
+            n_folds: Int = 5
+        Returns:   
+            num_layer: Layer number
+            mean_score: Mean accuracy score
+            scores: List of accuracy scores for each fold
         """
 
         scores = []
@@ -171,19 +263,17 @@ def balance_by_label_within_groups(df, group_field, label_field):
     """
     Balance the number of elements for each value of `label_field` within each group defined by `group_field`.
 
-    Parameters
-    ----------
-    df : pd.DataFrame
-        The dataframe to balance.
-    group_field : str
-        The column name to group by.
-    label_field : str
-        The column name whose values need to be balanced within each group.
+    Inputs:
+        df : pd.DataFrame
+            The dataframe to balance.
+        group_field : str
+            The column name to group by.
+        label_field : str
+            The column name whose values need to be balanced within each group.
 
-    Returns
-    -------
-    pd.DataFrame
-        A new dataframe where each group defined by `group_field` is balanced according to `label_field`.
+    Returns:
+        pd.DataFrame
+            A new dataframe where each group defined by `group_field` is balanced according to `label_field`.
     """
 
     # Function to balance each group

@@ -1,11 +1,14 @@
 from metrics.hidden_states_metrics import HiddenStatesMetrics
 from metrics.query import DataFrameQuery
-from common.globals_vars import _NUM_PROC, _OUTPUT_DIR, Array
+from common.global_vars import _NUM_PROC, _OUTPUT_DIR, Array
 from common.error import DataNotFoundError, UnknownError
 from dadapy.data import Data
 from sklearn.metrics import mutual_info_score
 from sklearn.metrics.cluster import adjusted_rand_score, \
-                                    adjusted_mutual_info_score
+                                    adjusted_mutual_info_score, \
+                                    completeness_score, \
+                                    homogeneity_score
+
 from sklearn.metrics import f1_score
 
 import tqdm
@@ -25,6 +28,9 @@ _COMPARISON_METRICS = {
     "adjusted_mutual_info_score": adjusted_mutual_info_score,
     "mutual_info_score": mutual_info_score,
     "f1_score": f1_score_micro,
+    "completeness_score": completeness_score,
+    "homogeneity_score": homogeneity_score,
+
 }
 
 
@@ -100,13 +106,11 @@ class LabelClustering(HiddenStatesMetrics):
                 row.extend(
                     [
                         clustering_dict["bincount"],
-                        clustering_dict["adjusted_rand_score"],
-                        clustering_dict["adjusted_mutual_info_score"],
-                        clustering_dict["mutual_info_score"],
                         clustering_dict["clusters_assignment"],
                         clustering_dict["labels"],
-                    ]
-                )
+                    ])
+                row[-1].extend([clustering_dict[metrics_name] for metrics_name
+                                in _COMPARISON_METRICS.keys()])
                 rows.append(row)
                 # Save checkpoint
                 if n % 3 == 0:

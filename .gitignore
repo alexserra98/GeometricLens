@@ -11,7 +11,7 @@ results/
 ../
 downloads/
 output_job/
-output_test_result/
+tests/test_folder/
 generated_script.sh
 *globals*
 # Byte-compiled / optimized / DLL files

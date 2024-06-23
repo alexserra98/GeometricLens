@@ -1,18 +1,16 @@
 from pathlib import Path
-from metrics.intrinisic_dimension import IntrinsicDimension
-from metrics.utils import TensorStorageManager, DataFrameQuery
+from metrics.utils import TensorStorageManager
 from common.globals_vars import _OUTPUT_DIR_TRANSPOSED
 from enum import Enum
-from common.utils import *
+from common.utils import read_config
 
+import json
 import argparse
 import importlib
 import logging
 from logging_utils.logging_config import setup_logging
-import pdb
 import datetime
 import os
-from metrics.utils import TensorStorageManager
 
 now = datetime.datetime.now()
 
@@ -49,15 +47,16 @@ def metric_function(name):
     except KeyError:
         raise ValueError(f"Unknown metric function {name}")
     except AttributeError:
-        raise ImportError(f"Could not import the specified class from the module")
+        raise ImportError(f"Could not import the specified class" 
+                          f"from the module")
 
 
 def create_queries(models, couples):
     queries = []
     queries_repr_comparison = []
     for model in models:
-        #for shot in [0, 1, 2, 3, 4, 5]:
-        for shot in [0,1, 2,4, 5]:
+        # for shot in [0, 1, 2, 3, 4, 5]:
+        for shot in [0, 1, 2, 4, 5]:
             if (
                 ("70" in model and shot == 5 and "chat" not in model)
                 or ("70" in model and "chat" in model and shot == 5)
@@ -152,13 +151,17 @@ def main():
 
     if tensor_storage_location not in ["std", "questions_sampled13"]:
         logger.error(
-            f"Tensor storage location {tensor_storage_location} not recognized. Please use 'std' or 'questions_sampled13'"
+            f"Tensor storage location {tensor_storage_location} not recognized."
+            f"Please use 'std' or 'questions_sampled13'"
         )
         raise 
     logger.info(
-        f"Metrics computer started\nModels:{models}\nMetrics:{metrics}\nVariations:{variations}\nTensor Storage Location:{tensor_storage_location}\n"
+        f"Metrics computer started\nModels:{models}\nMetrics:{metrics}\n"
+        f"Variations:{variations}\n"
+        f"Tensor Storage Location:{tensor_storage_location}\n"
     )
-    tsm = TensorStorageManager(tensor_storage_location=tensor_storage_location,instances_per_sub=200)
+    tsm = TensorStorageManager(tensor_storage_location=tensor_storage_location,
+                               instances_per_sub=200)
 
     queries, queries_repr_comparison = create_queries(models, couples_list)
 
@@ -173,7 +176,7 @@ def main():
             tensor_storage=tsm,
             variations=variations,
             storage_logic="npy",
-            parallel= True,
+            parallel=True,
         )
         try:
             # Probing like metrics require ground truth
@@ -184,11 +187,12 @@ def main():
             ):
                 if not labels:
                     raise ValueError(
-                        "Probe and LabelOverlap metrics require a label to be specified"
+                        "Probe and LabelOverlap metrics require a label"
+                        "to be specified"
                     )
                 for label_iter in labels:
                     result = metric_instance.main(label=label_iter)
-                    result_path = _TMP_RESULT_DIR / f"{metric}_{label_iter}.pkl"
+                    result_path = _TMP_RESULT_DIR/f"{metric}_{label_iter}.pkl"
                     result.to_pickle(result_path)
 
             else:

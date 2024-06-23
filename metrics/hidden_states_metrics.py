@@ -4,22 +4,43 @@ from pathlib import Path
 from abc import ABC, abstractmethod
 from common.tensor_storage import TensorStorage
 
-from common.globals_vars import Array
+from common.global_vars import Array, Str
 from jaxtyping import Float, Int
-from typing import Dict
+from typing import Dict, List
 import sys
 
 
 class HiddenStatesMetrics(ABC):
+    """
+    Abstract class for hidden states metrics.
+    """
     def __init__(
         self,
-        queries: dict,
-        df: DataFrame() = None,
-        tensor_storage=None,
-        variations: dict = None,
-        storage_logic: str = "npy",
+        queries: List[Dict],
+        df: DataFrame,
+        tensor_storage: TensorStorage,
+        variations: Dict[Str, Str],
+        storage_logic: Str = "npy",
         parallel: bool = True,
     ):
+        """
+        Initialize the class.
+        Inputs:
+            queries: List[Dict]
+                List of query to the hidden states storage.
+            df: DataFrame
+                Not sure about this one.
+            tensor_storage: TensorStorage
+                Class handling the retrieval of the hidden states from the storage.
+            variations: Dict[Str, Str]
+                Dictionary with metrics as key and the applied variations as valye.
+            storage_logic: Str
+                Logic to use for the storage.
+                (initially we stored tensors inside a .h5 database using sql database for metadata, 
+                now we store them as .npy files and dictionary)
+            parallel: bool
+                Whether to use parallel computation.
+        """
         self.queries = queries
         self.df = None
         self.tensor_storage = tensor_storage
