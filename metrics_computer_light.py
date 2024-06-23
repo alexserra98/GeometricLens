@@ -149,10 +149,11 @@ def main():
     couples_list = args.couples_list
     variations = json.loads(args.variations)
 
-    if tensor_storage_location not in ["std", "questions_sampled13"]:
+    if tensor_storage_location not in ["std", "questions_sampled13", "random_order"]:
         logger.error(
             f"Tensor storage location {tensor_storage_location} not recognized."
-            f"Please use 'std' or 'questions_sampled13'"
+            f"Please use one among:"
+            f"'std', 'random_order' or 'questions_sampled13'"
         )
         raise 
     logger.info(

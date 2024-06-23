@@ -6,7 +6,7 @@ from common.tensor_storage import TensorStorage
 
 from common.global_vars import Array, Str
 from jaxtyping import Float, Int
-from typing import Dict, List
+from typing import Dict, List, Optional
 import sys
 
 
@@ -17,9 +17,9 @@ class HiddenStatesMetrics(ABC):
     def __init__(
         self,
         queries: List[Dict],
-        df: DataFrame,
         tensor_storage: TensorStorage,
         variations: Dict[Str, Str],
+        df: Optional[DataFrame] = None,
         storage_logic: Str = "npy",
         parallel: bool = True,
     ):

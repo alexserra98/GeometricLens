@@ -14,5 +14,5 @@ module load cuda/11.8
 poetry shell
 export PYTHONPATH=/u/dssc/zenocosini/helm_suite/MCQA_Benchmark
 export CUDA_VISIBLE_DEVICES=0,1,2,3
-poetry run python metrics_computer_light.py --conf-path config/config_metrics_concat.json
+poetry run python metrics_computer_light.py --conf-path config/config_tmp.json
 echo "Running job: metrics"
