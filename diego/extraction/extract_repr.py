@@ -87,7 +87,7 @@ def parse_args():
         "--out_filename", type=str, default="", help="Where to store the final model."
     )
     parser.add_argument(
-        "--seed", type=int, default=None, help="A seed for reproducible training."
+        "--seed", type=int, default=42, help="A seed for reproducible training."
     )
     parser.add_argument(
         "--preprocessing_num_workers",
@@ -198,7 +198,6 @@ def parse_args():
     parser.add_argument("--skip_choices", action="store_true")
     parser.add_argument("--random_order", action="store_true")
     parser.add_argument("--sample_same_questions", action="store_true")
-    parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
     return args
 
@@ -332,7 +331,7 @@ def main():
         skip_answer=args.skip_answer,
         skip_choices=args.skip_choices,
         random_order=args.random_order,
-        few_shot_seed=args.few_shot_seed,
+        few_shot_seed=args.seed,
         sample_same_questions=args.sample_same_questions,
     ).construct_dataset()
 
@@ -449,7 +448,7 @@ def main():
         prompt_search=args.prompt_search,
         time_stamp=time_stamp,
         few_shot_indices=MMLU_Dataset.few_shot_indices,
-        few_shot_seed=args.few_shot_seed,
+        few_shot_seed=args.seed,
     )
 
 
