@@ -198,7 +198,7 @@ def parse_args():
     parser.add_argument("--skip_choices", action="store_true")
     parser.add_argument("--random_order", action="store_true")
     parser.add_argument("--sample_same_questions", action="store_true")
-    parser.add_argument("--few_shot_seed", type=int, default=42)
+    parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
     return args
 
