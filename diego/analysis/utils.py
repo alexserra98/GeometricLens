@@ -187,7 +187,6 @@ def analyze(
             entropies = []
             most_commons = []
             for clus in d.cluster_indices:
-                assert halo == False
                 composition = subj_label[np.array(clus)]
                 most_commons.append(Counter(composition).most_common()[0][1])
                 h = entropy(composition)
@@ -209,7 +208,6 @@ def analyze(
             entropies = []
             most_commons = []
             for clus in d.cluster_indices:
-                assert halo == False
                 composition = letter_label[np.array(clus)]
                 most_commons.append(Counter(composition).most_common()[0][1])
                 h = entropy(composition)
