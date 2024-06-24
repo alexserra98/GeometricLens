@@ -1,4 +1,5 @@
 from datasets import load_dataset, concatenate_datasets
+from datasets import Dataset
 import torch
 from functools import partial
 from datasets.utils.logging import disable_progress_bar
@@ -216,7 +217,7 @@ class MMLU_Dataset:
                     lambda example: example["subject"] == "anatomy"
                 )
                 indices = rng.choice(len(data), self.num_few_shots, replace=False)
-                final.append(data[indices])
+                final.append(Dataset.from_dict(data[indices]))
                 self.few_shot_indices[sub] = list(indices)
             final = concatenate_datasets(final)
 
