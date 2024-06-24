@@ -418,6 +418,8 @@ def main():
         inner_path = f"evaluated_{args.split}/wrong_answers/{model_name}/{args.num_few_shots}shot"
     elif args.sample_questions:
         inner_path = f"evaluated_{args.split}/questions_sampled13/{model_name}/{args.num_few_shots}shot"
+    elif args.sample_same_quetions:
+        inner_path = f"evaluated_{args.split}/questions_sampled_same/{model_name}/{args.num_few_shots}shot"
     elif args.random_order:
         inner_path = (
             f"evaluated_{args.split}/random_order/{model_name}/{args.num_few_shots}shot"

@@ -25,11 +25,11 @@ export PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"
 
 #export CUDA_LAUNCH_BLOCKING=1
 
-#model_name=llama-2-70b-chat
-#path=llama_v2
+model_name=llama-3-8b
+path=llama_v3
 
-model_name=mistral-1-7b
-path=mistral_v1
+#model_name=mistral-1-7b
+#path=mistral_v1
 
 
 torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
@@ -42,17 +42,20 @@ torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
     --out_dir "./results" \
     --logging_steps 100 \
     --layer_interval 1 \
-    --save_distances --save_repr \
     --remove_duplicates \
     --use_last_token \
     --max_seq_len 4090 \
     --split "test" \
     --num_few_shots 5 \
-    #--random_order
-    #--finetuned_path  "/u/area/ddoimo/ddoimo/finetuning_llm/open-instruct/results" \
-    #--finetuned_mode "dev_val_balanced_20samples" \
-    #--finetuned_epochs 4 \
+    --sample_same_questions \
+    --seed 0 
+    # --finetuned_path  "/u/area/ddoimo/ddoimo/finetuning_llm/open-instruct/results" \
+    # --finetuned_mode "dev_val_balanced_20samples" \
+    # --finetuned_epochs 4 \
+    # --save_distances --save_repr \
     #--step $step
+
+    
     #--ckpt_epoch 4  
     #--split "test" \
     #--prompt_search
