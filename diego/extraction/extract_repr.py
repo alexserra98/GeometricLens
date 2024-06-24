@@ -19,13 +19,6 @@ import torch
 import os
 from utils.helpers import print_memory_consumed, is_memory_enough
 
-from accelerate import FullyShardedDataParallelPlugin
-from torch.distributed.fsdp.fully_sharded_data_parallel import (
-    FullOptimStateDictConfig,
-    FullStateDictConfig,
-)
-import numpy as np
-
 
 import datetime
 
@@ -204,6 +197,8 @@ def parse_args():
     parser.add_argument("--skip_answer", action="store_true")
     parser.add_argument("--skip_choices", action="store_true")
     parser.add_argument("--random_order", action="store_true")
+    parser.add_argument("--sample_same_questions", action="store_true")
+    parser.add_argument("--few_shot_seed", type=int, default=42)
     args = parser.parse_args()
     return args
 
@@ -337,6 +332,8 @@ def main():
         skip_answer=args.skip_answer,
         skip_choices=args.skip_choices,
         random_order=args.random_order,
+        few_shot_seed=args.few_shot_seed,
+        sample_same_questions=args.sample_same_questions,
     ).construct_dataset()
 
     # print(dataset[0]["prompt"])
@@ -449,6 +446,8 @@ def main():
         print_every=args.logging_steps,
         prompt_search=args.prompt_search,
         time_stamp=time_stamp,
+        few_shot_indices=MMLU_Dataset.few_shot_indices,
+        few_shot_seed=args.few_shot_seed,
     )
 
 

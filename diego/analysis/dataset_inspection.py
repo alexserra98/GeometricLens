@@ -9,6 +9,12 @@ from datasets import load_dataset, concatenate_datasets
 rng = np.random.default_rng(42)
 
 
+dataset = load_dataset("cais/mmlu", "all", split="test")
+
+arr = list(Counter(dataset["subject"]).values())
+np.sort(arr)[23]
+
+
 dataset = load_dataset("cais/mmlu", "all", split="dev+validation")
 
 
@@ -21,8 +27,8 @@ for sub in np.unique(subjects):
     mask.extend(list(np.sort(chosen)))
 
 mask = np.array(mask)
-
 np.save("dev+validation_mask_20.npy", mask)
+len(np.load("test_mask_200.npy"))
 
 
 # -------------------------------------------------

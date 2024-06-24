@@ -97,6 +97,8 @@ def compute_id(
     print_every=100,
     prompt_search=False,
     time_stamp=None,
+    few_shot_indices=None,
+    few_shot_seed=None,
 ):
     model = model.eval()
     if accelerator.is_main_process:
@@ -191,17 +193,30 @@ def compute_id(
                     f.write(f"prediction: {predictions[ind]}\n\n")
 
         if not prompt_search:
-            statistics = {
-                "subjects": dataloader.dataset["subjects"],
-                "answers": answers,
-                "predictions": predictions,
-                "contrained_predictions": constrained_predictions,
-                "accuracy": acc_pred,
-                "constrained_accuracy": acc_constrained,
-            }
+            if few_shot_indices is not None:
 
-            with open(f"{dirpath}/statistics{filename}.pkl", "wb") as f:
-                pickle.dump(statistics, f)
+                few_shot_seed is not None
+                statistics = {
+                    "accuracy": acc_pred,
+                    "few_shot_indices": few_shot_indices,
+                }
+                with open(
+                    f"{dirpath}/statistics{filename}_seed{few_shot_seed}.pkl", "wb"
+                ) as f:
+                    pickle.dump(statistics, f)
+
+            else:
+                statistics = {
+                    "subjects": dataloader.dataset["subjects"],
+                    "answers": answers,
+                    "predictions": predictions,
+                    "contrained_predictions": constrained_predictions,
+                    "accuracy": acc_pred,
+                    "constrained_accuracy": acc_constrained,
+                }
+
+                with open(f"{dirpath}/statistics{filename}.pkl", "wb") as f:
+                    pickle.dump(statistics, f)
 
             if save_distances:
                 for i, (layer, act) in enumerate(act_dict.items()):
