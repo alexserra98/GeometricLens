@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --partition=DGX
-#SBATCH --nodelist=dgx001
+##SBATCH --nodelist=dgx001
 #SBATCH --account=lade
 #SBATCH --nodes=1
 #SBATCH --time=6:00:00            
