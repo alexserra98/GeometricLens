@@ -12,8 +12,6 @@ from collections import Counter
 
 disable_progress_bar()
 
-rng = np.random.default_rng(42)
-
 
 def filter_out_long_sequences(tokenized_dataset, max_seq_len):
 
@@ -76,7 +74,11 @@ class MMLU_Dataset:
         skip_answer=False,
         skip_choices=False,
         random_order=False,
+        few_shot_seed=42,
+        sample_same_questions=False,
     ):
+        global rng
+        rng = np.random.default_rng(few_shot_seed)
 
         self.dataset = "mmlu"
         self.subject = subject
@@ -104,6 +106,7 @@ class MMLU_Dataset:
         self.skip_answer = skip_answer
         self.skip_choices = skip_choices
         self.random_order = random_order
+        self.sample_same_questions = sample_same_questions
 
         # self.dummy_examples = self.construct_gibberish_questions(
         #     path="diego/extraction/utils/asset/dummy.txt"
@@ -145,7 +148,7 @@ class MMLU_Dataset:
         skip_choices=False,
     ):
         if only_answer:
-            # rjust answer template
+            # adjust answer template
             prompt = "Answer:"
             prompt += f" {self.answers[answer]}\n\n"
 
@@ -199,30 +202,49 @@ class MMLU_Dataset:
         few_shot_subject = random.choice(area_to_subjects[few_shot_area])
         return few_shot_subject
 
-    def get_few_shot_dataset(
-        self,
-    ):
+    def get_few_shot_dataset(self, sample_same_questions=False):
 
-        dev_set = load_dataset("cais/mmlu", "all", split="dev")
+        if sample_same_questions:
+            few_shot_set = load_dataset("cais/mmlu", "all", split="dev+validation")
+            subjects = np.array(final["subject"])
+            counts = Counter(subjects)
 
-        val_set = load_dataset("cais/mmlu", "all", split="validation")
-        subjects = np.array(val_set["subject"])
+            final = []
+            self.few_shot_indices = {}
+            for sub in np.unique(subjects):
 
-        mask = []
-        for sub in np.unique(subjects):
-            ind = np.nonzero(sub == subjects)[0]
-            nsamples = min(8, len(ind))
-            chosen = rng.choice(ind, nsamples, replace=False)
-            mask.extend(list(np.sort(chosen)))
-        mask = np.array(mask)
-        val_set_balanced = val_set.select(mask)
-        final = concatenate_datasets([dev_set, val_set_balanced])
+                data = few_shot_set.filter(
+                    lambda example: example["subject"] == "anatomy"
+                )
+                indices = rng.choice(len(data), self.num_few_shots, replace=False)
+                final.append(data[indices])
+                self.few_shot_indices[sub] = list(indices)
+            final = concatenate_datasets(final)
 
-        # just double check that all is fine
-        counts = Counter(final["subject"])
-        assert len(np.unique(list(counts.values()))) == 1
-        assert np.unique(list(counts.values()))[0] == 13
-        self.max_prompt_questions = 13
+        else:
+
+            dev_set = load_dataset("cais/mmlu", "all", split="dev")
+            val_set = load_dataset("cais/mmlu", "all", split="validation")
+            subjects = np.array(val_set["subject"])
+
+            mask = []
+            for sub in np.unique(subjects):
+                ind = np.nonzero(sub == subjects)[0]
+                nsamples = min(8, len(ind))
+                chosen = rng.choice(ind, nsamples, replace=False)
+                mask.extend(list(np.sort(chosen)))
+            mask = np.array(mask)
+            val_set_balanced = val_set.select(mask)
+            final = concatenate_datasets([dev_set, val_set_balanced])
+
+            # just double check that all is fine
+            counts = Counter(final["subject"])
+            assert len(np.unique(list(counts.values()))) == 1
+            assert np.unique(list(counts.values()))[0] == 13
+
+            self.max_prompt_questions = {}
+            for sub in np.unique(subjects):
+                self.max_prompt_questions[sub] = 13
 
         return final
 
@@ -304,7 +326,9 @@ class MMLU_Dataset:
 
                 if self.sample_questions:
                     indices = rng.choice(
-                        self.max_prompt_questions, num_few_shots, replace=False
+                        self.max_prompt_questions[current_subject],
+                        num_few_shots,
+                        replace=False,
                     )
 
                 for j in indices:
@@ -339,6 +363,7 @@ class MMLU_Dataset:
 
             else:
                 prompt += question
+
             prompts.append(prompt)
 
         # tokenization part
@@ -440,6 +465,11 @@ class MMLU_Dataset:
             assert self.num_few_shots > 0
             assert self.split != "validation"
             few_shot_dataset = self.get_few_shot_dataset()
+
+        elif self.sample_same_questions:
+            assert self.num_few_shots > 0
+            assert self.split != "validation"
+            few_shot_dataset = self.get_few_shot_dataset(self.sample_same_questions)
 
         else:
             few_shot_dataset = None

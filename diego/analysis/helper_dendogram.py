@@ -308,6 +308,8 @@ def plot_with_labels(
     index_to_subject,
     ori="left",
     path=None,
+    width=9,
+    color_threshold=10,
 ):
     # ****************************************************************************************************************
     DD = sp.cluster.hierarchy.linkage(dis, method="weighted")
@@ -334,18 +336,22 @@ def plot_with_labels(
         labels.append(name.strip()[:-1])
 
     # ************************************
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(9, 14))
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(width, 14))
     dn = sp.cluster.hierarchy.dendrogram(
         DD,
         p=30,
         truncate_mode=None,
-        color_threshold=10,
+        color_threshold=color_threshold,
         get_leaves=True,
         orientation=ori,
         above_threshold_color="C5",
         labels=labels,
         leaf_font_size=10,
     )
+    ax.set_xticks([])
+    ax.set_xticklabels([])
+
     plt.tight_layout()
     if path is not None:
-        plt.savefig(f"{path}", dpi=200)
+        plt.savefig(f"{path}.png")
+        plt.savefig(f"{path}.pdf")

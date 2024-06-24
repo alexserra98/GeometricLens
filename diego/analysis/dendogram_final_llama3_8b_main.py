@@ -53,8 +53,9 @@ plot_with_labels(
     ground_truth_labels,
     index_to_subject,
     ori="left",
-    path=f"{results_path}/llama-3-8b-5shot-Z=1.6.png",
+    # path=f"{results_path}/llama-3-8b-5shot-Z=4.png",
 )
+
 
 xcoords_5shot, ycoords_5shot = get_xy_coords(
     dis,
@@ -81,18 +82,20 @@ d_0s, index_to_subject_0s = get_clusters(
     mask=mask,
     gtl=ground_truth_labels,
     subjects=subjects,
+    Z=1.6,
 )
 
 
 # F = [d_0s.log_den[c] for c in d_0s.cluster_centers]
 # plt.plot(F, marker=".")
-dis_0s, peak_y_0s, final_clusters_0s = get_dissimilarity(d_0s, threshold=-15)
+dis_0s, peak_y_0s, final_clusters_0s = get_dissimilarity(d_0s, threshold=-14)
 
 plot_with_labels(
     dis_0s,
     final_clusters_0s,
     ground_truth_labels,
     index_to_subject_0s,
+    # path=f"{results_path}/llama-3-8b-0shot-Z=1.6.png",
 )
 # **********************************************************************
 
@@ -121,6 +124,7 @@ d_ft, index_to_subject_ft = get_clusters(
     mask=mask,
     gtl=ground_truth_labels,
     subjects=subjects,
+    Z=1.6,
 )
 
 
@@ -133,7 +137,9 @@ plot_with_labels(
     final_clusters_ft,
     ground_truth_labels,
     index_to_subject_ft,
+    # path=f"{results_path}/llama-3-8b-ft-Z=1.6.png",
 )
+
 
 xcoords_ft, ycoords_ft = get_xy_coords(
     dis_ft,
@@ -199,7 +205,7 @@ plt.xticks(
     fontsize=10,
 )
 
-gs0.tight_layout(fig, rect=[0, 0.35, 1, 0.69])
+gs0.tight_layout(fig, rect=[0.03, 0.35, 0.97, 0.69])
 plt.ylabel("log density")
 
 
@@ -356,7 +362,7 @@ axT.spines["left"].set_visible(False)
 axT.spines["right"].set_visible(False)
 
 ax.set_xlim(47.5, 56.5)
-ax.set_ylim(-15.3, 0.5)
+ax.set_ylim(-15, 0.5)
 ax.set_xlabel("")
 ax.set_ylabel("")
 ax.set_yticks([])
@@ -448,13 +454,11 @@ ax.text(26, 4, "mix 26", rotation=90, fontsize=10, fontweight="bold")
 ax.text(18, 4, "mix 11", rotation=90, fontsize=10, fontweight="bold")
 ax.text(24, 4, "mix 7", rotation=90, fontsize=10, fontweight="bold")
 ax.text(30, 4, "mix 5", rotation=90, fontsize=10, fontweight="bold")
-ax.text(15, 4, "mix 6", rotation=90, fontsize=10, fontweight="bold")
-
 
 ax.set_xticks([])
 ax.set_xticklabels([])
 ax.set_ylabel("log density")
-gs5.tight_layout(fig, rect=[0.02, 0.05, 0.48, 0.40])
+gs5.tight_layout(fig, rect=[0.02, 0.05, 0.48, 0.42])
 fig.text(0.25, 0.03, "0 shot", fontsize=14, fontweight="bold")
 
 
@@ -475,14 +479,28 @@ for i, link in enumerate(range(nlinks)):
         x1, y1 = xcoords_ft[link, i + 1], ycoords_ft[link, i + 1]
         ax.plot([x0, x1], [y0, y1], color="C5", lw=1.5)
 
+
 ax.set_xticks([])
 ax.set_xticklabels([])
+ax.set_ylim(-20.5, 2)
 ax.set_ylabel("log density")
 
-gs6.tight_layout(fig, rect=[0.52, 0.05, 0.98, 0.25])
+
+ax.scatter(28, -4, s=50, color="C3")
+ax.scatter(26, -3, s=100, color="C3")
+ax.scatter(24, -1, s=600, color="C3")
+ax.scatter(22, -2, s=200, color="C3")
+ax.scatter(20, -3, s=50, color="C3")
+# ax.scatter(18.8, -10, s=300, color="C3")
+# ax.scatter(15, -10, s=80, color="C3")
+
+ax.text(26, 4, "mix 6", rotation=90, fontsize=10, fontweight="bold")
+ax.text(22, 4, "mix 12", rotation=90, fontsize=10, fontweight="bold")
+ax.text(24, 4, "mix 19", rotation=90, fontsize=10, fontweight="bold")
+ax.text(20, 4, "mix 7", rotation=90, fontsize=10, fontweight="bold")
+ax.text(28, 4, "mix 6", rotation=90, fontsize=10, fontweight="bold")
+
+gs6.tight_layout(fig, rect=[0.52, 0.05, 0.98, 0.42])
 fig.text(0.75, 0.03, "fine-tuned", fontsize=14, fontweight="bold")
-plt.savefig("final_dendogram_llama3-8b.png", dpi=400)
-
-
-# ****************************************************************
-# ****************************************************************
+plt.savefig(f"{results_path}/final_dendogram_llama3-8b.png")
+plt.savefig(f"{results_path}/final_dendogram_llama3-8b.pdf")
