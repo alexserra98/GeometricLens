@@ -206,8 +206,7 @@ class MMLU_Dataset:
 
         if sample_same_questions:
             few_shot_set = load_dataset("cais/mmlu", "all", split="dev+validation")
-            subjects = np.array(final["subject"])
-            counts = Counter(subjects)
+            subjects = np.array(few_shot_set["subject"])
 
             final = []
             self.few_shot_indices = {}
