@@ -213,14 +213,11 @@ class MMLU_Dataset:
             final = []
             for sub in np.unique(subjects):
 
-                data = few_shot_set.filter(
-                    lambda example: example["subject"] == sub
-                )
+                data = few_shot_set.filter(lambda example: example["subject"] == sub)
                 indices = rng.choice(len(data), self.num_few_shots, replace=False)
                 final.append(Dataset.from_dict(data[indices]))
                 self.few_shot_indices[sub] = list(indices)
             final = concatenate_datasets(final)
-            print(Counter(final["subject"]))
 
         else:
 
@@ -471,7 +468,7 @@ class MMLU_Dataset:
             assert self.num_few_shots > 0
             assert self.split != "validation"
             few_shot_dataset = self.get_few_shot_dataset(self.sample_same_questions)
-            assert len(self.few_shot_indices) ==57, len(self.few_shot_indices)
+            assert len(self.few_shot_indices) == 57, len(self.few_shot_indices)
         else:
             few_shot_dataset = None
             if self.num_few_shots > 0 and self.num_few_shots <= 5:
