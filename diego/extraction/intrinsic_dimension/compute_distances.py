@@ -195,7 +195,7 @@ def compute_id(
         if not prompt_search:
             if few_shot_indices is not None:
 
-                few_shot_seed is not None
+                assert few_shot_seed is not None
                 statistics = {
                     "accuracy": acc_pred,
                     "few_shot_indices": few_shot_indices,

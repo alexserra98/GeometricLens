@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --partition=DGX
-##SBATCH --nodelist=dgx001
+##SBATCH --nodelist=dgx002
 #SBATCH --account=lade
 #SBATCH --nodes=1
 #SBATCH --time=6:00:00            
@@ -48,7 +48,7 @@ torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
     --split "test" \
     --num_few_shots 5 \
     --sample_same_questions \
-    --seed 0 
+    --seed $seed 
     # --finetuned_path  "/u/area/ddoimo/ddoimo/finetuning_llm/open-instruct/results" \
     # --finetuned_mode "dev_val_balanced_20samples" \
     # --finetuned_epochs 4 \
