@@ -233,7 +233,7 @@ class LabelClustering(HiddenStatesMetrics):
         for layer_result in results:
             for key in output:
                 output[key].append(layer_result[key])
-            return output
+        return output
 
     def process_layer(
             self, 

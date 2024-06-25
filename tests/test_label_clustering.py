@@ -16,7 +16,7 @@ class TestProbe(unittest.TestCase):
 
     def test_paralell_compute(self):
             
-        hidden_states = np.random.rand(100, 2, 768).astype(np.float32)  # Fake input
+        hidden_states = np.random.rand(100, 10, 768).astype(np.float32)  # Fake input
         label = np.random.randint(0, 10, (100)).astype(np.float32)  # Fake target
         
         actual_output = self.my_class.parallel_compute(hidden_states, label, z=0.1)

@@ -11,7 +11,7 @@
             "program": "${file}",
             "console": "integratedTerminal",
             //"pythonPath": "/path/to/your/python/interpreter",
-            "args": ["--conf-path", "config/config_tmp.json"]
+            //"args": ["--conf-path", "config/config_tmp.json"]
         }
     ]
 }
