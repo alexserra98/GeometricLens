@@ -447,7 +447,7 @@ def main():
         print_every=args.logging_steps,
         prompt_search=args.prompt_search,
         time_stamp=time_stamp,
-        few_shot_indices=MMLU_Dataset.few_shot_indices,
+        few_shot_indices=dataset.few_shot_indices,
         few_shot_seed=args.seed,
     )
 
