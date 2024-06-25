@@ -310,7 +310,7 @@ def main():
     if args.random_subject:
         args.num_few_shots = 5
 
-    dataset, longest_seq = MMLU_Dataset(
+    mmlu_dataset = MMLU_Dataset(
         tokenizer=tokenizer,
         max_seq_len=max_seq_len,
         num_few_shots=args.num_few_shots,
@@ -333,7 +333,9 @@ def main():
         random_order=args.random_order,
         few_shot_seed=args.seed,
         sample_same_questions=args.sample_same_questions,
-    ).construct_dataset()
+    )
+
+    dataset, longest_seq = mmlu_dataset.construct_dataset()
 
     # print(dataset[0]["prompt"])
     # print(len(dataset))
@@ -447,7 +449,7 @@ def main():
         print_every=args.logging_steps,
         prompt_search=args.prompt_search,
         time_stamp=time_stamp,
-        few_shot_indices=dataset.few_shot_indices,
+        few_shot_indices=mmlu_dataset.few_shot_indices,
         few_shot_seed=args.seed,
     )
 
