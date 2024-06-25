@@ -108,6 +108,7 @@ class MMLU_Dataset:
         self.skip_choices = skip_choices
         self.random_order = random_order
         self.sample_same_questions = sample_same_questions
+        self.few_shot_indices = {}
 
         # self.dummy_examples = self.construct_gibberish_questions(
         #     path="diego/extraction/utils/asset/dummy.txt"
@@ -210,11 +211,10 @@ class MMLU_Dataset:
             subjects = np.array(few_shot_set["subject"])
 
             final = []
-            self.few_shot_indices = {}
             for sub in np.unique(subjects):
 
                 data = few_shot_set.filter(
-                    lambda example: example["subject"] == "anatomy"
+                    lambda example: example["subject"] == sub
                 )
                 indices = rng.choice(len(data), self.num_few_shots, replace=False)
                 final.append(Dataset.from_dict(data[indices]))
@@ -471,7 +471,7 @@ class MMLU_Dataset:
             assert self.num_few_shots > 0
             assert self.split != "validation"
             few_shot_dataset = self.get_few_shot_dataset(self.sample_same_questions)
-
+            assert len(self.few_shot_indices) ==57, len(self.few_shot_indices)
         else:
             few_shot_dataset = None
             if self.num_few_shots > 0 and self.num_few_shots <= 5:
