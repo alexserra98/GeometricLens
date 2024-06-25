@@ -10,7 +10,7 @@ class TestProbe(unittest.TestCase):
         self.my_class = LinearProbe(queries=self.query_dict,
                                     df = "",
                                     tensor_storage = "",
-                                    variations = {"probe": None},
+                                    variations = {"probe": "weights"},
                                     parallel = False)
         self.mock_logger = Mock()
 
@@ -27,8 +27,9 @@ class TestProbe(unittest.TestCase):
         actual_output = self.my_class.compute_fold(hidden_states, target, skf, n_folds, module_logger=self.mock_logger, query_dict=self.query_dict)
         print(f"type = {type(actual_output)},\n{actual_output=}")
         # self.mock_logger.info.assert_called_with("Processing data in compute_fold")
+        self.assertTrue(isinstance(actual_output[-2], np.ndarray))
         self.assertTrue(isinstance(actual_output[-1], np.ndarray))
-        self.assertTrue(np.allclose(actual_output, 0.1, atol=1e-1))
+        self.assertTrue(np.allclose(actual_output[-2], 0.1, atol=1e-1))
 
 
 if __name__ == '__main__':

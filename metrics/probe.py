@@ -75,7 +75,11 @@ class LinearProbe(HiddenStatesMetrics):
                 # Save checkpoint
                 df_temp = pd.DataFrame(
                     rows,
-                    columns=["model", "method", "shot", "accuracies"],
+                    columns=["model",
+                             "method",
+                             "shot",
+                             "accuracies",
+                             "weights"],
                 )
                 df_temp.to_pickle(check_point_dir / f"checkpoint_probe.pkl")
 
@@ -86,7 +90,11 @@ class LinearProbe(HiddenStatesMetrics):
 
         df = pd.DataFrame(
             rows,
-            columns=["model", "method", "shot", "accuracies"],
+            columns=["model",
+                     "method",
+                     "shot",
+                     "accuracies",
+                     "weights"],
         )
         return df
 
@@ -128,7 +136,7 @@ class LinearProbe(HiddenStatesMetrics):
                                                class_weight)))
 
         try:
-            accuracies = self.parallel_compute(
+            accuracies, weights = self.parallel_compute(
                 train_folds, test_folds, class_weight_folds, n_folds
             )
         except Exception as e:
@@ -140,6 +148,7 @@ class LinearProbe(HiddenStatesMetrics):
             query_dict["method"],
             query_dict["train_instances"],
             accuracies,
+            weights,
         ]
         return row
 
@@ -201,12 +210,13 @@ class LinearProbe(HiddenStatesMetrics):
 
         end_time = time.time()
         print(f"Label overlap over batch of data took: {end_time-start_time}")
-        accuracies = list(results)
+        results = list(results)
 
         # Sort results by layer. Parallel processing shuffle the results
-        accuracies.sort()
-        accuracies = [acc for _, acc, _ in results]
-        return np.stack(accuracies)
+        results.sort()
+        accuracies = [acc for _, acc, _, _ in results]
+        weights = [weight for _, _, _, weight in results]
+        return np.stack(accuracies), np.stack(weights)
 
     def process_layer(
             self,
@@ -244,6 +254,7 @@ class LinearProbe(HiddenStatesMetrics):
         """
 
         scores = []
+        weights = []
         for i in range(n_folds):
             X_train, y_train = train_folds[i]
             X_train = X_train[:, num_layer, :]
@@ -254,9 +265,12 @@ class LinearProbe(HiddenStatesMetrics):
             )
             model.fit(X_train, y_train)
             predictions = model.predict(X_test)
+            weights.append(model.coef_)
             scores.append(accuracy_score(y_test, predictions))
-
-        return num_layer, np.mean(scores), scores
+        if self.variations["probe"] == "weights":
+            return num_layer, np.mean(scores), scores, np.mean(weights, axis=0)
+        else:
+            return num_layer, np.mean(scores), scores, []
 
 
 def balance_by_label_within_groups(df, group_field, label_field):
