@@ -4,6 +4,7 @@ env_amd/
 slurm*
 !slurm_runner.py
 results/
+globals_vars.py
 
 *.pkl
 **/__pycache__/

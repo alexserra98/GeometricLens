@@ -109,9 +109,10 @@ class LabelClustering(HiddenStatesMetrics):
                         clustering_dict["clusters_assignment"],
                         clustering_dict["labels"],
                     ])
-                row[-1].extend([clustering_dict[metrics_name] for metrics_name
-                                in _COMPARISON_METRICS.keys()])
+                row.extend([clustering_dict[metrics_name] for metrics_name
+                            in _COMPARISON_METRICS.keys()])
                 rows.append(row)
+    
                 # Save checkpoint
                 if n % 3 == 0:
                     df_temp = pd.DataFrame(
@@ -122,11 +123,14 @@ class LabelClustering(HiddenStatesMetrics):
                             "train_instances",
                             "z",
                             "clustering_bincount",
+                            "clusters_assignment",
+                            "labels",
                             "adjusted_rand_score",
                             "adjusted_mutual_info_score",
                             "mutual_info_score",
-                            "clusters_assignment",
-                            "labels",
+                            "f1_score",
+                            "completeness_score",
+                            "homogeneity_score",
                         ],
                     )
                     df_temp.to_pickle(
@@ -141,11 +145,14 @@ class LabelClustering(HiddenStatesMetrics):
                 "train_instances",
                 "z",
                 "clustering_bincount",
+                "clusters_assignment",
+                "labels",
                 "adjusted_rand_score",
                 "adjusted_mutual_info_score",
                 "mutual_info_score",
-                "clusters_assignment",
-                "labels",
+                "f1_score",
+                "completeness_score",
+                "homogeneity_score",
             ],
         )
         return df
@@ -226,7 +233,7 @@ class LabelClustering(HiddenStatesMetrics):
         for layer_result in results:
             for key in output:
                 output[key].append(layer_result[key])
-        return output
+            return output
 
     def process_layer(
             self, 
