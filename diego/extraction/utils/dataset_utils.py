@@ -220,6 +220,7 @@ class MMLU_Dataset:
                 final.append(Dataset.from_dict(data[indices]))
                 self.few_shot_indices[sub] = list(indices)
             final = concatenate_datasets(final)
+            print(Counter(final["subject"]))
 
         else:
 
