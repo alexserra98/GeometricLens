@@ -11,6 +11,8 @@ import sys
 from accelerate import Accelerator
 import pickle
 import math
+from dadapy import data
+from sklearn.metrics import adjusted_rand_score
 
 
 def get_embdims(model, dataloader, target_layers):
@@ -101,6 +103,8 @@ def compute_id(
     few_shot_indices=None,
     few_shot_seed=None,
     acc_macro=None,
+    measure_ari=False,
+    mask_dir=None,
 ):
     model = model.eval()
     if accelerator.is_main_process:
@@ -213,6 +217,17 @@ def compute_id(
                     pickle.dump(statistics, f)
 
             else:
+                ari = None
+                if measure_ari:
+                    dataset_mask = None
+                    if mask_dir is not None:
+                        dataset_mask = np.load(f"{mask_dir}/test_mask_200.npy")
+                    ari = compute_ari(
+                        act_dict=act_dict,
+                        subjects=dataloader.dataset["subjetcs"],
+                        dataset_mask=dataset_mask,
+                    )
+
                 statistics = {
                     "subjects": dataloader.dataset["subjects"],
                     "answers": answers,
@@ -221,6 +236,7 @@ def compute_id(
                     "accuracy": acc_pred,
                     "constrained_accuracy": acc_constrained,
                     "few_shot_indices": few_shot_indices,
+                    "subject_ari": ari,
                 }
 
                 with open(f"{dirpath}/statistics{filename}.pkl", "wb") as f:
@@ -281,3 +297,46 @@ def compute_id(
                         np.save(
                             f"{dirpath}/l{target_layer_labels[i]}{filename}_mus", mus
                         )
+
+
+def compute_ari(act_dict, subjects, dataset_mask=None):
+
+    for i, (layer, act) in enumerate(act_dict.items()):
+        act = act.to(torch.float64).numpy()
+
+        subjects_to_int = {sub: i for i, sub in enumerate(np.unique(subjects))}
+        subj_label = np.array([subjects_to_int[sub] for sub in subjects])
+
+        # balance the test set if asked
+        is_balanced = ""
+        if dataset_mask is not None:
+            base_repr = base_repr[dataset_mask]
+            subj_label = subj_label[dataset_mask]
+
+        # remove identical points
+        base_unique, base_idx, base_inverse = np.unique(
+            base_repr, axis=0, return_index=True, return_inverse=True
+        )
+        indices = np.sort(base_idx)
+        base_repr = base_repr[indices]
+        subj_label = subj_label[indices]
+
+        # **************************************************************************
+
+        maxk = 1000
+        assert indices.shape[0] > maxk, (indices.shape[0], maxk)
+        distances_base, dist_index_base, mus, _ = compute_distances(
+            X=base_repr,
+            n_neighbors=maxk + 1,
+            n_jobs=1,
+            working_memory=2048,
+            range_scaling=2048,
+            argsort=False,
+        )
+
+        d = data.Data(distances=(distances_base, dist_index_base))
+        ids, _, _ = d.return_id_scaling_gride(range_max=100)
+        d.set_id(ids[3])
+        d.compute_density_kNN(k=16)
+        assignment = d.compute_clustering_ADP(Z=1.6, halo=False)
+        return adjusted_rand_score(assignment, subj_label)

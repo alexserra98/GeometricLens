@@ -13,11 +13,6 @@ from scipy.stats import entropy
 from collections import Counter
 
 
-arr = np.array([1, 1, 3, 4])
-
-Counter(arr).most_common()[0][1]
-
-
 def return_data_overlap(indices_base, indices_other, k=30, subjects=None):
 
     assert indices_base.shape[0] == indices_other.shape[0]
