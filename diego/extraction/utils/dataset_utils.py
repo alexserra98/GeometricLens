@@ -77,6 +77,7 @@ class MMLU_Dataset:
         random_order=False,
         few_shot_seed=42,
         sample_same_questions=False,
+        indices_dict=None,
     ):
         global rng
         rng = np.random.default_rng(few_shot_seed)
@@ -108,7 +109,11 @@ class MMLU_Dataset:
         self.skip_choices = skip_choices
         self.random_order = random_order
         self.sample_same_questions = sample_same_questions
-        self.few_shot_indices = {}
+        self.few_shot_indices = None
+        self.indices_dict = indices_dict
+        self.acc_macro = None
+        if indices_dict is not None:
+            self.acc_macro = indices_dict["acc_macro"]
 
         # self.dummy_examples = self.construct_gibberish_questions(
         #     path="diego/extraction/utils/asset/dummy.txt"
@@ -211,12 +216,24 @@ class MMLU_Dataset:
             subjects = np.array(few_shot_set["subject"])
 
             final = []
-            for sub in np.unique(subjects):
+            if self.indices_dict is not None:
 
-                data = few_shot_set.filter(lambda example: example["subject"] == sub)
-                indices = rng.choice(len(data), self.num_few_shots, replace=False)
-                final.append(Dataset.from_dict(data[indices]))
-                self.few_shot_indices[sub] = list(indices)
+                for sub in np.unique(subjects):
+                    data = few_shot_set.filter(
+                        lambda example: example["subject"] == sub
+                    )
+                    indices = self.indices_dict[sub]
+                    final.append(Dataset.from_dict(data[indices]))
+            else:
+                self.few_shot_indices = {}
+                for sub in np.unique(subjects):
+                    data = few_shot_set.filter(
+                        lambda example: example["subject"] == sub
+                    )
+                    indices = rng.choice(len(data), self.num_few_shots, replace=False)
+                    self.few_shot_indices[sub] = list(indices)
+                    final.append(Dataset.from_dict(data[indices]))
+
             final = concatenate_datasets(final)
 
         else:
@@ -468,7 +485,6 @@ class MMLU_Dataset:
             assert self.num_few_shots > 0
             assert self.split != "validation"
             few_shot_dataset = self.get_few_shot_dataset(self.sample_same_questions)
-            assert len(self.few_shot_indices) == 57, len(self.few_shot_indices)
         else:
             few_shot_dataset = None
             if self.num_few_shots > 0 and self.num_few_shots <= 5:

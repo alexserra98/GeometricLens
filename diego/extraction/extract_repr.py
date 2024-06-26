@@ -18,7 +18,7 @@ from intrinsic_dimension.compute_distances import compute_id
 import torch
 import os
 from utils.helpers import print_memory_consumed, is_memory_enough
-
+import pickle
 
 import datetime
 
@@ -198,6 +198,7 @@ def parse_args():
     parser.add_argument("--skip_choices", action="store_true")
     parser.add_argument("--random_order", action="store_true")
     parser.add_argument("--sample_same_questions", action="store_true")
+    parser.add_argument("--indices_path", type="str", default=None)
     args = parser.parse_args()
     return args
 
@@ -310,6 +311,12 @@ def main():
     if args.random_subject:
         args.num_few_shots = 5
 
+    indices_dict = None
+    if args.indices_path is not None:
+        assert args.sample_same_questions
+        with open(f"{args.indices_path}", "rb") as f:
+            indices_dict = pickle.load(f)
+
     mmlu_dataset = MMLU_Dataset(
         tokenizer=tokenizer,
         max_seq_len=max_seq_len,
@@ -333,6 +340,7 @@ def main():
         random_order=args.random_order,
         few_shot_seed=args.seed,
         sample_same_questions=args.sample_same_questions,
+        indices_dict=indices_dict,
     )
 
     dataset, longest_seq = mmlu_dataset.construct_dataset()
@@ -451,6 +459,7 @@ def main():
         time_stamp=time_stamp,
         few_shot_indices=mmlu_dataset.few_shot_indices,
         few_shot_seed=args.seed,
+        acc_macro=mmlu_dataset.acc_macro,
     )
 
 

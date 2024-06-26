@@ -10,6 +10,7 @@ from transformers import PreTrainedModel, LlamaTokenizer
 import sys
 from accelerate import Accelerator
 import pickle
+import math
 
 
 def get_embdims(model, dataloader, target_layers):
@@ -99,6 +100,7 @@ def compute_id(
     time_stamp=None,
     few_shot_indices=None,
     few_shot_seed=None,
+    acc_macro=None,
 ):
     model = model.eval()
     if accelerator.is_main_process:
@@ -169,6 +171,11 @@ def compute_id(
             answers[: len(predictions)],
             np.array(subjects[: len(predictions)]),
         )
+        if acc_macro is not None:
+            is_close = math.isclose(acc_pred["macro"], acc_macro, rel_tol=1e-4)
+            if not is_close:
+                print("measured: ", acc_pred["macro"], "\nexpected: ", acc_macro)
+
         acc_constrained = compute_accuracy(
             constrained_predictions,
             answers[: len(constrained_predictions)],
@@ -213,6 +220,7 @@ def compute_id(
                     "contrained_predictions": constrained_predictions,
                     "accuracy": acc_pred,
                     "constrained_accuracy": acc_constrained,
+                    "few_shot_indices": few_shot_indices,
                 }
 
                 with open(f"{dirpath}/statistics{filename}.pkl", "wb") as f:
