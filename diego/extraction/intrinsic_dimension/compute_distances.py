@@ -300,7 +300,7 @@ def compute_id(
 
 
 def compute_ari(act_dict, subjects, dataset_mask=None):
-
+    aris = []
     for i, (layer, act) in enumerate(act_dict.items()):
         act = act.to(torch.float64).numpy()
 
@@ -308,7 +308,6 @@ def compute_ari(act_dict, subjects, dataset_mask=None):
         subj_label = np.array([subjects_to_int[sub] for sub in subjects])
 
         # balance the test set if asked
-        is_balanced = ""
         if dataset_mask is not None:
             base_repr = base_repr[dataset_mask]
             subj_label = subj_label[dataset_mask]
@@ -339,4 +338,6 @@ def compute_ari(act_dict, subjects, dataset_mask=None):
         d.set_id(ids[3])
         d.compute_density_kNN(k=16)
         assignment = d.compute_clustering_ADP(Z=1.6, halo=False)
-        return adjusted_rand_score(assignment, subj_label)
+        aris.append(adjusted_rand_score(assignment, subj_label))
+
+    return aris

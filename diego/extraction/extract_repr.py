@@ -199,6 +199,7 @@ def parse_args():
     parser.add_argument("--random_order", action="store_true")
     parser.add_argument("--sample_same_questions", action="store_true")
     parser.add_argument("--indices_path", type="str", default=None)
+    parser.add_argument("--measure_ari", action="store_true")
     args = parser.parse_args()
     return args
 
@@ -460,6 +461,7 @@ def main():
         few_shot_indices=mmlu_dataset.few_shot_indices,
         few_shot_seed=args.seed,
         acc_macro=mmlu_dataset.acc_macro,
+        measure_ari=args.measure_ari,
     )
 
 
