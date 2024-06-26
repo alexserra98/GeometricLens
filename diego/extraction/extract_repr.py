@@ -198,7 +198,7 @@ def parse_args():
     parser.add_argument("--skip_choices", action="store_true")
     parser.add_argument("--random_order", action="store_true")
     parser.add_argument("--sample_same_questions", action="store_true")
-    parser.add_argument("--indices_path", type="str", default=None)
+    parser.add_argument("--indices_path", type=str, default=None)
     args = parser.parse_args()
     return args
 
