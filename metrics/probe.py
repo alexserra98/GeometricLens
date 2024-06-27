@@ -85,11 +85,6 @@ class LinearProbe(HiddenStatesMetrics):
 
         df = pd.DataFrame(
             rows,
-            columns=["model", "method", "shot", "accuracies"],
-        )
-
-        df = pd.DataFrame(
-            rows,
             columns=["model",
                      "method",
                      "shot",
