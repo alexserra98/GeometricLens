@@ -244,8 +244,10 @@ def compute_id(
                     "metrics": metrics,
                 }
 
-                if measure_ari:   
-                    with open(f"{dirpath}/statistics{filename}_seed{few_shot_seed}.pkl", "wb") as f:
+                if measure_ari:
+                    with open(
+                        f"{dirpath}/statistics{filename}_seed{few_shot_seed}.pkl", "wb"
+                    ) as f:
                         pickle.dump(statistics, f)
 
                 else:
@@ -334,8 +336,8 @@ def compute_ari(act_dict, subjects, dataset_mask=None):
         # **************************************************************************
 
         maxk = 1000
-        
-        if indices.shape[0] > maxk: 
+
+        if indices.shape[0] > maxk:
             distances_base, dist_index_base, mus, _ = compute_distances(
                 X=base_repr,
                 n_neighbors=maxk + 1,
@@ -351,16 +353,9 @@ def compute_ari(act_dict, subjects, dataset_mask=None):
             d.compute_density_kNN(k=16)
             assignment = d.compute_clustering_ADP(Z=1.6, halo=False)
 
-<<<<<<< HEAD
-        metrics["ari"].append(adjusted_rand_score(assignment, subj_label))
-        metrics["ami"].append(adjusted_mutual_info_score(assignment, subj_label))
-        metrics["completeness"].append(completeness_score(assignment, subj_label))
-        metrics["homogeneity"].append(homogeneity_score(assignment, subj_label))
-=======
-            metrics["ari"] = adjusted_rand_score(assignment, subj_label)
-            metrics["ami"] = adjusted_mutual_info_score(assignment, subj_label)
-            metrics["completeness"] = completeness_score(assignment, subj_label)
-            metrics["homogeneity"] = homogeneity_score(assignment, subj_label)
->>>>>>> 20acf5c13c77df7e88b11f8343ce42773127f713
+            metrics["ari"].append(adjusted_rand_score(assignment, subj_label))
+            metrics["ami"].append(adjusted_mutual_info_score(assignment, subj_label))
+            metrics["completeness"].append(completeness_score(assignment, subj_label))
+            metrics["homogeneity"].append(homogeneity_score(assignment, subj_label))
 
     return metrics
