@@ -12,7 +12,12 @@ from accelerate import Accelerator
 import pickle
 import math
 from dadapy import data
-from sklearn.metrics import adjusted_rand_score
+from sklearn.metrics import (
+    adjusted_rand_score,
+    completeness_score,
+    homogeneity_score,
+    adjusted_mutual_info_score,
+)
 
 
 def get_embdims(model, dataloader, target_layers):
@@ -217,12 +222,12 @@ def compute_id(
                     pickle.dump(statistics, f)
 
             else:
-                ari = None
+                metrics = None
                 if measure_ari:
                     dataset_mask = None
                     if mask_dir is not None:
                         dataset_mask = np.load(f"{mask_dir}/test_mask_200.npy")
-                    ari = compute_ari(
+                    metrics = compute_ari(
                         act_dict=act_dict,
                         subjects=dataloader.dataset["subjects"],
                         dataset_mask=dataset_mask,
@@ -236,7 +241,7 @@ def compute_id(
                     "accuracy": acc_pred,
                     "constrained_accuracy": acc_constrained,
                     "few_shot_indices": few_shot_indices,
-                    "subject_ari": ari,
+                    "metrics": metrics,
                 }
 
                 if measure_ari:   
@@ -305,7 +310,8 @@ def compute_id(
 
 
 def compute_ari(act_dict, subjects, dataset_mask=None):
-    aris = []
+    metrics = {}
+
     for i, (layer, act) in enumerate(act_dict.items()):
         base_repr = act.to(torch.float64).numpy()
 
@@ -318,7 +324,7 @@ def compute_ari(act_dict, subjects, dataset_mask=None):
             subj_label = subj_label[dataset_mask]
 
         # remove identical points
-        base_unique, base_idx, base_inverse = np.unique(
+        _, base_idx, _ = np.unique(
             base_repr, axis=0, return_index=True, return_inverse=True
         )
         indices = np.sort(base_idx)
@@ -344,6 +350,10 @@ def compute_ari(act_dict, subjects, dataset_mask=None):
             d.set_id(ids[3])
             d.compute_density_kNN(k=16)
             assignment = d.compute_clustering_ADP(Z=1.6, halo=False)
-            aris.append(adjusted_rand_score(assignment, subj_label))
 
-    return aris
+            metrics["ari"] = adjusted_rand_score(assignment, subj_label)
+            metrics["ami"] = adjusted_mutual_info_score(assignment, subj_label)
+            metrics["completeness"] = completeness_score(assignment, subj_label)
+            metrics["homogeneity"] = homogeneity_score(assignment, subj_label)
+
+    return metrics

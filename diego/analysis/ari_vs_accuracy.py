@@ -1,9 +1,39 @@
 import numpy as np
 import pickle
 from collections import defaultdict
+import matplotlib.pyplot as plt
+
 
 dirpath = "/home/diego/Documents/area_science/ricerca/open/geometric_lens/repo/results/evaluated_test/questions_sampled_same/llama-3-8b/5shot"
 filename = "statistics_target_seed0.pkl"
+
+
+acc_subjects = defaultdict(list)
+acc_macro = []
+acc_micro = []
+aris = []
+for seed in range(10):
+    with open(f"{dirpath}/statistics_target_seed{seed}.pkl", "rb") as f:
+        file = pickle.load(f)
+    for sub, acc in file["accuracy"]["subjects"].items():
+        acc_subjects[sub].append(acc)
+    acc_macro.append(file["accuracy"]["macro"])
+    acc_micro.append(file["accuracy"]["micro"])
+    aris.append(file["subject_ari"])
+
+
+for i in range(10):
+    plt.plot(aris[i])
+
+acc_macro
+aris
+file["subject_ari"]
+
+
+with open(f"{dirpath}/statistics_target_seed0.pkl", "rb") as f:
+    file = pickle.load(f)
+
+# *****************************************************************************************
 
 
 acc_subjects = defaultdict(list)
@@ -20,10 +50,6 @@ for seed in range(10):
     acc_macro.append(file["accuracy"]["macro"])
     acc_micro.append(file["accuracy"]["micro"])
 
-indices_subjects
-acc_macro
-acc_micro
-file["few_shot_indices"]
 
 sorted_acc = np.zeros((len(acc_subjects), 10))
 sorted_indices = np.zeros((len(acc_subjects), 10, 5), dtype=int)
