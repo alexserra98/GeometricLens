@@ -48,8 +48,9 @@ torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
     --split "test" \
     --num_few_shots 5 \
     --sample_same_questions \
-    --seed 0 \
-    --indices_path "diego/sorted_indices_subjects/sorted_indices_0.pkl"
+    --seed $seed \
+    --indices_path "diego/sorted_indices_subjects/sorted_indices_$seed.pkl"\
+    --measure_ari 
     # --finetuned_path  "/u/area/ddoimo/ddoimo/finetuning_llm/open-instruct/results" \
     # --finetuned_mode "dev_val_balanced_20samples" \
     # --finetuned_epochs 4 \
