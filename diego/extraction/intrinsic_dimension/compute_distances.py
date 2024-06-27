@@ -305,7 +305,7 @@ def compute_id(
 
 
 def compute_ari(act_dict, subjects, dataset_mask=None):
-    metrics = {}
+    metrics = defaultdict(list)
 
     for i, (layer, act) in enumerate(act_dict.items()):
         base_repr = act.to(torch.float64).numpy()
@@ -345,9 +345,9 @@ def compute_ari(act_dict, subjects, dataset_mask=None):
         d.compute_density_kNN(k=16)
         assignment = d.compute_clustering_ADP(Z=1.6, halo=False)
 
-        metrics["ari"] = adjusted_rand_score(assignment, subj_label)
-        metrics["ami"] = adjusted_mutual_info_score(assignment, subj_label)
-        metrics["completeness"] = completeness_score(assignment, subj_label)
-        metrics["homogeneity"] = homogeneity_score(assignment, subj_label)
+        metrics["ari"].append(adjusted_rand_score(assignment, subj_label))
+        metrics["ami"].append(adjusted_mutual_info_score(assignment, subj_label))
+        metrics["completeness"].append(completeness_score(assignment, subj_label))
+        metrics["homogeneity"].append(homogeneity_score(assignment, subj_label))
 
     return metrics
