@@ -229,7 +229,7 @@ def compute_id(
                         dataset_mask = np.load(f"{mask_dir}/test_mask_200.npy")
                     metrics = compute_ari(
                         act_dict=act_dict,
-                        subjects=dataloader.dataset["subjetcs"],
+                        subjects=dataloader.dataset["subjects"],
                         dataset_mask=dataset_mask,
                     )
 
@@ -244,8 +244,13 @@ def compute_id(
                     "metrics": metrics,
                 }
 
-                with open(f"{dirpath}/statistics{filename}.pkl", "wb") as f:
-                    pickle.dump(statistics, f)
+                if measure_ari:   
+                    with open(f"{dirpath}/statistics{filename}_seed{few_shot_seed}.pkl", "wb") as f:
+                        pickle.dump(statistics, f)
+
+                else:
+                    with open(f"{dirpath}/statistics{filename}.pkl", "wb") as f:
+                        pickle.dump(statistics, f)
 
             if save_distances:
                 for i, (layer, act) in enumerate(act_dict.items()):
@@ -329,25 +334,33 @@ def compute_ari(act_dict, subjects, dataset_mask=None):
         # **************************************************************************
 
         maxk = 1000
-        assert indices.shape[0] > maxk, (indices.shape[0], maxk)
-        distances_base, dist_index_base, mus, _ = compute_distances(
-            X=base_repr,
-            n_neighbors=maxk + 1,
-            n_jobs=1,
-            working_memory=2048,
-            range_scaling=2048,
-            argsort=False,
-        )
+        
+        if indices.shape[0] > maxk: 
+            distances_base, dist_index_base, mus, _ = compute_distances(
+                X=base_repr,
+                n_neighbors=maxk + 1,
+                n_jobs=1,
+                working_memory=2048,
+                range_scaling=2048,
+                argsort=False,
+            )
 
-        d = data.Data(distances=(distances_base, dist_index_base))
-        ids, _, _ = d.return_id_scaling_gride(range_max=100)
-        d.set_id(ids[3])
-        d.compute_density_kNN(k=16)
-        assignment = d.compute_clustering_ADP(Z=1.6, halo=False)
+            d = data.Data(distances=(distances_base, dist_index_base))
+            ids, _, _ = d.return_id_scaling_gride(range_max=100)
+            d.set_id(ids[3])
+            d.compute_density_kNN(k=16)
+            assignment = d.compute_clustering_ADP(Z=1.6, halo=False)
 
+<<<<<<< HEAD
         metrics["ari"].append(adjusted_rand_score(assignment, subj_label))
         metrics["ami"].append(adjusted_mutual_info_score(assignment, subj_label))
         metrics["completeness"].append(completeness_score(assignment, subj_label))
         metrics["homogeneity"].append(homogeneity_score(assignment, subj_label))
+=======
+            metrics["ari"] = adjusted_rand_score(assignment, subj_label)
+            metrics["ami"] = adjusted_mutual_info_score(assignment, subj_label)
+            metrics["completeness"] = completeness_score(assignment, subj_label)
+            metrics["homogeneity"] = homogeneity_score(assignment, subj_label)
+>>>>>>> 20acf5c13c77df7e88b11f8343ce42773127f713
 
     return metrics
