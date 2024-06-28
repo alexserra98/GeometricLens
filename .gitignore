@@ -7,7 +7,9 @@ slurm*
 results/
 
 *.pkl
-!diego/sorted_indices_subjects/*
+!diego/sorted_indices_subjects/1shot/*
+!diego/sorted_indices_subjects/2shot/*
+!diego/sorted_indices_subjects/5shot/*
 **/__pycache__/
 **/assets/
 ../
