@@ -1,10 +1,11 @@
+# Personal
 results*
 env/
 env_amd/
 slurm*
 !slurm_runner.py
 results/
-globals_vars.py
+global_vars.py
 
 *.pkl
 **/__pycache__/
@@ -14,7 +15,13 @@ downloads/
 output_job/
 tests/test_folder/
 generated_script.sh
-*globals*
+*global*
+common/global_vars.py
+scratch/
+output_test_result/
+config/
+*.png
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -43,6 +50,7 @@ share/python-wheels/
 *.egg
 MANIFEST
 mcqa/
+
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -117,7 +125,7 @@ ipython_config.py
 #   This is especially recommended for binary packages to ensure reproducibility, and is more
 #   commonly ignored for libraries.
 #   https://python-poetry.org/docs/basic-usage/#commit-your-poetrylock-file-to-version-control
-#poetry.lock
+poetry.lock
 
 # pdm
 #   Similar to Pipfile.lock, it is generally recommended to include pdm.lock in version control.
@@ -177,8 +185,3 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-scratch/
-output_test_result/
-config/
-
-*.png

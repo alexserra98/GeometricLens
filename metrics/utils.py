@@ -1,6 +1,6 @@
 from metrics.query import DataFrameQuery
 from common.tensor_storage import TensorStorage
-from common.globals_vars import _DEBUG
+from common.global_vars import _DEBUG
 from common.error import DataNotFoundError, UnknownError
 
 import numpy as np

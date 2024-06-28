@@ -10,7 +10,7 @@ class TestProbe(unittest.TestCase):
         self.my_class = LinearProbe(queries=self.query_dict,
                                     df = "",
                                     tensor_storage = "",
-                                    variations = {"probe": "weights"},
+                                    variations = {"probe": ["weights", "svc"]},
                                     parallel = False)
         self.mock_logger = Mock()
 
@@ -19,12 +19,12 @@ class TestProbe(unittest.TestCase):
         target = np.random.randint(0, 10, (100)).astype(np.float32)  # Fake target
         n_folds = 3
         skf = StratifiedKFold(n_splits=n_folds,
-                            shuffle=True,
-                            random_state=42)
+                              shuffle=True,
+                              random_state=42)
         
         
 
-        actual_output = self.my_class.compute_fold(hidden_states, target, skf, n_folds, module_logger=self.mock_logger, query_dict=self.query_dict)
+        actual_output = self.my_class.compute_query(hidden_states, target, skf, n_folds, module_logger=self.mock_logger, query_dict=self.query_dict)
         print(f"type = {type(actual_output)},\n{actual_output=}")
         # self.mock_logger.info.assert_called_with("Processing data in compute_fold")
         self.assertTrue(isinstance(actual_output[-2], np.ndarray))

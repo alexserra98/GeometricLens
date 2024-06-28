@@ -7,6 +7,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.utils.class_weight import compute_class_weight
 from sklearn.linear_model import LogisticRegression
+from sklearn.svm import LinearSVC
 
 import tqdm
 import pandas as pd
@@ -64,12 +65,12 @@ class LinearProbe(HiddenStatesMetrics):
             skf = StratifiedKFold(n_splits=n_folds,
                                   shuffle=True,
                                   random_state=42)
-            rows.append(self.compute_fold(hidden_states,
-                                          target,
-                                          skf,
-                                          n_folds,
-                                          module_logger,
-                                          query_dict))
+            rows.append(self.compute_query(hidden_states,
+                                           target,
+                                           skf,
+                                           n_folds,
+                                           module_logger,
+                                           query_dict))
 
             if n % 3 == 0:
                 # Save checkpoint
@@ -93,13 +94,13 @@ class LinearProbe(HiddenStatesMetrics):
         )
         return df
 
-    def compute_fold(self,
-                     hidden_states: Float[Array, "num_instances num_layers model_dim"],
-                     target: Int[Array, "num_instances num_layers"],
-                     skf: StratifiedKFold,
-                     n_folds: Int,
-                     module_logger: logging.Logger,
-                     query_dict: Dict[Str, Str]) -> pd.DataFrame:
+    def compute_query(self,
+                      hidden_states: Float[Array, "num_instances num_layers model_dim"],
+                      target: Int[Array, "num_instances num_layers"],
+                      skf: StratifiedKFold,
+                      n_folds: Int,
+                      module_logger: logging.Logger,
+                      query_dict: Dict[Str, Str]) -> pd.DataFrame:
         """
         Compute the linear probe accuracy for each fold.
         Inputs:
@@ -110,33 +111,24 @@ class LinearProbe(HiddenStatesMetrics):
         Returns:
             df: DataFrame with the results of the probe
         """
-        train_folds = []
-        test_folds = []
-        class_weight_folds = []
+        train_folds_indices = []
+        test_folds_indices = []
 
         # Split the data into train and test sets for each fold
         for train_index, test_index in skf.split(hidden_states, target):
-            X_train, y_train = hidden_states[train_index], \
-                target[train_index]
-            X_test, y_test = hidden_states[test_index], \
-                target[test_index]
-
-            class_weight = compute_class_weight(
-                "balanced", classes=np.unique(y_train), y=y_train
-            )
-
-            train_folds.append((X_train, y_train))
-            test_folds.append((X_test, y_test))
-            class_weight_folds.append(dict(zip(np.unique(y_train),
-                                               class_weight)))
+            train_folds_indices.append(train_index)
+            test_folds_indices.append(test_index)
 
         try:
             accuracies, weights = self.parallel_compute(
-                train_folds, test_folds, class_weight_folds, n_folds
+                hidden_states, target,
+                train_folds_indices, test_folds_indices,
+                n_folds
             )
         except Exception as e:
             module_logger.error(f"Error processing query {query_dict}: {e}")
             accuracies = np.nan
+            weights = np.nan
 
         row = [
             query_dict["model_name"],
@@ -149,31 +141,25 @@ class LinearProbe(HiddenStatesMetrics):
 
     def parallel_compute(
             self,
-            train_folds: List[Union[Float[Array, "num_instances num_layers model_dim"],
-                                    Int[Array, "num_instances num_layers"]]],
-            test_folds: List[Union[Float[Array, "num_instances num_layers model_dim"],
-                                   Int[Array, "num_instances num_layers"]]],
-            class_weights_folds: List[
-                                Dict[Int[Array, "num_instances num_layers"], 
-                                Float[Array, "num_instances num_layers"]]],
+            hidden_states: Float[Array, "num_instances num_layers model_dim"],
+            target: Int[Array, "num_instances"],
+            train_folds_indices: Int[Array, "num_instances-num_instances/n_folds"],
+            test_folds_indices: Int[Array, "num_instances-num_instances/n_folds"],
             n_folds: Int = 5
     ) -> Float[Array, "num_instances num_layers"]:
 
         """
         Compute the linear probe accuracy for each layer in parallel.
         Inputs:
-            train_folds: List[Union[Float[Array, "num_instances num_layers model_dim"],
-                                    Int[Array, "num_instances num_layers"]]],
-                List of tuples of hidden states and labels for training
+            hidden_states: Float[Array, "num_instances num_layers model_dim"],
+                Hidden states of the given query
+            target: Int[Array, "num_instances"],
+                Label for eah instance of the query
+            train_folds_indices: Int[Array, "num_instances-num_instances/n_folds"],
+                List of indices of training set for each fold
 
-            test_folds: List[Union[Float[Array, "num_instances num_layers model_dim"],
-                                   Int[Array, "num_instances num_layers"]]],
-                List of tuples of hidden states and labels for testing
-            class_weights_folds: List[
-                                Dict[Int[Array, "num_instances num_layers"], 
-                                Float[Array, "num_instances num_layers"]]],
-                List of dictionaries with class weights for
-                each fold
+            test_folds_indices: Int[Array, "num_instances-num_instances/n_folds"],
+                List of indices of test set for each fold
             n_folds: Int = 5
             
         Returns:    
@@ -184,12 +170,13 @@ class LinearProbe(HiddenStatesMetrics):
 
         process_layer = partial(
             self.process_layer,
-            train_folds=train_folds,
-            test_folds=test_folds,
-            class_weights_folds=class_weights_folds,
+            hidden_states=hidden_states,
+            target=target,
+            train_folds_indices=train_folds_indices,
+            test_folds_indices=test_folds_indices,
             n_folds=n_folds,
         )
-        number_of_layers = train_folds[0][0].shape[1]
+        number_of_layers = hidden_states.shape[1]
         if self.parallel:
             with Parallel(n_jobs=_NUM_PROC) as parallel:
                 results = parallel(
@@ -216,54 +203,64 @@ class LinearProbe(HiddenStatesMetrics):
     def process_layer(
             self,
             num_layer: Int,
-            train_folds: List[Union[Float[Array, "num_instances num_layers model_dim"],
-                                    Int[Array, "num_instances num_layers"]]],
-            test_folds: List[Union[Float[Array, "num_instances num_layers model_dim"],
-                                   Int[Array, "num_instances num_layers"]]],
-            class_weights_folds: List[
-                                Dict[Int[Array, "num_instances num_layers"], 
-                                Float[Array, "num_instances num_layers"]]],
+            hidden_states: Float[Array, "num_instances num_layers model_dim"],
+            target: Int[Array, "num_instances"],
+            train_folds_indices: Int[Array, "num_instances-num_instances/n_folds"],
+            test_folds_indices: Int[Array, "num_instances-num_instances/n_folds"],
             n_folds: Int = 5
     ) -> Tuple[Int, Float, List[Float]]:
         """
         Process a single layer.
         Inputs:
-            num_layer: Layer to process
-            train_folds: List[Union[Float[Array, "num_instances num_layers model_dim"],
-                                    Float[Array, "num_instances num_layers"]]],
-                List of tuples of hidden states and labels for training
+            num_layer: Layer to process,
+            hidden_states: Float[Array, "num_instances num_layers model_dim"],
+                Hidden states of the given query
+            target: Int[Array, "num_instances"],
+                Label for eah instance of the query
+            train_folds_indices: Int[Array, "num_instances-num_instances/n_folds"],
+                List of indices of training set for each fold
 
-            test_folds: List[Union[Float[Array, "num_instances num_layers model_dim"],
-                                   Int[Array, "num_instances num_layers"]]],
-                List of tuples of hidden states and labels for testing
-            class_weights_folds: List[
-                                Dict[Int[Array, "num_instances num_layers"], 
-                                Float[Array, "num_instances num_layers"]]],
-                List of dictionaries with class weights for
-                each fold
+            test_folds_indices: Int[Array, "num_instances-num_instances/n_folds"],
+                List of indices of test set for each fold
             n_folds: Int = 5
         Returns:   
             num_layer: Layer number
             mean_score: Mean accuracy score
             scores: List of accuracy scores for each fold
         """
+        scores = []        
+        hidden_states = hidden_states[:, num_layer, :]
+        target = target
 
-        scores = []
-        weights = []
+        # Compute cross-validation to get the accuracy of the model
         for i in range(n_folds):
-            X_train, y_train = train_folds[i]
-            X_train = X_train[:, num_layer, :]
-            X_test, y_test = test_folds[i]
-            X_test = X_test[:, num_layer, :]
-            model = LogisticRegression(
-                max_iter=3500, class_weight=class_weights_folds[i], n_jobs=-1
-            )
+            X_train, y_train = hidden_states[train_folds_indices[i]], \
+                target[train_folds_indices[i]]
+            
+            X_test, y_test = hidden_states[test_folds_indices[i]],  \
+                target[test_folds_indices[i]]
+            
+            if "svc" in self.variations["probe"]:
+                model = LinearSVC(class_weight="balanced")
+            else:
+                model = LogisticRegression(
+                    max_iter=3500, class_weight="balanced", n_jobs=-1
+                )
             model.fit(X_train, y_train)
             predictions = model.predict(X_test)
-            weights.append(model.coef_)
             scores.append(accuracy_score(y_test, predictions))
-        if self.variations["probe"] == "weights":
-            return num_layer, np.mean(scores), scores, np.mean(weights, axis=0)
+        
+        # Repeat on whole dataset
+        X_train = hidden_states
+        if "svc" in self.variations["probe"]:
+            model = LinearSVC(class_weight="balanced")
+        else:
+            model = LogisticRegression(max_iter=3500, class_weight="balanced", n_jobs=-1)
+        model.fit(X_train, target)
+        weights = model.coef_
+        
+        if "weights" in self.variations["probe"]:
+            return num_layer, np.mean(scores), scores, weights
         else:
             return num_layer, np.mean(scores), scores, []
 

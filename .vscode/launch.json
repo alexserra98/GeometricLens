@@ -10,6 +10,7 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
+            "env": {"PYTHONPATH": "$PYTHONPATH:/home/alex/Desktop/work/research_project/MCQA_Benchmark"},
             //"pythonPath": "/path/to/your/python/interpreter",
             //"args": ["--conf-path", "config/config_tmp.json"]
         }

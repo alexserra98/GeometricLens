@@ -1,6 +1,6 @@
 from pathlib import Path
 from metrics.utils import TensorStorageManager
-from common.globals_vars import _OUTPUT_DIR_TRANSPOSED
+from common.global_vars import _OUTPUT_DIR_TRANSPOSED
 from enum import Enum
 from common.utils import read_config
 
@@ -139,17 +139,24 @@ def main():
         type=str,
         help="Couples to use in representation comparisons",
     )
+    parser.add_argument(
+        "--additional_info",
+        type=str,
+        help="Additional information to add to the output file name",
+    )
     args = parser.parse_args(remaining_argv)
-    print(args.variations)
 
     models = args.models
     metrics = args.metrics
     labels = args.labels
     tensor_storage_location = args.tensor_storage_location[0]
     couples_list = args.couples_list
-    variations = json.loads(args.variations)
+    additional_info = args.additional_info
+    variations = args.variations
 
-    if tensor_storage_location not in ["std", "questions_sampled13", "random_order"]:
+    if tensor_storage_location not in ["std",
+                                       "questions_sampled13",
+                                       "random_order"]:
         logger.error(
             f"Tensor storage location {tensor_storage_location} not recognized."
             f"Please use one among:"
@@ -160,6 +167,8 @@ def main():
         f"Metrics computer started\nModels:{models}\nMetrics:{metrics}\n"
         f"Variations:{variations}\n"
         f"Tensor Storage Location:{tensor_storage_location}\n"
+        f"additional_info:{additional_info}\n"
+
     )
     tsm = TensorStorageManager(tensor_storage_location=tensor_storage_location,
                                instances_per_sub=200)

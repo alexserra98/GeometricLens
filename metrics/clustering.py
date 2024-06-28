@@ -75,7 +75,7 @@ class LabelClustering(HiddenStatesMetrics):
                     module_logger.error(f"Error processing query {query_dict}: {e}")
                     raise
 
-                if self.variations["label_clustering"] == "balanced_letter":
+                if "balanced_letter" in self.variations["label_clustering"]:
                     hidden_states_df.reset_index(inplace=True)
                     hidden_states_df, index = balance_by_label_within_groups(
                         hidden_states_df, "dataset", "letter_gold"
@@ -575,7 +575,7 @@ class PointClustering(HiddenStatesMetrics):
         data_i = input_i[:, layer, :]
         data_j = input_j[:, layer, :]
 
-        if self.variations["point_clustering"] == "norm":
+        if "norm" in self.variations["point_clustering"]:
             data_i = data_i / np.linalg.norm(data_i, axis=1, keepdims=True)
             clusters_i = self.compute_cluster_assignment(data_i, z)
 
