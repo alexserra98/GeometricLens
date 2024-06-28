@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import os
 
 num_samples = 30
-num_few_shots = 2
+num_few_shots = 5
 dirpath = f"/home/diego/Documents/area_science/ricerca/open/geometric_lens/repo/results/evaluated_test/questions_sampled_same/llama-3-8b/{num_few_shots}shot"
 
 
