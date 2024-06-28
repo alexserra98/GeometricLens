@@ -246,7 +246,8 @@ def compute_id(
 
                 if measure_ari:
                     with open(
-                        f"{dirpath}/statistics{filename}_seed{few_shot_seed}.pkl", "wb"
+                        f"{dirpath}/statistics{filename}_sorted_sample{few_shot_seed}.pkl",
+                        "wb",
                     ) as f:
                         pickle.dump(statistics, f)
 

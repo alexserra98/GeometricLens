@@ -19,15 +19,14 @@ for seed in range(10):
         acc_subjects[sub].append(acc)
     acc_macro.append(file["accuracy"]["macro"])
     acc_micro.append(file["accuracy"]["micro"])
-    aris.append(file["subject_ari"])
+    aris.append(file["metrics"])
 
+file["metrics"]
 
 for i in range(10):
-    plt.plot(aris[i])
+    plt.plot(aris[i]["ari"])
 
-acc_macro
-aris
-file["subject_ari"]
+plt.scatter([max(metric["ari"]) for metric in aris], acc_macro)
 
 
 with open(f"{dirpath}/statistics_target_seed0.pkl", "rb") as f:
