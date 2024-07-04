@@ -49,14 +49,14 @@ torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
     --num_few_shots 5 \
     --sample_same_questions \
     --seed $seed \
-    --indices_path "diego/sorted_indices_subjects/sorted_indices_$seed.pkl"\
-    --measure_ari 
-    # --finetuned_path  "/u/area/ddoimo/ddoimo/finetuning_llm/open-instruct/results" \
-    # --finetuned_mode "dev_val_balanced_20samples" \
-    # --finetuned_epochs 4 \
-    # --save_distances --save_repr \
+    --finetuned_path  "/u/area/ddoimo/ddoimo/finetuning_llm/open-instruct/results" \
+    --finetuned_mode "dev_val_balanced_20samples" \
+    --finetuned_epochs 4 \
+    --model_seed 1 \
+    --save_distances --save_repr \
     #--step $step
-
+    #--indices_path "diego/sorted_indices_subjects/sorted_indices_$seed.pkl"\
+    #--measure_ari 
     
     #--ckpt_epoch 4  
     #--split "test" \

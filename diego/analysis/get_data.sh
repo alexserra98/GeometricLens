@@ -62,6 +62,4 @@ for folder in "${model_list[@]}"; do
     done
 done
 
-
-
 #rsync_remote_to_local "$remote_host" "$remote_base_path" "$local_base_path" "${model_list[@]}"
