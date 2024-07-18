@@ -20,6 +20,7 @@ tokenizers = "^0.19.1"
 jupyter = "^1.0.0"
 torch = "^2.3.1"
 dadapy = {path = "../DADApy"}
+openai = "^1.35.7"
 
 
 [build-system]
