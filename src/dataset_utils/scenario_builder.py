@@ -34,9 +34,7 @@ class Scenario():
     model_name: str
     requests_instances: List[RequestInstance] = field(default_factory=list)
     output_mapping: List[str] = field(default_factory=dict)
-    
-
-        
+            
 class ScenarioBuilder(ABC):
     """
     Abstract class for building a scenario.

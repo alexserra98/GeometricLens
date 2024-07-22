@@ -21,6 +21,7 @@ jupyter = "^1.0.0"
 torch = "^2.3.1"
 dadapy = {path = "../DADApy"}
 openai = "^1.35.7"
+datasets = "^2.20.0"
 
 
 [build-system]

@@ -10,11 +10,11 @@ from functools import partial
 import torch
 import sys
 
-from datasets.utils.logging import disable_progress_bar
+#from datasets.utils.logging import disable_progress_bar
 import sys
 
 
-disable_progress_bar()
+#disable_progress_bar()
 
 
 _TMP = True
