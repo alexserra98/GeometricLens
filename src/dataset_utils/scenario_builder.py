@@ -21,13 +21,10 @@ def map_aliases(dataset):
 
 @dataclass
 class RequestInstance():
-    prompt: str
     question: str
-    choices: List[str]
+    prompt: str
     letter_gold: str
-    subject: str = None
     token_gold: int = None
-    
 
 
 @dataclass
