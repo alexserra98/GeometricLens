@@ -6,7 +6,7 @@ slurm*
 !slurm_runner.py
 results/
 global_vars.py
-
+*.pdf
 *.pkl
 **/__pycache__/
 **/assets/
