@@ -1,7 +1,7 @@
-from metrics.hidden_states_metrics import HiddenStatesMetrics
-from metrics.query import DataFrameQuery
-from common.global_vars import _NUM_PROC, _OUTPUT_DIR, Array
-from common.error import DataNotFoundError, UnknownError
+from src.metrics.hidden_states_metrics import HiddenStatesMetrics
+from src.metrics.query import DataFrameQuery
+from src.common.global_vars import _NUM_PROC, _OUTPUT_DIR, Array
+from src.common.error import DataNotFoundError, UnknownError
 from dadapy.data import Data
 from sklearn.metrics import mutual_info_score
 from sklearn.metrics.cluster import adjusted_rand_score, \

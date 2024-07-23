@@ -1,7 +1,7 @@
-from metrics.query import DataFrameQuery
-from common.tensor_storage import TensorStorage
-from common.global_vars import _DEBUG
-from common.error import DataNotFoundError, UnknownError
+from src.metrics.query import DataFrameQuery
+from src.common.tensor_storage import TensorStorage
+from src.common.global_vars import _DEBUG, Array
+from src.common.error import DataNotFoundError, UnknownError
 
 import numpy as np
 import torch
@@ -18,6 +18,8 @@ import os
 from pathlib import Path
 import re
 import pickle
+from jaxtyping import Float
+from typing import Tuple
 
 
 @dataclass
@@ -57,7 +59,7 @@ class TensorStorageManager:
         storage_config_h5: TensorStorage = None,
         storage_config_npy: Path = None,
         tensor_storage_location: str = "std",
-        instances_per_sub: int = 100,
+        instances_per_sub: int = None,
     ):
         # Initialization with storage configurations or connections
         self.storage_h5 = storage_config_h5
@@ -144,10 +146,120 @@ class TensorStorageManager:
                   f"seconds")
 
         return hidden_states, logits, df_hiddenstates
+    
+    def retrieve_from_storage_npy_path(
+            self,
+            model_name: str,
+            train_instances: int,
+            storage_path: Path
+            ) -> Tuple[Float[Array, "num_instances num_layers d_model"],
+                       Float[Array, "num_instances d_vocab"],
+                       pd.DataFrame]:
+        """
+        Retrieve tensors from a given path.
 
+        Parameters
+        ----------
+        path : Path
+            Path to the directory containing the tensors.
+
+        Returns
+        -------
+        tuple of (np.ndarray, np.ndarray, pd.DataFrame)
+            Returns a tuple containing arrays of hidden states, logits, and 
+            the original DataFrame.
+        """
+        try:
+            if not storage_path.exists() or not storage_path.is_dir():
+                raise DataNotFoundError(f"Storage path does not exist:"
+                                        f"{storage_path}")
+
+            files = os.listdir(storage_path)
+
+            # Filter files with the specific pattern and range check
+            pattern = re.compile(r"l(\d+)_target\.pt")
+            filtered_files = [file for file in files if pattern.match(file)]
+
+            # Sort files based on the number in the filename
+            filtered_files.sort(key=lambda x: int(pattern.match(x).group(1)))
+
+            # Load tensors and add them to a list
+            tensors = [
+                torch.load(os.path.join(storage_path, file))
+                for file in filtered_files
+            ]
+
+            # Stack all tensors along a new dimension
+            stacked_tensor = torch.stack(tensors[:-1])
+            stacked_tensor = rearrange(stacked_tensor, "l n d -> n l d")
+            logits = tensors[-1]
+
+            # retrieve statistics
+            with open(Path(storage_path, "statistics_target.pkl"), "rb") as f:
+                stat_target = pickle.load(f)
+
+            # Cropping tensors because of inconsistency in the data
+            for key in stat_target.keys():
+                value = stat_target.get(key, None)
+                if value is None or isinstance(value, float):
+                    continue 
+                elif "accuracy" in key:
+                    stat_target[key] = stat_target[key]["macro"]
+                    continue
+
+                # import pdb; pdb.set_trace()
+                stat_target[key] = stat_target[key][:14040]
+
+            df = pd.DataFrame(stat_target)
+            df = df.rename(
+                columns={
+                    "subjects": "dataset",
+                    "predictions": "std_pred",
+                    "answers": "letter_gold",
+                    "contrained_predictions": "only_ref_pred",
+                }
+            )
+            df["train_instances"] = train_instances
+            # "meta-llama-Llama-2-7b-hf"
+            df["model_name"] = model_name
+            df["method"] = "last"
+
+            if self.instances_per_sub:
+                path_mask = Path(
+                    f"/orfeo/scratch/dssc/zenocosini/mmlu_result/test_mask_"
+                    f"{self.instances_per_sub}.npy"
+                )
+                if not path_mask.exists():
+                    raise DataNotFoundError(f"Mask path does not exist: "
+                                            f"{path_mask}")
+
+                mask = np.load(path_mask)
+                stacked_tensor = stacked_tensor.float().numpy()[:14040][mask]
+                logits = logits.float().numpy()[:14040][mask]
+                df = df.iloc[mask]
+                df.reset_index(inplace=True, drop=True)
+
+            else:
+                stacked_tensor = stacked_tensor.float().numpy()[:14040]
+                logits = logits.float().numpy()[:14040]
+                df = df.iloc[:14040]
+                df.reset_index(inplace=True, drop=True)
+        except DataNotFoundError as e:
+            # Handle missing data but continue the program
+            print(e)
+            raise e
+        except UnknownError as e:
+            print(e)
+            raise e
+
+        return stacked_tensor, logits, df
+            
     def retrieve_from_storage_npy(
             self, 
-            query):
+            query: DataFrameQuery
+            ) -> Tuple[Float[Array, "num_instances num_layers d_model"],
+                       Float[Array, "num_instances d_vocab"],
+                       pd.DataFrame]:
         try:
             query_dict = query.query
             model_name = query_dict["model_name"]

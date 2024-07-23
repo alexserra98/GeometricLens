@@ -1,10 +1,10 @@
-from metrics.hidden_states_metrics import HiddenStatesMetrics
+from src.metrics.hidden_states_metrics import HiddenStatesMetrics
 from .utils import (
     angular_distance,
 )
-from metrics.query import DataFrameQuery
-from common.globals_vars import _NUM_PROC, _OUTPUT_DIR, Array
-from common.error import DataNotFoundError, UnknownError
+from src.metrics.query import DataFrameQuery
+from src.common.globals_vars import _NUM_PROC, _OUTPUT_DIR, Array
+from src.common.error import DataNotFoundError, UnknownError
 
 from dadapy import Data
 
@@ -236,7 +236,7 @@ class PointOverlap(HiddenStatesMetrics):
             data_i: Float[Array, "num_instances num_layers model_dim"],
             data_j:  Float[Array, "num_instances num_layers model_dim"],
             k: Int
-        ) -> Array:
+        ) -> Float[Array, "num_layers"]:
         """
         Process a single layer
         Inputs:
@@ -252,17 +252,18 @@ class PointOverlap(HiddenStatesMetrics):
         data_i = data_i[:, layer, :]
         data_j = data_j[:, layer, :]
 
-        if self.variations["point_overlap"] == "norm":
+        if "norm" in self.variations["point_overlap"]:
             data_i = data_i / np.linalg.norm(data_i, axis=1, keepdims=True)
             data_j = data_j / np.linalg.norm(data_j, axis=1, keepdims=True)
             data = Data(coordinates=data_i, maxk=k)
             overlap = data.return_data_overlap(data_j, k=k)
-        elif self.variations["point_overlap"] == "cosine":
+        elif "cosine" in self.variations["point_overlap"]:
             distances_i = angular_distance(data_i)
             distances_j = angular_distance(data_j)
             data = Data(coordinates=data_i, distances=distances_i, maxk=k)
             overlap = data.return_data_overlap(data_j, distances=distances_j, k=k)
         else:
+            data = Data(coordinates=data_i, maxk=k)
             overlap = data.return_data_overlap(data_j, k=k)
         return overlap
 
@@ -311,7 +312,7 @@ class LabelOverlap(HiddenStatesMetrics):
                 except UnknownError as e:
                     module_logger.error(f"Unknown error for {query}. Error: {e}")
                     raise e
-                if self.variations["label_overlap"] == "balanced_letter":
+                if "balanced_letter" in self.variations["label_overlap"]:
                     hidden_states_df.reset_index(inplace=True)
                     hidden_states_df, index = balance_by_label_within_groups(
                         hidden_states_df, "dataset", "letter_gold"
@@ -455,7 +456,7 @@ class LabelOverlap(HiddenStatesMetrics):
             Array
         """
 
-        if self.variations["label_overlap"] == "norm":
+        if "norm" in self.variations["label_overlap"]:
             hidden_states = hidden_states[:, num_layer, :] / np.linalg.norm(
                 hidden_states[:, num_layer, :], axis=1, keepdims=True
             )
