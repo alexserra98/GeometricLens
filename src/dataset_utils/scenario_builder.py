@@ -20,10 +20,12 @@ def map_aliases(dataset):
 
 
 @dataclass
-class RequestInstance():
-    question: str
+class RequestInstance:
     prompt: str
+    question: str
+    choices: List[str]
     letter_gold: str
+    subject: str
     token_gold: int = None
 
 
