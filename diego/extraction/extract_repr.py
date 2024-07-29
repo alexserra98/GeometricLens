@@ -13,6 +13,7 @@ from utils.helpers import get_target_layers_llama, get_target_layers_mistral
 from utils.model_utils import get_model
 from utils.dataloader_utils import get_dataloader
 from utils.dataset_utils import MMLU_Dataset
+from utils.scienceqa import scienceqa_dataset
 from utils.tokenizer_utils import get_tokenizer
 from intrinsic_dimension.compute_distances import compute_id
 import torch
@@ -187,6 +188,12 @@ def parse_args():
         type=str,
         default=None,
     )
+    parser.add_argument(
+        "--dataset",
+        type=str,
+        help="Path to pretrained model or model identifier from huggingface.co/models.",
+        required=False,
+    )
     parser.add_argument("--ckpt_epoch", type=int, default=None)
     parser.add_argument("--step", type=int, default=None)
     parser.add_argument("--dummy", action="store_true")
@@ -202,9 +209,11 @@ def parse_args():
     parser.add_argument("--skip_answer", action="store_true")
     parser.add_argument("--skip_choices", action="store_true")
     parser.add_argument("--random_order", action="store_true")
+
     parser.add_argument("--sample_same_questions", action="store_true")
     parser.add_argument("--indices_path", type=str, default=None)
     parser.add_argument("--measure_ari", action="store_true")
+    parser.add_argument("--prompt_mmlu", action="store_true")
     args = parser.parse_args()
     return args
 
@@ -329,37 +338,45 @@ def main():
         with open(f"{args.indices_path}", "rb") as f:
             indices_dict = pickle.load(f)
 
-    mmlu_dataset = MMLU_Dataset(
-        tokenizer=tokenizer,
-        max_seq_len=max_seq_len,
-        num_few_shots=args.num_few_shots,
-        accelerator=accelerator,
-        subject=None,
-        num_processes=args.preprocessing_num_workers,
-        num_samples=args.num_samples,
-        split=args.split,
-        dummy=args.dummy,
-        gibberish=args.gibberish,
-        random_subject=args.random_subject,
-        wrong_answers=args.wrong_answers,
-        sample_questions=args.sample_questions,
-        declarative=args.declarative,
-        aux_few_shot=args.aux_few_shot,
-        only_question=args.only_question,
-        only_answer=args.only_answer,
-        skip_answer=args.skip_answer,
-        skip_choices=args.skip_choices,
-        random_order=args.random_order,
-        few_shot_seed=args.seed,
-        sample_same_questions=args.sample_same_questions,
-        indices_dict=indices_dict,
-    )
+    if args.dataset == "mmlu":
+        dataset_class = MMLU_Dataset(
+            tokenizer=tokenizer,
+            max_seq_len=max_seq_len,
+            num_few_shots=args.num_few_shots,
+            accelerator=accelerator,
+            subject=None,
+            num_processes=args.preprocessing_num_workers,
+            num_samples=args.num_samples,
+            split=args.split,
+            dummy=args.dummy,
+            gibberish=args.gibberish,
+            random_subject=args.random_subject,
+            wrong_answers=args.wrong_answers,
+            sample_questions=args.sample_questions,
+            declarative=args.declarative,
+            aux_few_shot=args.aux_few_shot,
+            only_question=args.only_question,
+            only_answer=args.only_answer,
+            skip_answer=args.skip_answer,
+            skip_choices=args.skip_choices,
+            random_order=args.random_order,
+            few_shot_seed=args.seed,
+            sample_same_questions=args.sample_same_questions,
+            indices_dict=indices_dict,
+        )
+    elif args.dataset == "scienceqa":
+        print("dataset: scienceqa")
+        dataset_class = scienceqa_dataset(
+            tokenizer=tokenizer,
+            max_seq_len=max_seq_len,
+            num_few_shots=args.num_few_shots,
+            accelerator=accelerator,
+            num_processes=args.preprocessing_num_workers,
+            split=args.split,
+            prompt_mmlu=args.prompt_mmlu,
+        )
 
-    dataset, longest_seq = mmlu_dataset.construct_dataset()
-
-    # print(dataset[0]["prompt"])
-    # print(len(dataset))
-    # assert False
+    dataset, longest_seq = dataset_class.construct_dataset()
 
     time_stamp = None
     if args.prompt_search:
@@ -428,7 +445,10 @@ def main():
     nsamples = len(dataloader.dataset)
     accelerator.print("num_total_samples", nsamples)
 
-    inner_path = f"evaluated_{args.split}/{model_name}/{args.num_few_shots}shot"
+    inner_path = ""
+    if args.dataset == "scienceqa":
+        inner_path = "scienceqa/"
+    inner_path += f"evaluated_{args.split}/{model_name}/{args.num_few_shots}shot"
     if args.dummy:
         inner_path = f"evaluated_{args.split}/dummy/{model_name}/5shot"
     elif args.gibberish:
@@ -469,9 +489,9 @@ def main():
         print_every=args.logging_steps,
         prompt_search=args.prompt_search,
         time_stamp=time_stamp,
-        few_shot_indices=mmlu_dataset.few_shot_indices,
+        few_shot_indices=dataset_class.few_shot_indices,
         few_shot_seed=args.seed,
-        acc_macro=mmlu_dataset.acc_macro,
+        acc_macro=dataset_class.acc_macro,
         measure_ari=args.measure_ari,
     )
 
