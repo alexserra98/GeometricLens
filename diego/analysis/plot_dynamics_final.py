@@ -96,9 +96,9 @@ alphas = [0.2, 0.3, 0.4, 0.5, 0.7, 1]
 
 #################################################
 
-comparison_ov_ll3[f"letters-step-{cpt}_k30"][:-1]
-comparison_ov_ll3
-comparison_ov_ll3[f"letters-step-{cpt}-0.1"][:-1]
+# comparison_ov_ll3[f"letters-step-{cpt}_k30"][:-1]
+# comparison_ov_ll3
+# comparison_ov_ll3[f"letters-step-{cpt}-0.1"][:-1]
 sns.set_style(
     "whitegrid",
     rc={"axes.edgecolor": ".15", "xtick.bottom": True, "ytick.left": True},
@@ -130,7 +130,8 @@ ax.set_xticklabels(np.arange(1, nlayers, 4))
 ax.legend(fontsize=9)
 
 # ********************************************************
-
+fig = plt.figure(figsize=(13, 4))
+gs1 = GridSpec(1, 3)
 ax = fig.add_subplot(gs1[1])
 for cpt, alpha in zip(ckpts, alphas):
 
