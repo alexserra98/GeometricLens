@@ -90,6 +90,11 @@ def parse_args():
         "--seed", type=int, default=42, help="A seed for reproducible training."
     )
     parser.add_argument(
+        "--model_seed",
+        type=int,
+        default=None,
+    )
+    parser.add_argument(
         "--preprocessing_num_workers",
         type=int,
         default=None,
@@ -282,12 +287,18 @@ def main():
         accelerator.print("loading pretrained peft models")
         if args.ckpt_epoch is not None:
             ckpt = f"epoch_{args.ckpt_epoch}"
-            finetune_details = f"{model_name}/{args.finetuned_mode}/{args.finetuned_epochs}epochs/{ckpt}"
+            seed = ""
+            if args.model_seed is not None:
+                seed += f"_seed{args.model_seed}"
+            finetune_details = f"{model_name}/{args.finetuned_mode}/{args.finetuned_epochs}epochs{seed}/{ckpt}"
+
         elif args.step is not None:
             assert args.split == "dev+validation"
-
+            seed = ""
+            if args.model_seed is not None:
+                seed += f"_seed{args.model_seed}"
             ckpt = f"10ckpts/step_{args.step}"
-            finetune_details = f"{model_name}/{args.finetuned_mode}/{args.finetuned_epochs}epochs/{ckpt}"
+            finetune_details = f"{model_name}/{args.finetuned_mode}/{args.finetuned_epochs}epochs{seed}/{ckpt}"
         path = f"{args.finetuned_path}/{finetune_details}"
         model = PeftModel.from_pretrained(model, path)
         model.print_trainable_parameters()

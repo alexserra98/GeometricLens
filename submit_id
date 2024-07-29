@@ -1,14 +1,14 @@
 #!/bin/bash
 #SBATCH --partition=DGX
-#SBATCH --nodelist=dgx001
+##SBATCH --nodelist=dgx001
 #SBATCH --account=lade
 #SBATCH --nodes=1
 #SBATCH --time=6:00:00            
 #SBATCH --ntasks-per-node=1       
 #SBATCH --cpus-per-task=32           
-#SBATCH --mem=100G                
+#SBATCH --mem=300G                
 #SBATCH --job-name=test
-#SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:5
 
 
 #source /etc/profile.d/modules.sh
@@ -25,14 +25,14 @@ export PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"
 
 #export CUDA_LAUNCH_BLOCKING=1
 
-model_name=llama-3-8b
+model_name=llama-3-70b
 path=llama_v3
 
 #model_name=mistral-1-7b
 #path=mistral_v1
 
 torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
-       	--nnodes=1  --nproc-per-node=1 \
+       	--nnodes=1  --nproc-per-node=5 \
     diego/extraction/extract_repr.py \
     --checkpoint_dir  "/u/area/ddoimo/ddoimo/models/$path/models_hf/$model_name" \
     --use_slow_tokenizer \
@@ -44,18 +44,18 @@ torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
     --remove_duplicates \
     --use_last_token \
     --max_seq_len 4090 \
-    --split "test" \
-    --num_few_shots $num_shots \
-    --sample_same_questions \
-    --seed $seed \
-    --indices_path "diego/sorted_indices_subjects/${num_shots}shot/sorted_indices_$seed.pkl"\
-    --measure_ari 
-    # --finetuned_path  "/u/area/ddoimo/ddoimo/finetuning_llm/open-instruct/results" \
-    # --finetuned_mode "dev_val_balanced_20samples" \
-    # --finetuned_epochs 4 \
-    # --save_distances --save_repr \
+    --split "dev+validation" \
+    --num_few_shots 0 \
+    --save_distances --save_repr \
+    --finetuned_path  "/u/area/ddoimo/ddoimo/finetuning_llm/open-instruct/results" \
+    --finetuned_mode "dev_val_balanced_20samples" \
+    --finetuned_epochs 4 \
+    --model_seed 0 \
+    --ckpt_epoch 0 \
     #--step $step
-
+    #--sample_same_questions \
+    #--indices_path "diego/sorted_indices_subjects/${num_shots}shot/sorted_indices_$seed.pkl"\
+    #--measure_ari 
     
     #--ckpt_epoch 4  
     #--split "test" \
