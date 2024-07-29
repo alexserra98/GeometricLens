@@ -375,6 +375,8 @@ def main():
             split=args.split,
             prompt_mmlu=args.prompt_mmlu,
         )
+    else:
+        assert False, "provide a valid dataset name"
 
     dataset, longest_seq = dataset_class.construct_dataset()
 
