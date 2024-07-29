@@ -373,7 +373,7 @@ def main():
     elif args.dataset == "scienceqa":
         print("dataset: scienceqa")
         dataset_class = scienceqa_dataset(
-            dataset_path=args.dataset_path
+            dataset_path=args.dataset_path,
             tokenizer=tokenizer,
             max_seq_len=max_seq_len,
             num_few_shots=args.num_few_shots,
