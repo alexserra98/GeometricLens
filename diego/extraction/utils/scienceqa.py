@@ -68,6 +68,7 @@ class scienceqa_dataset:
         self.mask_path = mask_path
         self.samples_per_subject = samples_per_subject
         self.prompt_mmlu = prompt_mmlu
+        self.few_shot_indices = None
 
     # ****************************************************
     def construct_question_scienceqa(
