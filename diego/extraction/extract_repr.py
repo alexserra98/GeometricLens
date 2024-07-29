@@ -194,6 +194,12 @@ def parse_args():
         help="Path to pretrained model or model identifier from huggingface.co/models.",
         required=False,
     )
+    parser.add_argument(
+        "--dataset_path",
+        type=str,
+        help="Path to pretrained model or model identifier from huggingface.co/models.",
+        required=False,
+    )
     parser.add_argument("--ckpt_epoch", type=int, default=None)
     parser.add_argument("--step", type=int, default=None)
     parser.add_argument("--dummy", action="store_true")
@@ -367,6 +373,7 @@ def main():
     elif args.dataset == "scienceqa":
         print("dataset: scienceqa")
         dataset_class = scienceqa_dataset(
+            dataset_path=args.dataset_path
             tokenizer=tokenizer,
             max_seq_len=max_seq_len,
             num_few_shots=args.num_few_shots,

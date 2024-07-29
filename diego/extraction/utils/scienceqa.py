@@ -42,6 +42,7 @@ class scienceqa_dataset:
     # model_name number_istances to remove
     def __init__(
         self,
+        dataset_path,
         tokenizer,
         max_seq_len,
         accelerator,
@@ -55,6 +56,7 @@ class scienceqa_dataset:
     ):
 
         self.dataset = "mmlu"
+        self.dataset_path = dataset_path
         self.answers = np.array(["A", "B", "C", "D"])
         self.num_few_shots = num_few_shots
         self.tokenizer = tokenizer
@@ -301,17 +303,13 @@ class scienceqa_dataset:
         else:
             # dataset = load_dataset("cais/mmlu", "all", split=split)
 
-            dataset = load_from_disk(
-                "/home/diego/Documents/area_science/ricerca/open/geometric_lens/repo/diego/science_qa/test"
-            )
+            dataset = load_from_disk(f"{self.dataset_path}/test")
 
         few_shot_dataset = None
         if self.num_few_shots > 0:
             if self.num_few_shots > 5:
                 assert False
-            few_shot_dataset = load_from_disk(
-                "/home/diego/Documents/area_science/ricerca/open/geometric_lens/repo/diego/science_qa/train"
-            )
+            few_shot_dataset = load_from_disk(f"{self.dataset_path}/train")
             # few_shot_dataset = load_dataset("cais/mmlu", "all", split="dev")
 
         # *********************************************************************************
