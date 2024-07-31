@@ -12,19 +12,6 @@ disable_progress_bar()
 IGNORE_INDEX = -100
 
 
-dataset = load_from_disk(
-    "/home/diego/Documents/area_science/ricerca/open/geometric_lens/repo/diego/science_qa/topic_partition/train"
-)
-Counter(dataset["topic"])
-
-
-dataset = load_from_disk(
-    "/home/diego/Documents/area_science/ricerca/open/geometric_lens/repo/diego/science_qa/topic_partition/test"
-)
-
-Counter(dataset["topic"])
-
-
 def filter_out_long_sequences(tokenized_dataset, max_seq_len):
 
     tot_examples = tokenized_dataset.num_rows
