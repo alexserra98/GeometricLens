@@ -71,7 +71,7 @@ class scienceqa_dataset:
         self.prompt_mmlu = prompt_mmlu
         self.few_shot_indices = None
         self.acc_macro = None
-        self.few_shot_topics = False
+        self.few_shot_topics = few_shot_topics
 
     # ****************************************************
     def construct_question_scienceqa(
@@ -293,25 +293,24 @@ class scienceqa_dataset:
         """
         Construct the request instances for the scenario
         """
+
         subfolder_name = "category_partition"
         if self.few_shot_topics:
+            self.accelerator.print("using the topic partition as subjects")
             subfolder_name = "topic_partition"
 
         if self.split == "train":
-            # training on the dev + validation datasets
             assert self.num_few_shots == 0
             # dataset = self.construct_balanced(
             #     mask_path=self.mask_path,
             #     samples_per_subject=self.samples_per_subject,
             #     split=split,
             # )
-            if self.few_shot_topics:
-                dataset = load_from_disk(f"{self.dataset_path}/{subfolder_name}/train")
+            dataset = load_from_disk(f"{self.dataset_path}/{subfolder_name}/train")
 
         else:
             # dataset = load_dataset("cais/mmlu", "all", split=split)
-            if self.few_shot_topics:
-                dataset = load_from_disk(f"{self.dataset_path}/{subfolder_name}/test")
+            dataset = load_from_disk(f"{self.dataset_path}/{subfolder_name}/test")
 
         few_shot_dataset = None
         if self.num_few_shots > 0:
