@@ -372,7 +372,15 @@ def main():
             indices_dict=indices_dict,
         )
     elif args.dataset == "scienceqa":
-        print("dataset: scienceqa")
+        accelerator.print("dataset: scienceqa")
+        accelerator.print(f"num_few_shots: {args.num_few_shots}")
+        if args.few_shot_topics:
+            accelerator.print("subjects = topics")
+        else:
+            accelerator.print("subjects = category")
+        if args.prompt_mmlu:
+            accelerator.print("mmlu prompt")
+
         dataset_class = scienceqa_dataset(
             dataset_path=args.dataset_path,
             tokenizer=tokenizer,
@@ -460,11 +468,11 @@ def main():
     if args.dataset == "scienceqa":
         inner_path = "scienceqa/"
     if args.few_shot_topics:
-        inner_path += f"few_shot_topics/"
+        inner_path += "few_shot_topics/"
     else:
-        inner_path += f"few_shot_category/"
+        inner_path += "few_shot_category/"
     if args.prompt_mmlu:
-        inner_path += f"prompt_mmlu/"
+        inner_path += "prompt_mmlu/"
     inner_path += f"evaluated_{args.split}/{model_name}/{args.num_few_shots}shot"
     if args.dummy:
         inner_path = f"evaluated_{args.split}/dummy/{model_name}/5shot"
