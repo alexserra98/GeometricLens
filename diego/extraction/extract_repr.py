@@ -461,7 +461,6 @@ def main():
         inner_path = "scienceqa/"
     if args.few_shot_topics:
         inner_path += f"few_shot_topics/"
-
     inner_path += f"evaluated_{args.split}/{model_name}/{args.num_few_shots}shot"
     if args.dummy:
         inner_path = f"evaluated_{args.split}/dummy/{model_name}/5shot"
