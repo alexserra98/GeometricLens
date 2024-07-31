@@ -8,6 +8,9 @@ rng = np.random.default_rng(42)
 disable_progress_bar()
 
 dataset = load_dataset("derek-thomas/ScienceQA", split="train")
+
+dataset
+
 dataset = dataset.filter(lambda example: example["image"] == None)
 
 selected_categories = []
