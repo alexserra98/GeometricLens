@@ -12,6 +12,19 @@ disable_progress_bar()
 IGNORE_INDEX = -100
 
 
+dataset = load_from_disk(
+    "/home/diego/Documents/area_science/ricerca/open/geometric_lens/repo/diego/science_qa/topic_partition/train"
+)
+Counter(dataset["topic"])
+
+
+dataset = load_from_disk(
+    "/home/diego/Documents/area_science/ricerca/open/geometric_lens/repo/diego/science_qa/topic_partition/test"
+)
+
+Counter(dataset["topic"])
+
+
 def filter_out_long_sequences(tokenized_dataset, max_seq_len):
 
     tot_examples = tokenized_dataset.num_rows
@@ -53,9 +66,10 @@ class scienceqa_dataset:
         mask_path=None,
         samples_per_subject=None,
         prompt_mmlu=False,
+        few_shot_topics=False,
     ):
 
-        self.dataset = "mmlu"
+        self.dataset = "scienceqa"
         self.dataset_path = dataset_path
         self.answers = np.array(["A", "B", "C", "D"])
         self.num_few_shots = num_few_shots
@@ -70,6 +84,7 @@ class scienceqa_dataset:
         self.prompt_mmlu = prompt_mmlu
         self.few_shot_indices = None
         self.acc_macro = None
+        self.few_shot_topics = False
 
     # ****************************************************
     def construct_question_scienceqa(
@@ -111,9 +126,12 @@ class scienceqa_dataset:
     ):
 
         prompts = []
+        subject_field = "category"
+        if self.few_shot_topics:
+            subject_field = "topic"
 
         questions = batch["question"]  # list of strings
-        subjects = batch["category"]  # list of strings
+        subjects = batch[subject_field]  # list of strings
         choices = batch["choices"]  # list of list of strings
         context = batch["hint"]
         answer_indices = np.array(batch["answer"])  # array of integers
@@ -123,7 +141,7 @@ class scienceqa_dataset:
             local_dev_set = {}
             for subject in set(subjects):
                 local_dev_set[subject] = dev_set.filter(
-                    lambda dev_example, current=subject: dev_example["category"]
+                    lambda dev_example, current=subject: dev_example[subject_field]
                     == current
                 )
 
@@ -288,24 +306,27 @@ class scienceqa_dataset:
         """
         Construct the request instances for the scenario
         """
-        split = self.split
         if self.split == "train":
             # training on the dev + validation datasets
-            split = "dev+validation"
             assert self.num_few_shots == 0
             # dataset = self.construct_balanced(
             #     mask_path=self.mask_path,
             #     samples_per_subject=self.samples_per_subject,
             #     split=split,
             # )
-
-            dataset = load_from_disk(
-                "/home/diego/Documents/area_science/ricerca/open/geometric_lens/repo/diego/science_qa/train"
-            )
+            if self.few_shot_topics:
+                dataset = load_from_disk(f"{self.dataset_path}/topic_partition/train")
+            else:
+                dataset = load_from_disk(
+                    f"{self.dataset_path}/category_partition/train"
+                )
         else:
             # dataset = load_dataset("cais/mmlu", "all", split=split)
+            if self.few_shot_topics:
+                dataset = load_from_disk(f"{self.dataset_path}/topic_partition/test")
 
-            dataset = load_from_disk(f"{self.dataset_path}/test")
+            else:
+                dataset = load_from_disk(f"{self.dataset_path}/category_partition/test")
 
         few_shot_dataset = None
         if self.num_few_shots > 0:
