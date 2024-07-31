@@ -345,6 +345,7 @@ def compute_ari(act_dict, subjects, dataset_mask=None, letters=None):
         indices = np.sort(base_idx)
         base_repr = base_repr[indices]
         subj_label = subj_label[indices]
+        lett_label = lett_label[indices]
 
         # **************************************************************************
 
