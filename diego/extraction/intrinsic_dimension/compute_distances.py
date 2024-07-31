@@ -231,7 +231,15 @@ def compute_id(
                         act_dict=act_dict,
                         subjects=dataloader.dataset["subjects"],
                         dataset_mask=dataset_mask,
+                        letters=answers,
                     )
+                    print("subject ari max:", max(metrics["ari"]))
+                    print("subject hom max:", max(metrics["homogeneity"]))
+                    print("subject compl max:", max(metrics["completeness"]))
+
+                    print("letter ari max:", max(metrics["ari-letters"]))
+                    print("letter hom max:", max(metrics["homogeneity-letters"]))
+                    print("letter compl max:", max(metrics["completeness-letters"]))
 
                 statistics = {
                     "subjects": dataloader.dataset["subjects"],
@@ -312,7 +320,7 @@ def compute_id(
                         )
 
 
-def compute_ari(act_dict, subjects, dataset_mask=None):
+def compute_ari(act_dict, subjects, dataset_mask=None, letters=None):
     metrics = defaultdict(list)
 
     for i, (layer, act) in enumerate(act_dict.items()):
@@ -320,6 +328,10 @@ def compute_ari(act_dict, subjects, dataset_mask=None):
 
         subjects_to_int = {sub: i for i, sub in enumerate(np.unique(subjects))}
         subj_label = np.array([subjects_to_int[sub] for sub in subjects])
+
+        if letters is not None:
+            lett_to_int = {sub: i for i, sub in enumerate(np.unique(letters))}
+            lett_label = np.array([lett_to_int[sub] for sub in letters])
 
         # balance the test set if asked
         if dataset_mask is not None:
@@ -358,5 +370,18 @@ def compute_ari(act_dict, subjects, dataset_mask=None):
             metrics["ami"].append(adjusted_mutual_info_score(assignment, subj_label))
             metrics["completeness"].append(completeness_score(assignment, subj_label))
             metrics["homogeneity"].append(homogeneity_score(assignment, subj_label))
+            if letters is not None:
+                metrics["ari-letters"].append(
+                    adjusted_rand_score(assignment, lett_label)
+                )
+                metrics["ami-letters"].append(
+                    adjusted_mutual_info_score(assignment, lett_label)
+                )
+                metrics["completeness-letters"].append(
+                    completeness_score(assignment, lett_label)
+                )
+                metrics["homogeneity-letters"].append(
+                    homogeneity_score(assignment, lett_label)
+                )
 
     return metrics
