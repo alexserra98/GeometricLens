@@ -13,7 +13,8 @@ torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
     --model_name 'llama' \
     --precision "no" \
     --out_dir './results_tmp' \
-    --dataset "scienceqa"
+    --dataset "scienceqa" \
+    --dataset_path /home/diego/Documents/area_science/ricerca/open/geometric_lens/repo/diego/
     # --declarative \
     # --prompt_search \
     #--aux_few_shot

@@ -220,6 +220,7 @@ def parse_args():
     parser.add_argument("--indices_path", type=str, default=None)
     parser.add_argument("--measure_ari", action="store_true")
     parser.add_argument("--prompt_mmlu", action="store_true")
+    parser.add_argument("--few_shot_topics", action="store_true")
     args = parser.parse_args()
     return args
 
@@ -381,6 +382,7 @@ def main():
             num_processes=args.preprocessing_num_workers,
             split=args.split,
             prompt_mmlu=args.prompt_mmlu,
+            few_shot_topics=args.few_shot_topics,
         )
     else:
         assert False, "provide a valid dataset name"
@@ -457,6 +459,9 @@ def main():
     inner_path = ""
     if args.dataset == "scienceqa":
         inner_path = "scienceqa/"
+    if args.few_shot_topics:
+        inner_path += f"few_shot_topics/"
+
     inner_path += f"evaluated_{args.split}/{model_name}/{args.num_few_shots}shot"
     if args.dummy:
         inner_path = f"evaluated_{args.split}/dummy/{model_name}/5shot"
