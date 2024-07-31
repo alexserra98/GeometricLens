@@ -293,6 +293,10 @@ class scienceqa_dataset:
         """
         Construct the request instances for the scenario
         """
+        subfolder_name = "category_partition"
+        if self.few_shot_topics:
+            subfolder_name = "topic_partition"
+
         if self.split == "train":
             # training on the dev + validation datasets
             assert self.num_few_shots == 0
@@ -302,24 +306,20 @@ class scienceqa_dataset:
             #     split=split,
             # )
             if self.few_shot_topics:
-                dataset = load_from_disk(f"{self.dataset_path}/topic_partition/train")
-            else:
-                dataset = load_from_disk(
-                    f"{self.dataset_path}/category_partition/train"
-                )
+                dataset = load_from_disk(f"{self.dataset_path}/{subfolder_name}/train")
+
         else:
             # dataset = load_dataset("cais/mmlu", "all", split=split)
             if self.few_shot_topics:
-                dataset = load_from_disk(f"{self.dataset_path}/topic_partition/test")
-
-            else:
-                dataset = load_from_disk(f"{self.dataset_path}/category_partition/test")
+                dataset = load_from_disk(f"{self.dataset_path}/{subfolder_name}/test")
 
         few_shot_dataset = None
         if self.num_few_shots > 0:
             if self.num_few_shots > 5:
                 assert False
-            few_shot_dataset = load_from_disk(f"{self.dataset_path}/train")
+            few_shot_dataset = load_from_disk(
+                f"{self.dataset_path}/{subfolder_name}/train"
+            )
             # few_shot_dataset = load_dataset("cais/mmlu", "all", split="dev")
 
         # *********************************************************************************
