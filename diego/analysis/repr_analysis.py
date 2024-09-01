@@ -88,10 +88,15 @@ if args.model_name in ["llama-3-8b", "mistral-1-7b"]:
     nlayers = 34
 elif args.model_name == "llama-2-13b":
     nlayers = 42
+elif "70" in args.model_name:
+    nlayers = 82
 else:
     assert (
         False
     ), f"wrong model name {args.model_name}, expected llama-3-8b or llama-2-13b"
+
+print("analyzing model:", args.model_name)
+
 
 # ********************************************************************************
 
@@ -116,7 +121,7 @@ else:
     assert False, "dataset misspecified"
 
 
-print(args.eval_dataset)
+print("mmlu_fold", args.eval_dataset)
 sys.stdout.flush()
 
 
@@ -126,7 +131,7 @@ intrinsic_dim = defaultdict(list)
 
 
 if args.finetuned_mode is not None:
-    print(args.finetuned_mode)
+    print("finetuned_mode:", args.finetuned_mode)
     sys.stdout.flush()
     args.results_path += f"/finetuned/{args.model_name}"
     os.makedirs(args.results_path, exist_ok=True)
@@ -141,7 +146,7 @@ if args.finetuned_mode is not None:
             name = f"{args.model_name}_finetuned_{args.finetuned_mode}_epoch{args.epochs}_10ckpts_eval_{args.eval_dataset}{is_balanced}_0shot"
 
             for layer in range(1, nlayers):
-                print("layer:", layer)
+                print("layer:", f"{layer}/{nlayers-1}")
                 sys.stdout.flush()
 
                 clusters, intrinsic_dim, overlaps = analyze(
@@ -166,7 +171,7 @@ if args.finetuned_mode is not None:
             sys.stdout.flush()
 
             for layer in range(1, nlayers):
-                print("layer:", layer)
+                print("layer:", f"{layer}/{nlayers-1}")
                 sys.stdout.flush()
 
                 clusters, intrinsic_dim, overlaps = analyze(
@@ -190,10 +195,12 @@ if args.finetuned_mode is not None:
                 pickle.dump(intrinsic_dim, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 elif args.pretrained_mode is not None:
-    print(args.pretrained_mode)
+    print("pretrained mode:", args.pretrained_mode)
     args.results_path += f"/pretrained/{args.model_name}"
     os.makedirs(args.results_path, exist_ok=True)
     num_shots = np.arange(6)
+    if "70" in args.model_name:
+        num_shots = np.arange(5)
     if args.num_shots is not None:
         num_shots = [args.num_shots]
 
@@ -204,7 +211,7 @@ elif args.pretrained_mode is not None:
         sys.stdout.flush()
 
         for layer in range(1, nlayers):
-            print("layer:", layer)
+            print("layer:", f"{layer}/{nlayers-1}")
             sys.stdout.flush()
 
             clusters, intrinsic_dim, overlaps = analyze(

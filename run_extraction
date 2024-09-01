@@ -1,5 +1,7 @@
 #!/bin/bash
-for seed in {0..9}
+
+#for step in 1 2 3 5 9 16 29 50 88 153 
+for step in 1 2 3 6 11 19 35 63 114 206
 do
-sbatch --export=ALL,seed=$seed  submit_id 
+sbatch --export=ALL,step=$step submit_id 
 done
