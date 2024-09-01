@@ -174,8 +174,8 @@ ax.set_xticklabels(np.arange(1, nlayers, 4))
 ax.legend(fontsize=9)
 gs1.tight_layout(fig, rect=[0, 0, 1, 1])
 
-plt.savefig(f"{plots_dir}/dynamics_only_similarity.png")
-plt.savefig(f"{plots_dir}/dynamics_only_similarity.pdf")
+# plt.savefig(f"{plots_dir}/dynamics_only_similarity.png")
+# plt.savefig(f"{plots_dir}/dynamics_only_similarity.pdf")
 
 
 # *********************************

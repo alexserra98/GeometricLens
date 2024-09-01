@@ -55,9 +55,12 @@ test = test.filter(lambda example: example[subject_field] in selected_categories
 test_set = concatenate_datasets([train_for_test, validation, test])
 
 
+test_set["choices"]
+test_set["answer"]
+
 # *************************************
 # double checks
-len(train)
+
 
 Counter(train["topic"])
 

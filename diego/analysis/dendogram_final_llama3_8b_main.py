@@ -12,6 +12,9 @@ from helper_dendogram import (
     plot_with_labels,
 )
 from collections import defaultdict
+from sklearn.metrics import homogeneity_score
+import numpy as np
+from collections import Counter
 
 results_path = "/home/diego/Documents/area_science/ricerca/open/geometric_lens/repo/diego/analysis/plots/final/dendrograms"
 base_dir = "/home/diego/Documents/area_science/ricerca/open/geometric_lens/repo"
@@ -42,6 +45,18 @@ d, index_to_subject = get_clusters(
     Z=1.6,
 )
 
+
+mc_fraction = []
+for index in np.unique(d.cluster_assignment):
+    ind_ = np.nonzero(d.cluster_assignment == index)[0]
+    mc = Counter(ground_truth_labels[ind_]).most_common()[0][1]
+    mc_fraction.append(mc / len(ind_))
+
+np.sum(np.array(mc_fraction) > 0.9)
+
+len(np.array(mc_fraction))
+
+homogeneity_score(d.cluster_assignment, ground_truth_labels)
 
 # F = [d.log_den[c] for c in d.cluster_centers]
 # plt.plot(F, marker=".")

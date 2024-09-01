@@ -20,6 +20,9 @@ mask, ground_truth_labels = get_dataset_mask(
 )
 subjects = subjects[mask]
 
+import numpy as np
+from collections import Counter
+
 # ********************************************************************
 
 
@@ -175,6 +178,15 @@ d_ft, index_to_subject_ft = get_clusters(
     subjects=subjects,
     Z=1,
 )
+d = d_ft
+mc_fraction = []
+for index in np.unique(d.cluster_assignment):
+    ind_ = np.nonzero(d.cluster_assignment == index)[0]
+    mc = Counter(ground_truth_labels[ind_]).most_common()[0][1]
+    mc_fraction.append(mc / len(ind_))
+
+np.sum(np.array(mc_fraction) > 0.80)
+
 
 # F = [d_ft.log_den[c] for c in d_ft.cluster_centers]
 # plt.plot(F, marker=".")

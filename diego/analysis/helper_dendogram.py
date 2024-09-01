@@ -41,6 +41,7 @@ def get_clusters(
 
     d = Data(coordinates=X_sub, maxk=300)
     ids, _, _ = d.return_id_scaling_gride(range_max=300)
+    print(ids)
     d.set_id(ids[3])
     d.compute_density_kNN(k=16)
     cluster_assignment = d.compute_clustering_ADP(Z=Z, halo=False)
@@ -310,6 +311,8 @@ def plot_with_labels(
     path=None,
     width=9,
     color_threshold=10,
+    height=14,
+    leaf_font_size=10,
 ):
     # ****************************************************************************************************************
     DD = sp.cluster.hierarchy.linkage(dis, method="weighted")
@@ -336,7 +339,7 @@ def plot_with_labels(
         labels.append(name.strip()[:-1])
 
     # ************************************
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(width, 14))
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(width, height))
     dn = sp.cluster.hierarchy.dendrogram(
         DD,
         p=30,
@@ -346,7 +349,7 @@ def plot_with_labels(
         orientation=ori,
         above_threshold_color="C5",
         labels=labels,
-        leaf_font_size=10,
+        leaf_font_size=leaf_font_size,
     )
     ax.set_xticks([])
     ax.set_xticklabels([])

@@ -167,8 +167,8 @@ ax.legend()
 ax.set_ylabel("ARI answers")
 ax.set_xlabel("layers")
 ax.set_title("llama-2-13b")
-ax.set_xticks(np.arange(1, 42, 4))
-ax.set_xticklabels(np.arange(1, 42, 4))
+ax.set_xticks(np.arange(1, 82, 4))
+ax.set_xticklabels(np.arange(1, 82, 4))
 
 
 ax = fig.add_subplot(gs2[1])
@@ -193,7 +193,7 @@ ax.set_xticks(np.arange(1, 42, 4))
 ax.set_xticklabels(np.arange(1, 42, 4))
 
 
-gs2.tight_layout(fig, rect=[0.5, 0, 1, 1])
+gs2.tight_layout(fig)
 plt.savefig(f"{plots_dir}/overlap_labels.png", dpi=200)
 
 
