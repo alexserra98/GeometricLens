@@ -152,64 +152,69 @@ def analyze(
         is_halo = ""
         if halo:
             is_halo = "-halo"
-        for z in [0, 0.5, 1, 1.6, 2.1]:
+        for z in [0, 1, 1.6, 2.1]:
+            for k in [8, 16]:
 
-            d = data.Data(distances=(distances_base, dist_index_base))
-            ids, _, _ = d.return_id_scaling_gride(range_max=100)
-            d.set_id(ids[3])
-            intrinsic_dim[f"ids-{spec}"].append(ids)
-            d.compute_density_kNN(k=16)
-            assignment = d.compute_clustering_ADP(Z=z, halo=halo)
+                d = data.Data(distances=(distances_base, dist_index_base))
+                ids, _, _ = d.return_id_scaling_gride(range_max=100)
+                d.set_id(ids[3])
+                intrinsic_dim[f"ids-{spec}"].append(ids)
+                d.compute_density_kNN(k=k)
+                assignment = d.compute_clustering_ADP(Z=z, halo=halo)
 
-            mask = np.ones(len(assignment), dtype=bool)
-            if halo:
-                mask = assignment != -1
+                mask = np.ones(len(assignment), dtype=bool)
+                if halo:
+                    mask = assignment != -1
 
-            clusters[f"nclus-{spec}-z{z}{is_halo}"].append(d.N_clusters)
-            population = []
-            for clus in d.cluster_indices:
-                population.append(len(clus))
-            clusters[f"population-{spec}-z{z}{is_halo}"].append(population)
+                clusters[f"nclus-{spec}-z{z}-k{k}{is_halo}"].append(d.N_clusters)
+                population = []
+                for clus in d.cluster_indices:
+                    population.append(len(clus))
+                clusters[f"population-{spec}-z{z}-k{k}{is_halo}"].append(population)
 
-            clusters[f"subjects-ami-{spec}-z{z}{is_halo}"].append(
-                adjusted_mutual_info_score(assignment[mask], subj_label[mask])
-            )
+                # clusters[f"subjects-ami-{spec}-z{z}-k{k}{is_halo}"].append(
+                #     adjusted_mutual_info_score(assignment[mask], subj_label[mask])
+                # )
 
-            clusters[f"subjects-ari-{spec}-z{z}{is_halo}"].append(
-                adjusted_rand_score(assignment[mask], subj_label[mask])
-            )
+                clusters[f"subjects-ari-{spec}-z{z}-k{k}{is_halo}"].append(
+                    adjusted_rand_score(assignment[mask], subj_label[mask])
+                )
 
-            entropies = []
-            most_commons = []
-            for clus in d.cluster_indices:
-                composition = subj_label[np.array(clus)]
-                most_commons.append(Counter(composition).most_common()[0][1])
-                h = entropy(composition)
-                entropies.append(h)
+                # entropies = []
+                # most_commons = []
+                # for clus in d.cluster_indices:
+                #     composition = subj_label[np.array(clus)]
+                #     most_commons.append(Counter(composition).most_common()[0][1])
+                #     h = entropy(composition)
+                #     entropies.append(h)
 
-            clusters[f"subj-entropies-{spec}-z{z}{is_halo}"].append(entropies)
-            clusters[f"subj-most_common-{spec}-z{z}{is_halo}"].append(most_commons)
+                # clusters[f"subj-entropies-{spec}-z{z}-k{k}{is_halo}"].append(entropies)
+                # clusters[f"subj-most_common-{spec}-z{z}-k{k}{is_halo}"].append(
+                #     most_commons
+                # )
 
-            # *********************************************************************
+                # *********************************************************************
 
-            clusters[f"letters-ami-{spec}-z{z}{is_halo}"].append(
-                adjusted_mutual_info_score(assignment[mask], letter_label[mask])
-            )
+                # clusters[f"letters-ami-{spec}-z{z}{is_halo}"].append(
+                #     adjusted_mutual_info_score(assignment[mask], letter_label[mask])
+                # )
 
-            clusters[f"letters-ari-{spec}-z{z}{is_halo}"].append(
-                adjusted_rand_score(assignment[mask], letter_label[mask])
-            )
+                clusters[f"letters-ari-{spec}-z{z}-k{k}{is_halo}"].append(
+                    adjusted_rand_score(assignment[mask], letter_label[mask])
+                )
 
-            entropies = []
-            most_commons = []
-            for clus in d.cluster_indices:
-                composition = letter_label[np.array(clus)]
-                most_commons.append(Counter(composition).most_common()[0][1])
-                h = entropy(composition)
-                entropies.append(h)
+                # entropies = []
+                # most_commons = []
+                # for clus in d.cluster_indices:
+                #     composition = letter_label[np.array(clus)]
+                #     most_commons.append(Counter(composition).most_common()[0][1])
+                #     h = entropy(composition)
+                #     entropies.append(h)
 
-            clusters[f"letters-entropies-{spec}-z{z}{is_halo}"].append(entropies)
-            clusters[f"letters-most_common-{spec}-z{z}{is_halo}"].append(most_commons)
+                # clusters[f"letters-entropies-{spec}-z{z}{is_halo}"].append(entropies)
+                # clusters[f"letters-most_common-{spec}-z{z}{is_halo}"].append(
+                #     most_commons
+                # )
             # ************************************************************************************
 
     # print(clusters[f"letters-ari-{spec}-z{z}{is_halo}"])
