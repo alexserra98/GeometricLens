@@ -1,0 +1,6 @@
+#!/bin/bash
+
+for shot in 0 1 2 5
+do 
+sbatch --export=ALL,num_shots=$shot submit_analysis 
+done

@@ -108,6 +108,7 @@ def analyze(
 
     base_repr = torch.load(f"{base_path}/l{layer}_target.pt")
     base_repr = base_repr.to(torch.float64).numpy()
+    print("dataset_size:", base_repr.shape[0])
 
     with open(f"{base_path}/statistics_target.pkl", "rb") as f:
         stats = pickle.load(f)
@@ -134,6 +135,7 @@ def analyze(
     base_repr = base_repr[indices]
     subj_label = subj_label[indices]
     letter_label = letter_label[indices]
+    print("dataset_size after mask and prune:", base_repr.shape[0])
 
     # ***********************************************************************
 

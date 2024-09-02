@@ -1,7 +1,11 @@
 #!/bin/bash
 
+# 8 epochs 
+# 1 2 4 9 19 40 83 173 360 752
+# 1 2 5 10 21 45 96 205
 #for step in 1 2 3 5 9 16 29 50 88 153 
-for step in 1 2 3 6 11 19 35 63 114 206
+#for step in 1 2 3 6 11 19 35 63 114 206
+for step in 1 2 4 9 19 40 83 173 360 752 
 do
 sbatch --export=ALL,step=$step submit_id 
 done
