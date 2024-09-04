@@ -110,8 +110,12 @@ def analyze(
     base_repr = base_repr.to(torch.float64).numpy()
     print("dataset_size:", base_repr.shape[0])
 
-    with open(f"{base_path}/statistics_target.pkl", "rb") as f:
-        stats = pickle.load(f)
+    try:
+        with open(f"{base_path}/statistics_target.pkl", "rb") as f:
+            stats = pickle.load(f)
+    except:
+        with open(f"{base_path}/statistics_target_sorted_sample42.pkl", "rb") as f:
+            stats = pickle.load(f)
     subjects = stats["subjects"]
     subjects_to_int = {sub: i for i, sub in enumerate(np.unique(subjects))}
     subj_label = np.array([subjects_to_int[sub] for sub in subjects])

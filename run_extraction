@@ -1,11 +1,23 @@
 #!/bin/bash
 
+# 6 epochs
+# 1 2 4 8 17 34 68 138 279 564
+# llama3-70
+# 1 2 4 7 13 24 44 84 158 296
+
 # 8 epochs 
 # 1 2 4 9 19 40 83 173 360 752
-# 1 2 5 10 21 45 96 205
+# 10 epochs 
+# 1 2 5 10 21 45 96 205 439 
+# llama 3 70
+# 1 2 4 8 15 30 60 120 237
+
 #for step in 1 2 3 5 9 16 29 50 88 153 
 #for step in 1 2 3 6 11 19 35 63 114 206
-for step in 1 2 4 9 19 40 83 173 360 752 
+#for step in 1 2 4 9 19 40 83 173 360 752
+
+#for step in 1 2 4 7 13 24 44 84 
+for step in 158 296 
 do
 sbatch --export=ALL,step=$step submit_id 
 done

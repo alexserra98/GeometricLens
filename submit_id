@@ -6,9 +6,9 @@
 #SBATCH --time=6:00:00            
 #SBATCH --ntasks-per-node=1       
 #SBATCH --cpus-per-task=32           
-#SBATCH --mem=100G                
+#SBATCH --mem=250G                
 #SBATCH --job-name=test
-#SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:5
 
 
 #source /etc/profile.d/modules.sh
@@ -24,15 +24,15 @@ export OMP_NUM_THREADS=32
 #export PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"
 
 #export CUDA_LAUNCH_BLOCKING=1
-
-model_name=llama-3-8b
-path=llama_v3
+model_name=llama-2-70b
+path=llama_v2
 
 #model_name=mistral-1-7b
 #path=mistral_v1
+#step=940
 
 torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
-       	--nnodes=1  --nproc-per-node=1 \
+       	--nnodes=1  --nproc-per-node=5 \
     diego/extraction/extract_repr.py \
     --dataset "mmlu" \
     --checkpoint_dir  "/u/area/ddoimo/ddoimo/models/$path/models_hf/$model_name" \
@@ -46,19 +46,31 @@ torchrun --rdzv-backend=c10d --rdzv-endpoint=localhost:0 \
     --use_last_token \
     --max_seq_len 4090 \
     --num_few_shots 0 \
-    --save_distances --save_repr \
-    --measure_ari \
     --finetuned_path  "/u/area/ddoimo/ddoimo/finetuning_llm/open-instruct/results" \
     --finetuned_mode "dev_val_balanced_40samples" \
-    --finetuned_epochs 8 \
-    --dataset_path "/orfeo/cephfs/scratch/area/ddoimo/open/geometric_lens/repo/diego/science_qa" \
-    --step $step \
-    --split "dev+validation" \
-    #--ckpt_epoch 8 \
+    --finetuned_epochs 6  \
+    --save_distances --save_repr --measure_ari \
+    --split "test" \
+    --ckpt_epoch 6 \
+    --model_seed 0 
+    
+    #--ckpt_epoch 6 \
     #--split "test" \
+    #--ckpt_epoch 10 \
+    #--split "test" \
+    #--random_order \
+    #--model_seed 0    
+    #--random_order \
+    #--split "test" \
+    #--split "dev+validation" \
+    #--step $step \
+
+
+    #--dataset_path "/orfeo/cephfs/scratch/area/ddoimo/open/geometric_lens/repo/diego/science_qa" \
+
+
     #--model_seed 0 \
 
-    
     #--prompt_mmlu \
     #--ckpt_epoch 4 \
     #--few_shot_topics 

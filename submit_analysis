@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --partition=DGX
+#SBATCH --partition=EPYC
 ##SBATCH --nodelist=dgx001
 #SBATCH --account=lade
 #SBATCH --nodes=1
@@ -26,16 +26,16 @@ export PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"
 
 #python diego/analysis/repr_comparison.py \
 python diego/analysis/repr_analysis.py \
-    --model_name "llama-3-8b" \
+    --model_name "mistral-1-7b" \
     --results_path "diego/analysis/results" \
     --mask_dir /orfeo/cephfs/scratch/area/ddoimo/open/geometric_lens/repo/diego/analysis \
-    --epochs 8 \
+    --epochs 6 \
     --samples_subject 200 \
     --eval_dataset "test" \
-    --finetuned_mode "dev_val_balanced_40samples" \
-    --ckpt 8
-#--pretrained_mode "random_order" \
-    #--num_shots 4
+    --pretrained_mode "random_order" \
+    --num_shots $num_shots 
+    #--ckpt 6 \
+    #--finetuned_mode "dev_val_balanced_40samples" \
 
 
 
